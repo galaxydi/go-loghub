@@ -1,0 +1,12 @@
+language: go
+
+go:
+ - 1.7
+
+install:
+ - go get github.com/gogo/protobuf/proto
+ - go get github.com/cloudflare/golz4
+ - go get github.com/golang/glog
+
+script:
+ - go test -cover
