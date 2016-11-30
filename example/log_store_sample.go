@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	sls "go-loghub"
-	"go-loghub/example/util"
+	sls "github.com/galaxydi/go-loghub"
+	"github.com/galaxydi/go-loghub/example/util"
 	"os"
 	"time"
 
@@ -92,8 +92,10 @@ func main() {
 		cursor = c
 		break
 	}
+
+	endCursor, _ := store.GetCursor(0, "end")
 	for {
-		gl, next, err := store.GetLogs(0, cursor, 100)
+		gl, next, err := store.GetLogs(0, cursor, endCursor, 100)
 		if err != nil {
 			fmt.Println("GetLogs from:" + store.Name + " fail:")
 			fmt.Println(err)
