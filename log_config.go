@@ -6,6 +6,7 @@ type InputDetail struct {
 	LogPath       string   `json:"logPath"`
 	FilePattern   string   `json:"filePattern"`
 	LocalStorage  bool     `json:"localStorage"`
+	TimeKey       string   `json:"timeKey"`
 	TimeFormat    string   `json:"timeFormat"`
 	LogBeginRegex string   `json:"logBeginRegex"`
 	Regex         string   `json:"regex"`
