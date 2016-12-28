@@ -82,7 +82,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 		return NewClientError(err.Error())
 	}
 
-	body, _ := ioutil.ReadAll(r.Body)
+	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
 		json.Unmarshal(body, err)
