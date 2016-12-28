@@ -25,9 +25,9 @@ var _ = math.Inf
 
 // Log defines SLS Log struct
 type Log struct {
-	Time            *uint32        `protobuf:"varint,1,req,name=Time" json:"Time,omitempty"`
+	Time            *int64        `protobuf:"varint,1,req,name=Time" json:"Time,omitempty"`
 	Contents        []*LogContent `protobuf:"bytes,2,rep,name=Contents" json:"Contents,omitempty"`
-	XXXUnrecognized []byte         `json:"-"`
+	XXXUnrecognized []byte        `json:"-"`
 }
 
 // Reset the Log
@@ -38,7 +38,7 @@ func (m *Log) String() string { return proto.CompactTextString(m) }
 func (*Log) ProtoMessage() {}
 
 // GetTime get log timestamp
-func (m *Log) GetTime() uint32 {
+func (m *Log) GetTime() int64 {
 	if m != nil && m.Time != nil {
 		return *m.Time
 	}
@@ -61,7 +61,7 @@ type LogContent struct {
 }
 
 // Reset set empty log content
-func (m *LogContent) Reset()          { *m = LogContent{} }
+func (m *LogContent) Reset()         { *m = LogContent{} }
 func (m *LogContent) String() string { return proto.CompactTextString(m) }
 
 // ProtoMessage empty implement
@@ -92,7 +92,7 @@ type LogGroup struct {
 	XXXUnrecognized []byte  `json:"-"`
 }
 
-// Reset set emply log group
+// Reset set empty log group
 func (m *LogGroup) Reset()         { *m = LogGroup{} }
 func (m *LogGroup) String() string { return proto.CompactTextString(m) }
 
