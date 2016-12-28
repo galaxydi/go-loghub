@@ -60,18 +60,14 @@ func (s *LogStore) ListShards() (shardIDs []int, err error) {
 func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	body, err := proto.Marshal(lg)
 	if err != nil {
-		return
-	}
-
-	if glog.V(2) {
-		glog.Infof("%v", lg)
+		return NewClientError(err.Error())
 	}
 
 	// Compresse body with lz4
 	out := make([]byte, lz4.CompressBound(body))
 	n, err := lz4.Compress(body, out)
 	if err != nil {
-		return
+		return NewClientError(err.Error())
 	}
 
 	h := map[string]string{
@@ -83,29 +79,16 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	uri := fmt.Sprintf("/logstores/%v", s.Name)
 	r, err := request(s.project, "POST", uri, h, out[:n])
 	if err != nil {
-		return
+		return NewClientError(err.Error())
 	}
 
-	buf, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
+	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to put logs")
-			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
-			}
-			return
-		}
-		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
-		return
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
 	}
-	return
+	return nil
 }
 
 // GetCursor gets log cursor of one shard specified by shardId.
