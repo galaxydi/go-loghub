@@ -44,7 +44,7 @@ func signature(project *LogProject, method, uri string,
 	slsHeaders := make(map[string]string, len(headers))
 	for k, v := range headers {
 		l := strings.TrimSpace(strings.ToLower(k))
-		if strings.HasPrefix(l, "x-sls-") {
+		if strings.HasPrefix(l, "x-sls-") || strings.HasPrefix(l, "x-acs-") {
 			slsHeaders[l] = strings.TrimSpace(v)
 			slsHeaderKeys = append(slsHeaderKeys, l)
 		}
