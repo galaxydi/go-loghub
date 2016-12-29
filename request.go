@@ -25,10 +25,15 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	headers["Date"] = nowRFC1123()
 	headers["x-sls-apiversion"] = version
 	headers["x-sls-signaturemethod"] = signatureMethod
+
+	// Access with token
+	if project.SessionToken != "" {
+		headers["x-acs-security-token"] = project.SessionToken
+	}
+
 	if body != nil {
 		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
 		headers["Content-MD5"] = bodyMD5
-
 		if _, ok := headers["Content-Type"]; !ok {
 			err = fmt.Errorf("Can't find 'Content-Type' header")
 			return
