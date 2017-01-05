@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	sls "go-loghub"
-	"go-loghub/example/util"
+	sls "github.com/galaxydi/go-loghub"
+	"github.com/galaxydi/go-loghub/example/util"
 	"os"
 )
 
