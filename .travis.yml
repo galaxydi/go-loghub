@@ -5,9 +5,10 @@ go:
  - 1.7
 
 install:
+ - go get github.com/mattn/goveralls
  - go get github.com/gogo/protobuf/proto
  - go get github.com/cloudflare/golz4
  - go get github.com/golang/glog
 
 script:
- - go test -v -cover
+ - $HOME/gopath/bin/goveralls -service=travis-ci
