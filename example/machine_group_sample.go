@@ -2,15 +2,14 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	sls "github.com/galaxydi/go-loghub"
 	"github.com/galaxydi/go-loghub/example/util"
-	"os"
 )
 
-var projectName = "another-project"
-var logstore = "demo-store"
-
-func main() {
+// MachineGroupSample ...
+func MachineGroupSample() {
 	// machine group example
 	testConf := "test-conf"
 	testMachineGroup := "test-mg"
@@ -58,7 +57,7 @@ func main() {
 		util.Project.DeleteConfig(testConf)
 	}
 
-	err = createConfig(testConf, projectName, logstore, testService)
+	err = createLogConfig(testConf, projectName, logstore, testService)
 	if err != nil {
 		fmt.Println("create config fail:")
 		fmt.Println(err)
@@ -98,14 +97,6 @@ func main() {
 	fmt.Println("machine group sample end")
 }
 
-func deleteConfig(confName string) (err error) {
-	err = util.Project.DeleteConfig(confName)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 func applyConfToMachineGroup(confName string, mgname string) (err error) {
 	err = util.Project.ApplyConfigToMachineGroup(confName, mgname)
 	if err != nil {
@@ -114,7 +105,7 @@ func applyConfToMachineGroup(confName string, mgname string) (err error) {
 	return nil
 }
 
-func createConfig(configName string, projectName, logstore string, serviceName string) (err error) {
+func createLogConfig(configName string, projectName, logstore string, serviceName string) (err error) {
 	// 日志所在的父目录
 	logPath := "/var/log/lambda/" + serviceName
 	// 日志文件的pattern，如functionName.LOG

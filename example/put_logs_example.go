@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	projectName     = "test-project"
+	project         = "test-project"
 	logstoreName    = "test-logstore"
 	endpoint        = "cn-hangzhou.log.aliyuncs.com"
 	accessKeyID     = "xxx"
@@ -19,8 +19,9 @@ const (
 	token           = "xxx"
 )
 
-func main() {
-	p1, _ := sls.NewLogProject(projectName, endpoint, accessKeyID, accessKeySecret)
+// PutLogsSample ...
+func PutLogsSample() {
+	p1, _ := sls.NewLogProject(project, endpoint, accessKeyID, accessKeySecret)
 	s1, _ := p1.GetLogStore(logstoreName)
 	content := &sls.LogContent{
 		Key:   proto.String("demo_key"),

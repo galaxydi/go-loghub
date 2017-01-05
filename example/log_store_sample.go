@@ -2,18 +2,17 @@ package main
 
 import (
 	"fmt"
-	sls "github.com/galaxydi/go-loghub"
-	"github.com/galaxydi/go-loghub/example/util"
 	"os"
 	"time"
+
+	sls "github.com/galaxydi/go-loghub"
+	"github.com/galaxydi/go-loghub/example/util"
 
 	"github.com/gogo/protobuf/proto"
 )
 
-var projectName = "another-project"
-var logstore = "demo-store"
-
-func main() {
+// LogstoreSample ...
+func LogstoreSample() {
 	list, err := util.Project.ListLogStore()
 	for _, v := range list {
 		_, err := util.Project.GetLogStore(v)
