@@ -98,10 +98,8 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 	h := map[string]string{
 		"x-sls-bodyrawsize": "0",
 	}
-
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=cursor&from=%v",
 		s.Name, shardID, from)
-
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
 		return
@@ -145,7 +143,6 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 // The nextCursor is the next curosr can be used to read logs at next time.
 func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
-
 	h := map[string]string{
 		"x-sls-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
@@ -179,7 +176,6 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
 		return
 	}
-
 	v, ok := r.Header["X-Sls-Compresstype"]
 	if !ok || len(v) == 0 {
 		err = fmt.Errorf("can't find 'x-sls-compresstype' header")
@@ -228,10 +224,10 @@ func LogsBytesDecode(data []byte) (gl *LogGroupList, err error) {
 	return gl, nil
 }
 
-// GetLogs gets logs from shard specified by shardId according cursor end end_cursor.
+// PullLogs gets logs from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
-// The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogs(shardID int, cursor, endCursor string,
+// The nextCursor is the next cursor can be used to read logs at next time.
+func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
 
 	out, nextCursor, err := s.GetLogsBytes(shardID, cursor, endCursor, logGroupMaxCount)
@@ -245,4 +241,47 @@ func (s *LogStore) GetLogs(shardID int, cursor, endCursor string,
 	}
 
 	return gl, nextCursor, nil
+}
+
+// GetLogs query logs with [from, to) time range
+func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
+
+	h := map[string]string{
+		"x-sls-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
+
+	r, err := request(s.project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err.Error())
+	}
+
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return nil, err
+	}
+
+	logs := []map[string]string{}
+	err = json.Unmarshal(body, &logs)
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+
+	getLogsResponse := GetLogsResponse{
+		Progress: r.Header[ProgressHeader][0],
+		Count:    count,
+		Logs:     logs,
+	}
+
+	return &getLogsResponse, nil
 }

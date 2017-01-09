@@ -94,7 +94,7 @@ func LogstoreSample() {
 
 	endCursor, _ := store.GetCursor(0, "end")
 	for {
-		gl, next, err := store.GetLogs(0, cursor, endCursor, 100)
+		gl, next, err := store.PullLogs(0, cursor, endCursor, 100)
 		if err != nil {
 			fmt.Println("GetLogs from:" + store.Name + " fail:")
 			fmt.Println(err)

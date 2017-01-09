@@ -10,4 +10,10 @@ const (
 	// OffsetOldest stands for the oldest offset available on the logstore for a
 	// shard.
 	OffsetOldest = "begin"
+
+	// ProgressHeader stands for the progress header in GetLogs response
+	ProgressHeader = "X-Sls-Progress"
+
+	// GetLogsCountHeader stands for the count header in GetLogs response
+	GetLogsCountHeader = "X-Sls-Count"
 )
