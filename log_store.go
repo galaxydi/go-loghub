@@ -58,6 +58,11 @@ func (s *LogStore) ListShards() (shardIDs []int, err error) {
 // PutLogs put logs into logstore.
 // The callers should transform user logs into LogGroup.
 func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
+	if len(lg.Logs) == 0 {
+		// empty log group
+		return nil
+	}
+
 	body, err := proto.Marshal(lg)
 	if err != nil {
 		return NewClientError(err.Error())
