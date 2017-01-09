@@ -1,7 +1,6 @@
 package sls
 
 import (
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -71,27 +70,7 @@ func (s *LogstoreTestSuite) TestEmptyLogGroup() {
 	s.Nil(err)
 }
 
-func (s *LogstoreTestSuite) TestLogstoreSample() {
-	list, err := s.Project.ListLogStore()
-	for _, v := range list {
-		_, err := s.Project.GetLogStore(v)
-		s.Nil(err)
-	}
-
-	testLogstoreName := "test_create_logstore"
-	err = s.Project.CreateLogStore(testLogstoreName, 1, 1)
-	if err != nil {
-		if err.(*Error).Code == "SLSLogStoreAlreadyExist" {
-			s.Project.DeleteLogStore(testLogstoreName)
-			err = s.Project.CreateLogStore(testLogstoreName, 1, 1)
-			s.Nil(err)
-		}
-	}
-
-	err = s.Project.UpdateLogStore(testLogstoreName, 2, 1)
-	s.Nil(err)
-
-	// construct a LogGroup
+func (s *LogstoreTestSuite) TestPullLogs() {
 	c := &LogContent{
 		Key:   proto.String("error code"),
 		Value: proto.String("InternalServerError"),
@@ -110,33 +89,14 @@ func (s *LogstoreTestSuite) TestLogstoreSample() {
 		},
 	}
 
-	testLogstore, err := s.Project.GetLogStore(testLogstoreName)
-	s.Nil(err)
-	err = testLogstore.PutLogs(lg)
+	err := s.Logstore.PutLogs(lg)
 	s.Nil(err)
 
-	cursor, err := testLogstore.GetCursor(0, "begin")
+	cursor, err := s.Logstore.GetCursor(0, "begin")
 	s.Nil(err)
-	endCursor, err := testLogstore.GetCursor(0, "end")
+	endCursor, err := s.Logstore.GetCursor(0, "end")
 	s.Nil(err)
-	for {
-		gl, next, err := testLogstore.PullLogs(0, cursor, endCursor, 100)
-		s.Nil(err)
-		for _, lg := range gl.LogGroups {
-			var tmp string
-			for _, l := range lg.Logs {
-				for _, c := range l.Contents {
-					tmp += fmt.Sprintf("%v=%v", *c.Key, *c.Value)
-					fmt.Println(tmp)
-					s.True(len(tmp) > 1)
-				}
-			}
-		}
-		if next == endCursor {
-			break
-		}
-		cursor = next
-	}
-	err = s.Project.DeleteLogStore(testLogstoreName)
+
+	_, _, err = s.Logstore.PullLogs(0, cursor, endCursor, 10)
 	s.Nil(err)
 }
