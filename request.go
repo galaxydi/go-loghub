@@ -7,24 +7,26 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"encoding/json"
+	"io/ioutil"
+
 	"github.com/golang/glog"
 )
 
 // request sends a request to SLS.
 func request(project *LogProject, method, uri string, headers map[string]string,
-	body []byte) (resp *http.Response, err error) {
+	body []byte) (*http.Response, error) {
 
-	// The caller should provide 'x-sls-bodyrawsize' header
-	if _, ok := headers["x-sls-bodyrawsize"]; !ok {
-		err = fmt.Errorf("Can't find 'x-sls-bodyrawsize' header")
-		return
+	// The caller should provide 'x-log-bodyrawsize' header
+	if _, ok := headers["x-log-bodyrawsize"]; !ok {
+		return nil, fmt.Errorf("Can't find 'x-log-bodyrawsize' header")
 	}
 
 	// SLS public request headers
 	headers["Host"] = project.Name + "." + project.Endpoint
 	headers["Date"] = nowRFC1123()
-	headers["x-sls-apiversion"] = version
-	headers["x-sls-signaturemethod"] = signatureMethod
+	headers["x-log-apiversion"] = version
+	headers["x-log-signaturemethod"] = signatureMethod
 
 	// Access with token
 	if project.SessionToken != "" {
@@ -35,8 +37,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
 		headers["Content-MD5"] = bodyMD5
 		if _, ok := headers["Content-Type"]; !ok {
-			err = fmt.Errorf("Can't find 'Content-Type' header")
-			return
+			return nil, fmt.Errorf("Can't find 'Content-Type' header")
 		}
 	}
 
@@ -44,17 +45,17 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	// Authorization = "SLS <AccessKeyId>:<Signature>"
 	digest, err := signature(project, method, uri, headers)
 	if err != nil {
-		return
+		return nil, err
 	}
 	auth := fmt.Sprintf("SLS %v:%v", project.AccessKeyID, digest)
 	headers["Authorization"] = auth
 
 	// Initialize http request
 	reader := bytes.NewReader(body)
-	urlStr := fmt.Sprintf("http://%v.%v%v", project.Name, project.Endpoint, uri)
+	urlStr := fmt.Sprintf("https://%v.%v%v", project.Name, project.Endpoint, uri)
 	req, err := http.NewRequest(method, urlStr, reader)
 	if err != nil {
-		return
+		return nil, err
 	}
 	for k, v := range headers {
 		req.Header.Add(k, v)
@@ -69,9 +70,18 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	}
 
 	// Get ready to do request
-	resp, err = http.DefaultClient.Do(req)
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return
+		return nil, err
+	}
+
+	// Parse the sls error from body.
+	buf, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		err := &Error{}
+		json.Unmarshal(buf, err)
+		err.RequestID = resp.Header.Get("x-log-requestid")
+		return nil, err
 	}
 
 	if glog.V(1) {
@@ -81,5 +91,5 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 		}
 		glog.Infof("HTTP Response:\n%v", string(dump))
 	}
-	return
+	return resp, nil
 }

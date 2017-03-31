@@ -1,7 +1,7 @@
 package sls
 
 const (
-	version         = "0.5.0"     // SDK version
+	version         = "0.6.0"     // SDK version
 	signatureMethod = "hmac-sha1" // Signature method
 
 	// OffsetNewest stands for the log head offset, i.e. the offset that will be
@@ -12,8 +12,8 @@ const (
 	OffsetOldest = "begin"
 
 	// ProgressHeader stands for the progress header in GetLogs response
-	ProgressHeader = "X-Sls-Progress"
+	ProgressHeader = "X-Log-Progress"
 
 	// GetLogsCountHeader stands for the count header in GetLogs response
-	GetLogsCountHeader = "X-Sls-Count"
+	GetLogsCountHeader = "X-Log-Count"
 )
