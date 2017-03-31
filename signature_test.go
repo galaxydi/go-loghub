@@ -19,12 +19,12 @@ var project = &LogProject{
 func TestSignatureGet(t *testing.T) {
 	defer glog.Flush()
 	h := map[string]string{
-		"x-sls-apiversion":      "0.4.0",
-		"x-sls-signaturemethod": "hmac-sha1",
-		"x-sls-bodyrawsize":     "0",
+		"x-log-apiversion":      "0.6.0",
+		"x-log-signaturemethod": "hmac-sha1",
+		"x-log-bodyrawsize":     "0",
 		"Date":                  "Mon, 3 Jan 2010 08:33:47 GMT",
 	}
-	digest := "3DGtV4yTxzzqTCxfXTPGKWmHX8M="
+	digest := "Rwm6cTKzoti4HWoe+GKcb6Kv07E="
 	s, err := signature(project, "GET", "/logstores", h)
 	if err != nil {
 		t.Fatal(err)
@@ -76,16 +76,16 @@ func TestSignaturePost(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := map[string]string{
-		"x-sls-apiversion":      "0.4.0",
-		"x-sls-signaturemethod": "hmac-sha1",
-		"x-sls-bodyrawsize":     "50",
+		"x-log-apiversion":      "0.6.0",
+		"x-log-signaturemethod": "hmac-sha1",
+		"x-log-bodyrawsize":     "50",
 		"Content-MD5":           md5Sum,
 		"Content-Type":          "application/x-protobuf",
 		"Content-Length":        "50",
 		"Date":                  "Mon, 3 Jan 2010 08:33:47 GMT",
 	}
 
-	digest := "WgfedxpxXG9q2r27d1ex/bHy+tY="
+	digest := "87xQWqFaOSewqRIma8kPjGYlXHc="
 	s, err := signature(project, "GET", "/logstores/app_log", h)
 	if err != nil {
 		t.Fatal(err)
