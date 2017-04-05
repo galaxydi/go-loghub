@@ -6,3 +6,13 @@ type GetLogsResponse struct {
 	Count    int64               `json:"count"`
 	Logs     []map[string]string `json:"logs"`
 }
+
+// IndexKey ...
+type IndexKey struct {
+	Tokens        []string // tokens that split the log line.
+	CaseSensitive bool
+	Type          string // text, long, double
+}
+
+type Index struct {
+}

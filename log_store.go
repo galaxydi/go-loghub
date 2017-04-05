@@ -290,3 +290,107 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 
 	return &getLogsResponse, nil
 }
+
+func (s *LogStore) CreateIndex() error {
+	type Index struct {
+		Name       string `json:"logstoreName"`
+		TTL        int    `json:"ttl"`
+		ShardCount int    `json:"shardCount"`
+	}
+	index := &Index{
+		Name:       name,
+		TTL:        ttl,
+		ShardCount: shardCnt,
+	}
+	body, err := json.Marshal(index)
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "POST", uri, h, body)
+	return err
+}
+
+func (s *LogStore) UpdateIndex() error {
+	type Index struct {
+		Name       string `json:"logstoreName"`
+		TTL        int    `json:"ttl"`
+		ShardCount int    `json:"shardCount"`
+	}
+	index := &Index{
+		Name:       name,
+		TTL:        ttl,
+		ShardCount: shardCnt,
+	}
+	body, err := json.Marshal(index)
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "PUT", uri, h, body)
+	return err
+}
+
+func (s *LogStore) DeleteIndex() error {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:logstoreName`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "DELETE", uri, h, body)
+	return err
+}
+
+func (s *LogStore) GetIndex() error {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:logstoreName`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "GET", uri, h, body)
+	return err
+}
