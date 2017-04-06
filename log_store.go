@@ -291,17 +291,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	return &getLogsResponse, nil
 }
 
-func (s *LogStore) CreateIndex() error {
-	type Index struct {
-		Name       string `json:"logstoreName"`
-		TTL        int    `json:"ttl"`
-		ShardCount int    `json:"shardCount"`
-	}
-	index := &Index{
-		Name:       name,
-		TTL:        ttl,
-		ShardCount: shardCnt,
-	}
+func (s *LogStore) CreateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
 		return err
@@ -314,21 +304,12 @@ func (s *LogStore) CreateIndex() error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	println(string(body))
 	_, err = request(s.project, "POST", uri, h, body)
 	return err
 }
 
-func (s *LogStore) UpdateIndex() error {
-	type Index struct {
-		Name       string `json:"logstoreName"`
-		TTL        int    `json:"ttl"`
-		ShardCount int    `json:"shardCount"`
-	}
-	index := &Index{
-		Name:       name,
-		TTL:        ttl,
-		ShardCount: shardCnt,
-	}
+func (s *LogStore) UpdateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
 		return err

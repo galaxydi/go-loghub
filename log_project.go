@@ -82,6 +82,7 @@ func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 
 	s := &LogStore{}
 	json.Unmarshal(buf, s)
+	s.Name = name
 	s.project = p
 	return s, nil
 }

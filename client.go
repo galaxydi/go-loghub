@@ -80,6 +80,21 @@ func (c *Client) CreateProject(name, description string) (*LogProject, error) {
 	return proj, nil
 }
 
+func (c *Client) GetProject(name string) (*LogProject, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := "/"
+	proj := convert(c, name)
+	_, err := request(proj, "GET", uri, h, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return proj, nil
+}
+
 func (c *Client) DeleteProject(name string) error {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
