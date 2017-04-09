@@ -13,7 +13,7 @@ type LogProject struct {
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
-	SessionToken    string
+	SecurityToken   string
 }
 
 // NewLogProject creates a new SLS project.
@@ -29,7 +29,7 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 
 // WithToken add token parameter
 func (p *LogProject) WithToken(token string) (*LogProject, error) {
-	p.SessionToken = token
+	p.SecurityToken = token
 	return p, nil
 }
 

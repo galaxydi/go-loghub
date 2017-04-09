@@ -304,7 +304,6 @@ func (s *LogStore) CreateIndex(index Index) error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	println(string(body))
 	_, err = request(s.project, "POST", uri, h, body)
 	return err
 }
@@ -329,7 +328,7 @@ func (s *LogStore) UpdateIndex(index Index) error {
 func (s *LogStore) DeleteIndex() error {
 	type Body struct {
 		project string `json:"projectName"`
-		store   string `json:logstoreName`
+		store   string `json:"logstoreName"`
 	}
 
 	body, err := json.Marshal(Body{
@@ -351,10 +350,10 @@ func (s *LogStore) DeleteIndex() error {
 	return err
 }
 
-func (s *LogStore) GetIndex() error {
+func (s *LogStore) GetIndex() (*Index, error) {
 	type Body struct {
 		project string `json:"projectName"`
-		store   string `json:logstoreName`
+		store   string `json:"logstoreName"`
 	}
 
 	body, err := json.Marshal(Body{
@@ -362,7 +361,7 @@ func (s *LogStore) GetIndex() error {
 		store:   s.Name,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	h := map[string]string{
@@ -372,6 +371,16 @@ func (s *LogStore) GetIndex() error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "GET", uri, h, body)
-	return err
+	resp, err := request(s.project, "GET", uri, h, body)
+	if err != nil {
+	}
+
+	index := &Index{}
+	data, _ := ioutil.ReadAll(resp.Body)
+	err = json.Unmarshal(data, index)
+	if err != nil {
+		return nil, err
+	}
+
+	return index, err
 }

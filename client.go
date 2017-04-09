@@ -37,7 +37,7 @@ type Client struct {
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
-	SessionToken    string
+	SecurityToken   string
 }
 
 func convert(c *Client, projName string) *LogProject {
@@ -46,7 +46,7 @@ func convert(c *Client, projName string) *LogProject {
 		Endpoint:        c.Endpoint,
 		AccessKeyID:     c.AccessKeyID,
 		AccessKeySecret: c.AccessKeySecret,
-		SessionToken:    c.SessionToken,
+		SecurityToken:   c.SecurityToken,
 	}
 }
 

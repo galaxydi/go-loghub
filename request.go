@@ -29,8 +29,8 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	headers["x-log-signaturemethod"] = signatureMethod
 
 	// Access with token
-	if project.SessionToken != "" {
-		headers["x-acs-security-token"] = project.SessionToken
+	if project.SecurityToken != "" {
+		headers["x-acs-security-token"] = project.SecurityToken
 	}
 
 	if body != nil {
@@ -76,9 +76,9 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	}
 
 	// Parse the sls error from body.
-	buf, _ := ioutil.ReadAll(resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		err := &Error{}
+		buf, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(buf, err)
 		err.RequestID = resp.Header.Get("x-log-requestid")
 		return nil, err
