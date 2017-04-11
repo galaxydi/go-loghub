@@ -33,28 +33,9 @@ func (s *ProjectTestSuite) SetupTest() {
 	}
 }
 
-func (s *ProjectTestSuite) checkProjectExist(projectName string) (bool, error) {
-	_, err := s.client.GetProject(projectName)
-	if err != nil {
-		switch err.(type) {
-		case *Error:
-			slsErr := err.(*Error)
-			switch slsErr.Code {
-			case "ProjectNotExist":
-				return false, nil
-			default:
-				return false, slsErr
-			}
-		default:
-			return false, err
-		}
-	}
-	return true, nil
-}
-
-func (s *ProjectTestSuite) TestGetProject() {
+func (s *ProjectTestSuite) TestCheckProjectExist() {
 	projectName := "not-exist-project"
-	exist, err := s.checkProjectExist(projectName)
+	exist, err := s.client.CheckProjectExist(projectName)
 	s.Nil(err)
 	s.False(exist)
 }

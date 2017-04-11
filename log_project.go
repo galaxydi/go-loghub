@@ -218,12 +218,31 @@ func (p *LogProject) ListMachineGroup(offset, size int) (m []string, total int, 
 	return m, total, nil
 }
 
-// CheckMachineGroupExist check machine group exist or not
-func (p *LogProject) CheckMachineGroupExist(name string) (exist bool, err error) {
+// CheckLogstoreExist check logstore exist or not
+func (p *LogProject) CheckLogstoreExist(name string) (bool, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
-	r, err := request(p, "GET", "/machinegroups/"+name, h, nil)
+	_, err := request(p, "GET", "/logstores/"+name, h, nil)
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "LogStoreNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// CheckMachineGroupExist check machine group exist or not
+func (p *LogProject) CheckMachineGroupExist(name string) (bool, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	_, err := request(p, "GET", "/machinegroups/"+name, h, nil)
 
 	if err != nil {
 		if _, ok := err.(*Error); ok {
@@ -235,10 +254,6 @@ func (p *LogProject) CheckMachineGroupExist(name string) (exist bool, err error)
 		}
 		return false, err
 	}
-
-	buf, _ := ioutil.ReadAll(r.Body)
-	m := new(MachineGroup)
-	json.Unmarshal(buf, m)
 	return true, nil
 }
 
@@ -371,11 +386,11 @@ func (p *LogProject) ListConfig(offset, size int) (cfgNames []string, total int,
 }
 
 // CheckConfigExist check config exist or not
-func (p *LogProject) CheckConfigExist(name string) (exist bool, err error) {
+func (p *LogProject) CheckConfigExist(name string) (bool, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
-	r, err := request(p, "GET", "/configs/"+name, h, nil)
+	_, err := request(p, "GET", "/configs/"+name, h, nil)
 	if err != nil {
 		if _, ok := err.(*Error); ok {
 			slsErr := err.(*Error)
@@ -386,10 +401,6 @@ func (p *LogProject) CheckConfigExist(name string) (exist bool, err error) {
 		}
 		return false, err
 	}
-
-	buf, _ := ioutil.ReadAll(r.Body)
-	c := &LogConfig{}
-	json.Unmarshal(buf, c)
 	return true, nil
 }
 

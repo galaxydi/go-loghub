@@ -2,7 +2,6 @@ package sls
 
 import (
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -43,16 +42,10 @@ func (s *LogstoreTestSuite) SetupTest() {
 	s.Logstore = slsLogstore
 }
 
-func (s *LogstoreTestSuite) checkLogstoreExist(logstoreName string) (bool, error) {
-	_, err := s.Project.GetLogStore(logstoreName)
-	if err != nil {
-		errorString := err.Error()
-		if strings.Contains(errorString, "LogStoreNotExist") {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
+func (s *LogstoreTestSuite) TestCheckLogstoreExist() {
+	exist, err := s.Project.CheckLogstoreExist("not-exist-logstore")
+	s.Nil(err)
+	s.False(exist)
 }
 
 func (s *LogstoreTestSuite) TestCheckMachineGroupExist() {
@@ -61,15 +54,8 @@ func (s *LogstoreTestSuite) TestCheckMachineGroupExist() {
 	s.False(exist)
 }
 
-func (s *LogstoreTestSuite) TestCheckLogConfigExist() {
+func (s *LogstoreTestSuite) TestCheckConfigExist() {
 	exist, err := s.Project.CheckConfigExist("not-exist-config")
-	s.Nil(err)
-	s.False(exist)
-}
-
-func (s *LogstoreTestSuite) TestGetLogstore() {
-	logstoreName := "not-exist-logstore"
-	exist, err := s.checkLogstoreExist(logstoreName)
 	s.Nil(err)
 	s.False(exist)
 }
