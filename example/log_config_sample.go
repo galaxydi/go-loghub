@@ -1,11 +1,11 @@
 package main
 
-/*
 import (
 	"fmt"
+	"os"
+
 	sls "github.com/galaxydi/go-loghub"
 	"github.com/galaxydi/go-loghub/example/util"
-	"os"
 )
 
 var projectName = "another-project"
@@ -120,4 +120,3 @@ func createConfig(configName string, projectName string, logstore string, servic
 	}
 	return nil
 }
-*/
