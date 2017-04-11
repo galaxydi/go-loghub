@@ -42,6 +42,24 @@ func (s *LogstoreTestSuite) SetupTest() {
 	s.Logstore = slsLogstore
 }
 
+func (s *LogstoreTestSuite) TestCheckLogstoreExist() {
+	exist, err := s.Project.CheckLogstoreExist("not-exist-logstore")
+	s.Nil(err)
+	s.False(exist)
+}
+
+func (s *LogstoreTestSuite) TestCheckMachineGroupExist() {
+	exist, err := s.Project.CheckMachineGroupExist("not-exist-group")
+	s.Nil(err)
+	s.False(exist)
+}
+
+func (s *LogstoreTestSuite) TestCheckConfigExist() {
+	exist, err := s.Project.CheckConfigExist("not-exist-config")
+	s.Nil(err)
+	s.False(exist)
+}
+
 func (s *LogstoreTestSuite) TestPutLogs() {
 	content := &LogContent{
 		Key:   proto.String("demo_key"),

@@ -291,6 +291,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	return &getLogsResponse, nil
 }
 
+// CreateIndex ...
 func (s *LogStore) CreateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
@@ -308,6 +309,7 @@ func (s *LogStore) CreateIndex(index Index) error {
 	return err
 }
 
+// UpdateIndex ...
 func (s *LogStore) UpdateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
@@ -325,6 +327,7 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	return err
 }
 
+// DeleteIndex ...
 func (s *LogStore) DeleteIndex() error {
 	type Body struct {
 		project string `json:"projectName"`

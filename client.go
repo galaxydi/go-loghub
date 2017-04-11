@@ -80,6 +80,7 @@ func (c *Client) CreateProject(name, description string) (*LogProject, error) {
 	return proj, nil
 }
 
+// GetProject ...
 func (c *Client) GetProject(name string) (*LogProject, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
@@ -95,6 +96,28 @@ func (c *Client) GetProject(name string) (*LogProject, error) {
 	return proj, nil
 }
 
+// CheckProjectExist check project exist or not
+func (c *Client) CheckProjectExist(name string) (bool, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	uri := "/"
+	proj := convert(c, name)
+	_, err := request(proj, "GET", uri, h, nil)
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "ProjectNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// DeleteProject ...
 func (c *Client) DeleteProject(name string) error {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
