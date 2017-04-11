@@ -224,19 +224,19 @@ func (p *LogProject) CheckMachineGroupExist(name string) (exist bool, err error)
 		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "GET", "/machinegroups/"+name, h, nil)
-	if err != nil {
-		return false, NewClientError(err.Error())
-	}
 
-	buf, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		json.Unmarshal(buf, err)
-		if err.Code == "MachineGroupNotExist" {
-			return false, nil
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "MachineGroupNotExist" {
+				return false, nil
+			}
+			return false, slsErr
 		}
 		return false, err
 	}
+
+	buf, _ := ioutil.ReadAll(r.Body)
 	m := new(MachineGroup)
 	json.Unmarshal(buf, m)
 	return true, nil
@@ -377,19 +377,17 @@ func (p *LogProject) CheckConfigExist(name string) (exist bool, err error) {
 	}
 	r, err := request(p, "GET", "/configs/"+name, h, nil)
 	if err != nil {
-		return false, NewClientError(err.Error())
-	}
-
-	buf, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		json.Unmarshal(buf, err)
-		if err.Code == "ConfigNotExist" {
-			return false, nil
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "ConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
 		}
 		return false, err
 	}
 
+	buf, _ := ioutil.ReadAll(r.Body)
 	c := &LogConfig{}
 	json.Unmarshal(buf, c)
 	return true, nil
