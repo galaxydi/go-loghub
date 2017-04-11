@@ -33,7 +33,7 @@ type Shard struct {
 // ListShards returns shard id list of this logstore.
 func (s *LogStore) ListShards() (shardIDs []int, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/logstores/%v/shards", s.Name)
 	r, err := request(s.project, "GET", uri, h, nil)
@@ -76,8 +76,8 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	}
 
 	h := map[string]string{
-		"x-sls-compresstype": "lz4",
-		"x-sls-bodyrawsize":  fmt.Sprintf("%v", len(body)),
+		"x-log-compresstype": "lz4",
+		"x-log-bodyrawsize":  fmt.Sprintf("%v", len(body)),
 		"Content-Type":       "application/x-protobuf",
 	}
 
@@ -101,7 +101,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 // For more detail please read: http://gitlab.alibaba-inc.com/sls/doc/blob/master/api/shard.md#logstore
 func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=cursor&from=%v",
 		s.Name, shardID, from)
@@ -149,7 +149,7 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
 		"Accept-Encoding":   "lz4",
 	}
@@ -181,9 +181,9 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
 		return
 	}
-	v, ok := r.Header["X-Sls-Compresstype"]
+	v, ok := r.Header["X-Log-Compresstype"]
 	if !ok || len(v) == 0 {
-		err = fmt.Errorf("can't find 'x-sls-compresstype' header")
+		err = fmt.Errorf("can't find 'x-log-compresstype' header")
 		return
 	}
 	if v[0] != "lz4" {
@@ -191,16 +191,16 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		return
 	}
 
-	v, ok = r.Header["X-Sls-Cursor"]
+	v, ok = r.Header["X-Log-Cursor"]
 	if !ok || len(v) == 0 {
-		err = fmt.Errorf("can't find 'x-sls-cursor' header")
+		err = fmt.Errorf("can't find 'x-log-cursor' header")
 		return
 	}
 	nextCursor = v[0]
 
-	v, ok = r.Header["X-Sls-Bodyrawsize"]
+	v, ok = r.Header["X-Log-Bodyrawsize"]
 	if !ok || len(v) == 0 {
-		err = fmt.Errorf("can't find 'x-sls-bodyrawsize' header")
+		err = fmt.Errorf("can't find 'x-log-bodyrawsize' header")
 		return
 	}
 	bodyRawSize, err := strconv.Atoi(v[0])
@@ -253,7 +253,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 		"Accept":            "application/json",
 	}
 
@@ -289,4 +289,98 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	}
 
 	return &getLogsResponse, nil
+}
+
+func (s *LogStore) CreateIndex(index Index) error {
+	body, err := json.Marshal(index)
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "POST", uri, h, body)
+	return err
+}
+
+func (s *LogStore) UpdateIndex(index Index) error {
+	body, err := json.Marshal(index)
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "PUT", uri, h, body)
+	return err
+}
+
+func (s *LogStore) DeleteIndex() error {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:"logstoreName"`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "DELETE", uri, h, body)
+	return err
+}
+
+func (s *LogStore) GetIndex() (*Index, error) {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:"logstoreName"`
+	}
+
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	resp, err := request(s.project, "GET", uri, h, body)
+	if err != nil {
+	}
+
+	index := &Index{}
+	data, _ := ioutil.ReadAll(resp.Body)
+	err = json.Unmarshal(data, index)
+	if err != nil {
+		return nil, err
+	}
+
+	return index, err
 }

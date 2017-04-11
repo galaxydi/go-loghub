@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"fmt"
 	sls "github.com/galaxydi/go-loghub"
@@ -119,3 +120,4 @@ func createConfig(configName string, projectName string, logstore string, servic
 	}
 	return nil
 }
+*/

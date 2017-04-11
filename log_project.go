@@ -7,39 +7,13 @@ import (
 	"net/http"
 )
 
-// Error defines sls error
-type Error struct {
-	Code    string `json:"errorCode"`
-	Message string `json:"errorMessage"`
-}
-
-// NewClientError new client error
-func NewClientError(message string) *Error {
-	err := new(Error)
-	err.Code = "ClientError"
-	err.Message = message
-	return err
-}
-
-func (e Error) String() string {
-	b, err := json.MarshalIndent(e, "", "    ")
-	if err != nil {
-		return ""
-	}
-	return string(b)
-}
-
-func (e Error) Error() string {
-	return e.String()
-}
-
 // LogProject defines log project
 type LogProject struct {
 	Name            string // Project name
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
-	SessionToken    string
+	SecurityToken   string
 }
 
 // NewLogProject creates a new SLS project.
@@ -55,14 +29,14 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 
 // WithToken add token parameter
 func (p *LogProject) WithToken(token string) (*LogProject, error) {
-	p.SessionToken = token
+	p.SecurityToken = token
 	return p, nil
 }
 
 // ListLogStore returns all logstore names of project p.
 func (p *LogProject) ListLogStore() ([]string, error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 
 	uri := fmt.Sprintf("/logstores")
@@ -91,7 +65,7 @@ func (p *LogProject) ListLogStore() ([]string, error) {
 // GetLogStore returns logstore according by logstore name.
 func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 
 	r, err := request(p, "GET", "/logstores/"+name, h, nil)
@@ -108,6 +82,7 @@ func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 
 	s := &LogStore{}
 	json.Unmarshal(buf, s)
+	s.Name = name
 	s.project = p
 	return s, nil
 }
@@ -133,7 +108,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int) error {
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -155,7 +130,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int) error {
 // DeleteLogStore deletes a logstore according by logstore name.
 func (p *LogProject) DeleteLogStore(name string) (err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 
 	r, err := request(p, "DELETE", "/logstores/"+name, h, nil)
@@ -191,7 +166,7 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -213,7 +188,7 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 // The offset starts from 0 and the size is the max number of machine groups could be returned.
 func (p *LogProject) ListMachineGroup(offset, size int) (m []string, total int, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	if size <= 0 {
 		size = 500
@@ -246,7 +221,7 @@ func (p *LogProject) ListMachineGroup(offset, size int) (m []string, total int, 
 // CheckMachineGroupExist check machine group exist or not
 func (p *LogProject) CheckMachineGroupExist(name string) (exist bool, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "GET", "/machinegroups/"+name, h, nil)
 	if err != nil {
@@ -270,7 +245,7 @@ func (p *LogProject) CheckMachineGroupExist(name string) (exist bool, err error)
 // GetMachineGroup retruns machine group according by machine group name.
 func (p *LogProject) GetMachineGroup(name string) (m *MachineGroup, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	resp, err := request(p, "GET", "/machinegroups/"+name, h, nil)
 	if err != nil {
@@ -298,7 +273,7 @@ func (p *LogProject) CreateMachineGroup(m *MachineGroup) error {
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -324,7 +299,7 @@ func (p *LogProject) UpdateMachineGroup(m *MachineGroup) (err error) {
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -345,7 +320,7 @@ func (p *LogProject) UpdateMachineGroup(m *MachineGroup) (err error) {
 // DeleteMachineGroup deletes machine group according machine group name.
 func (p *LogProject) DeleteMachineGroup(name string) (err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "DELETE", "/machinegroups/"+name, h, nil)
 	if err != nil {
@@ -366,7 +341,7 @@ func (p *LogProject) DeleteMachineGroup(name string) (err error) {
 // The offset starts from 0 and the size is the max number of configs could be returned.
 func (p *LogProject) ListConfig(offset, size int) (cfgNames []string, total int, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	if size <= 0 {
 		size = 100
@@ -398,7 +373,7 @@ func (p *LogProject) ListConfig(offset, size int) (cfgNames []string, total int,
 // CheckConfigExist check config exist or not
 func (p *LogProject) CheckConfigExist(name string) (exist bool, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "GET", "/configs/"+name, h, nil)
 	if err != nil {
@@ -423,7 +398,7 @@ func (p *LogProject) CheckConfigExist(name string) (exist bool, err error) {
 // GetConfig returns config according by config name.
 func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "GET", "/configs/"+name, h, nil)
 	if err != nil {
@@ -451,7 +426,7 @@ func (p *LogProject) UpdateConfig(c *LogConfig) (err error) {
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -477,7 +452,7 @@ func (p *LogProject) CreateConfig(c *LogConfig) (err error) {
 	}
 
 	h := map[string]string{
-		"x-sls-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
@@ -498,7 +473,7 @@ func (p *LogProject) CreateConfig(c *LogConfig) (err error) {
 // DeleteConfig deletes a config according by config name.
 func (p *LogProject) DeleteConfig(name string) (err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	r, err := request(p, "DELETE", "/configs/"+name, h, nil)
 	if err != nil {
@@ -518,7 +493,7 @@ func (p *LogProject) DeleteConfig(name string) (err error) {
 // GetAppliedMachineGroups returns applied machine group names list according config name.
 func (p *LogProject) GetAppliedMachineGroups(confName string) (groupNames []string, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/configs/%v/machinegroups", confName)
 	r, err := request(p, "GET", uri, h, nil)
@@ -546,7 +521,7 @@ func (p *LogProject) GetAppliedMachineGroups(confName string) (groupNames []stri
 // GetAppliedConfigs returns applied config names list according machine group name groupName.
 func (p *LogProject) GetAppliedConfigs(groupName string) (confNames []string, err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/machinegroups/%v/configs", groupName)
 	r, err := request(p, "GET", uri, h, nil)
@@ -574,7 +549,7 @@ func (p *LogProject) GetAppliedConfigs(groupName string) (confNames []string, er
 // ApplyConfigToMachineGroup applies config to machine group.
 func (p *LogProject) ApplyConfigToMachineGroup(confName, groupName string) (err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/machinegroups/%v/configs/%v", groupName, confName)
 	r, err := request(p, "PUT", uri, h, nil)
@@ -595,7 +570,7 @@ func (p *LogProject) ApplyConfigToMachineGroup(confName, groupName string) (err 
 // RemoveConfigFromMachineGroup removes config from machine group.
 func (p *LogProject) RemoveConfigFromMachineGroup(confName, groupName string) (err error) {
 	h := map[string]string{
-		"x-sls-bodyrawsize": "0",
+		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/machinegroups/%v/configs/%v", groupName, confName)
 	r, err := request(p, "DELETE", uri, h, nil)
