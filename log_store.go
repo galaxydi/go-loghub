@@ -353,6 +353,39 @@ func (s *LogStore) DeleteIndex() error {
 	return err
 }
 
+// CheckIndexExist check index exist or not
+func (s *LogStore) CheckIndexExist() (bool, error) {
+	type Body struct {
+		project string `json:"projectName"`
+		store   string `json:"logstoreName"`
+	}
+	body, err := json.Marshal(Body{
+		project: s.project.Name,
+		store:   s.Name,
+	})
+	if err != nil {
+		return false, err
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
+	_, err = request(s.project, "GET", uri, h, body)
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "IndexConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (s *LogStore) GetIndex() (*Index, error) {
 	type Body struct {
 		project string `json:"projectName"`
@@ -376,6 +409,7 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
 	resp, err := request(s.project, "GET", uri, h, body)
 	if err != nil {
+		return nil, err
 	}
 
 	index := &Index{}
