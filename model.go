@@ -1,5 +1,19 @@
 package sls
 
+// GetHistogramsResponse defines response from GetHistograms call
+type SingleHistogram struct {
+	Progress string              `json:"progress"`
+	Count    int64               `json:"count"`
+	From     int64               `json:"from"`
+	To       int64               `json:"to"`
+}
+
+type GetHistogramsResponse struct {
+	Progress string              `json:"progress"`
+	Count    int64               `json:"count"`
+	Histograms     []SingleHistogram `json:"histograms"`
+}
+
 // GetLogsResponse defines response from GetLogs call
 type GetLogsResponse struct {
 	Progress string              `json:"progress"`

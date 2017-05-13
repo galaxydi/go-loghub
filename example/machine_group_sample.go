@@ -8,9 +8,10 @@ import (
 	"github.com/galaxydi/go-loghub/example/util"
 )
 
-// MachineGroupSample ...
-func MachineGroupSample() {
+func main() {
 	// machine group example
+	projectName := util.Project.Name
+	logstore := "test-logstore"
 	testConf := "test-conf"
 	testMachineGroup := "test-mg"
 	testService := "demo-service"
@@ -193,6 +194,14 @@ func createMachineGroup(groupName string) (err error) {
 		Attribute:     attribute,
 	}
 	err = util.Project.CreateMachineGroup(machineGroup)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteConfig(confName string) (err error) {
+	err = util.Project.DeleteConfig(confName)
 	if err != nil {
 		return err
 	}

@@ -115,6 +115,9 @@ func (s *LogstoreTestSuite) TestPullLogs() {
 	endCursor, err := s.Logstore.GetCursor(0, "end")
 	s.Nil(err)
 
+	_, _, err = s.Logstore.PullLogs(0, cursor, "", 10)
+	s.Nil(err)
+
 	_, _, err = s.Logstore.PullLogs(0, cursor, endCursor, 10)
 	s.Nil(err)
 }

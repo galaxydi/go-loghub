@@ -154,8 +154,14 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		"Accept-Encoding":   "lz4",
 	}
 
-	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&end_cursor=%v&count=%v",
-		s.Name, shardID, cursor, endCursor, logGroupMaxCount)
+	uri := ""
+	if endCursor == "" {
+		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
+			s.Name, shardID, cursor, logGroupMaxCount)
+	} else {
+		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&end_cursor=%v&count=%v",
+			s.Name, shardID, cursor, endCursor, logGroupMaxCount)
+	}
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
@@ -246,6 +252,47 @@ func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	}
 
 	return gl, nextCursor, nil
+}
+
+// GetHistograms query logs with [from, to) time range
+func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error) {
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v?type=histogram&topic=%v&from=%v&to=%v&query=%v", s.Name, topic, from, to, queryExp)
+
+	r, err := request(s.project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err.Error())
+	}
+
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return nil, err
+	}
+
+	histograms := []SingleHistogram{}
+	err = json.Unmarshal(body, &histograms)
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	if err != nil {
+		return nil, err
+	}
+	getHistogramsResponse := GetHistogramsResponse{
+		Progress: r.Header[ProgressHeader][0],
+		Count:    count,
+		Histograms:     histograms,
+	}
+
+	return &getHistogramsResponse, nil
 }
 
 // GetLogs query logs with [from, to) time range
