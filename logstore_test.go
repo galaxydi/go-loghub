@@ -121,3 +121,57 @@ func (s *LogstoreTestSuite) TestPullLogs() {
 	_, _, err = s.Logstore.PullLogs(0, cursor, endCursor, 10)
 	s.Nil(err)
 }
+
+func (s *LogstoreTestSuite) TestGetLogs() {
+	err, idx := s.Logstore.GetIndex()
+	if err != nil {
+		idxConf := Index {
+			TTL: 7,
+			Keys: map[string]IndexKey {
+			}, 
+			Line: &IndexLine {
+				Token: []string{",", ":", " "},
+				CaseSensitive: false,
+				IncludeKeys: []string{},
+				ExcludeKeys: []string{},
+			},
+		}
+		err := s.Logstore.CreateIndex(idxConf)
+		if err != nil {
+			return
+		}
+		time.Sleep(10 * 1000 * time.Millisecond)
+	} else {
+		s.NotNil(idx)
+	}
+	begin_time := uint32(time.Now().Unix())
+	c := &LogContent{
+		Key:   proto.String("error code"),
+		Value: proto.String("InternalServerError"),
+	}
+	l := &Log{
+		Time: proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{
+			c,
+		},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("demo topic"),
+		Source: proto.String("10.230.201.117"),
+		Logs: []*Log{
+			l,
+		},
+	}
+
+	putErr := s.Logstore.PutLogs(lg)
+	s.Nil(putErr)
+
+	time.Sleep(3 * 1000 * time.Millisecond)
+
+	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time + 2), "InternalServerError")
+	s.Nil(hErr)
+	s.Equal(hResp.Count, int64(1))
+	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time + 2), "InternalServerError", 100, 0, false)
+	s.Nil(lErr)
+	s.Equal(lResp.Count, int64(1))
+}
