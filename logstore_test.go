@@ -126,12 +126,10 @@ func (s *LogstoreTestSuite) TestPullLogs() {
 }
 
 func (s *LogstoreTestSuite) TestGetLogs() {
-	err, idx := s.Logstore.GetIndex()
-	if err != nil {
-		idxConf := Index {
+	idxConf := Index {
 			TTL: 7,
 			Keys: map[string]IndexKey {
-			}, 
+			},
 			Line: &IndexLine {
 				Token: []string{",", ":", " "},
 				CaseSensitive: false,
@@ -139,14 +137,8 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 				ExcludeKeys: []string{},
 			},
 		}
-		err := s.Logstore.CreateIndex(idxConf)
-		if err != nil {
-			return
-		}
-		time.Sleep(15 * 1000 * time.Millisecond)
-	} else {
-		s.NotNil(idx)
-	}
+	s.Logstore.CreateIndex(idxConf)
+	time.Sleep(1 * 1000 * time.Millisecond)
 	begin_time := uint32(time.Now().Unix())
 	c := &LogContent{
 		Key:   proto.String("error code"),
@@ -181,12 +173,25 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 
 func (s *LogstoreTestSuite) TestLogstore() {
 	logstoreName := "github-test"
-	err := s.Project.CreateLogStore(logstoreName, 14, 2) 
+	err := s.Project.DeleteLogStore(logstoreName)
+	time.Sleep(5 * 1000 * time.Millisecond)
+	err = s.Project.CreateLogStore(logstoreName, 14, 2) 
 	s.Nil(err)
 	time.Sleep(10 * 1000 * time.Millisecond)
 	err = s.Project.UpdateLogStore(logstoreName, 7, 2)
 	s.Nil(err)
 	time.Sleep(1 * 1000 * time.Millisecond)
+	logstores, err := s.Project.ListLogStore()
+	s.Nil(err)
+	s.True(len(logstores) >= 1)
+	configs, configCount, err := s.Project.ListConfig(0, 100)
+	s.Nil(err)
+	s.True(len(configs) >= 0)
+	s.Equal(len(configs), configCount)
+	machineGroups, machineGroupCount, err := s.Project.ListMachineGroup(0, 100)
+	s.Nil(err)
+	s.True(len(machineGroups) >= 0)
+	s.Equal(len(machineGroups), machineGroupCount)
 	err = s.Project.DeleteLogStore(logstoreName)
 	s.Nil(err)
 }
