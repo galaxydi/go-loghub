@@ -107,7 +107,10 @@ func (s *LogstoreTestSuite) TestPullLogs() {
 		},
 	}
 
-	err := s.Logstore.PutLogs(lg)
+	shards, err := s.Logstore.ListShards()
+	s.True(len(shards) > 0)
+
+	err = s.Logstore.PutLogs(lg)
 	s.Nil(err)
 
 	cursor, err := s.Logstore.GetCursor(0, "begin")
@@ -140,7 +143,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 		if err != nil {
 			return
 		}
-		time.Sleep(10 * 1000 * time.Millisecond)
+		time.Sleep(15 * 1000 * time.Millisecond)
 	} else {
 		s.NotNil(idx)
 	}
@@ -166,7 +169,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	putErr := s.Logstore.PutLogs(lg)
 	s.Nil(putErr)
 
-	time.Sleep(3 * 1000 * time.Millisecond)
+	time.Sleep(5 * 1000 * time.Millisecond)
 
 	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time + 2), "InternalServerError")
 	s.Nil(hErr)
@@ -174,4 +177,16 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time + 2), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
 	s.Equal(lResp.Count, int64(1))
+}
+
+func (s *LogstoreTestSuite) TestLogstore() {
+	logstoreName := "github-test"
+	err := s.Project.CreateLogStore(logstoreName, 14, 2) 
+	s.Nil(err)
+	time.Sleep(10 * 1000 * time.Millisecond)
+	err = s.Project.UpdateLogStore(logstoreName, 7, 2)
+	s.Nil(err)
+	time.Sleep(1 * 1000 * time.Millisecond)
+	err = s.Project.DeleteLogStore(logstoreName)
+	s.Nil(err)
 }
