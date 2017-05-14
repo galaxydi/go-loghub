@@ -2,6 +2,7 @@ package sls
 
 import (
 	"os"
+	"fmt"
 	"testing"
 	"time"
 
@@ -126,6 +127,12 @@ func (s *LogstoreTestSuite) TestPullLogs() {
 }
 
 func (s *LogstoreTestSuite) TestGetLogs() {
+	idx, err := s.Logstore.GetIndex()
+	if err != nil {
+		fmt.Printf("GetIndex fail, err: %v, idx: %v\n", err, idx)
+		return
+	}
+	fmt.Printf("GetIndex success, idx: %v\n", idx)
 	idxConf := Index {
 			TTL: 7,
 			Keys: map[string]IndexKey {

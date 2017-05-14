@@ -89,6 +89,7 @@ func main() {
 			Source: proto.String("10.230.201.117"),
 			Logs: logs,
 		}
+		// PutLogs API Ref: https://intl.aliyun.com/help/doc-detail/29026.htm
 		err = logstore.PutLogs(loggroup)
 		if err == nil {
 			fmt.Println("PutLogs success")
@@ -102,6 +103,7 @@ func main() {
 	// search logs from index on logstore 
 	totalCount := int64(0)
 	for {
+		// GetHistograms API Ref: https://intl.aliyun.com/help/doc-detail/29030.htm
 		ghResp, err := logstore.GetHistograms("", int64(begin_time), int64(end_time), "col_0 > 1000000")
 		if err != nil {
 			fmt.Printf("GetHistograms fail, err: %v\n", err)
@@ -115,7 +117,9 @@ func main() {
 		}
 	}
 	offset := int64(0)
+	// get logs repeatedly with (offset, lines) parameters to get complete result
 	for offset < totalCount {
+		// GetLogs API Ref: https://intl.aliyun.com/help/doc-detail/29029.htm
 		glResp, err := logstore.GetLogs("", int64(begin_time), int64(end_time), "col_0 > 1000000", 100, offset, false)
 		if err != nil {
 			fmt.Printf("GetLogs fail, err: %v\n", err)

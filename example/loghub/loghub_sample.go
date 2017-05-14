@@ -28,7 +28,6 @@ func main() {
 	} else {
 		fmt.Printf("GetLogStore success, name: %s, ttl: %d, shardCount: %d, createTime: %d, lastModifyTime: %d\n", logstore.Name, logstore.TTL, logstore.ShardCount, logstore.CreateTime, logstore.LastModifyTime)
 	}
-	//logstore.Name = "test-xxx"
 	// put logs to logstore
 	for loggroupIdx := 0; loggroupIdx < 2; loggroupIdx++ {
 		logs := []*sls.Log {}
@@ -51,6 +50,7 @@ func main() {
 			Source: proto.String("10.230.201.117"),
 			Logs: logs,
 		}
+		// PostLogStoreLogs API Ref: https://intl.aliyun.com/help/doc-detail/29026.htm
 		err = logstore.PutLogs(loggroup)
 		if err == nil {
 			fmt.Println("PutLogs success")
@@ -63,8 +63,10 @@ func main() {
 	shards, err := logstore.ListShards()
 	for _, sh := range shards {
 		if sh == 0 {
+			// GetCursor API Ref: https://intl.aliyun.com/help/doc-detail/29024.htm
 			begin_cursor, _ := logstore.GetCursor(sh, "begin")	
 			end_cursor, _ := logstore.GetCursor(sh, "end")
+			// PullLogs API Ref: https://intl.aliyun.com/help/doc-detail/29025.htm
 			loggrouplist, next_cursor, _ := logstore.PullLogs(sh, begin_cursor, end_cursor, 100)
 			fmt.Printf("shard: %d, begin_cursor: %s, end_cursor: %s, next_cursor: %s\n", sh, begin_cursor, end_cursor, next_cursor)
 			for _, loggroup := range loggrouplist.LogGroups {
@@ -80,7 +82,7 @@ func main() {
 				loggrouplist, next_cursor, _ := logstore.PullLogs(sh, begin_cursor, "", 2)
 				fmt.Printf("shard: %d, begin_cursor: %s, next_cursor: %s, len(loggrouplist.LogGroups): %d\n", sh, begin_cursor, next_cursor, len(loggrouplist.LogGroups))
 				if len(loggrouplist.LogGroups) == 0 {
-					// means no data
+					// means no more data in this shard, you can break out or sleep to wait new data
 					break
 				} else {
 					for _, loggroup := range loggrouplist.LogGroups {
