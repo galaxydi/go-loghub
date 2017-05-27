@@ -5,8 +5,8 @@ import (
 	"time"
 	"math/rand"
 	"github.com/gogo/protobuf/proto"
-	sls "github.com/galaxydi/go-loghub"
-	"github.com/galaxydi/go-loghub/example/util"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk/example/util"
 )
 
 func main() {
