@@ -1,6 +1,6 @@
 package util
 
-import sls "github.com/galaxydi/go-loghub"
+import sls "github.com/aliyun-fc/go-loghub"
 
 // Project define Project for test
 var Project = &sls.LogProject{
