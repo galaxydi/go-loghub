@@ -16,7 +16,7 @@ type LogProject struct {
 	SecurityToken   string
 }
 
-// NewLogProject creates a new SLS project.
+// NewLogProject new a SLS project object.
 func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogProject, err error) {
 	p = &LogProject{
 		Name:            name,

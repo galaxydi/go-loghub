@@ -25,6 +25,15 @@ type LogStore struct {
 	project *LogProject
 }
 
+// NewLogProject new a SLS logStore object.
+func NewLogStore(logstoreName string, project *LogProject) (*LogStore, error) {
+	l := &LogStore{
+		Name:    logstoreName,
+		project: project,
+	}
+	return l, nil
+}
+
 // Shard defines shard struct
 type Shard struct {
 	ShardID int `json:"shardID"`
@@ -287,9 +296,9 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		return nil, err
 	}
 	getHistogramsResponse := GetHistogramsResponse{
-		Progress: r.Header[ProgressHeader][0],
-		Count:    count,
-		Histograms:     histograms,
+		Progress:   r.Header[ProgressHeader][0],
+		Count:      count,
+		Histograms: histograms,
 	}
 
 	return &getHistogramsResponse, nil
