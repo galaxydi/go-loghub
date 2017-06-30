@@ -2,8 +2,8 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"math/rand"
+	"time"
 
 	sls "github.com/aliyun-fc/go-loghub"
 	"github.com/aliyun-fc/go-loghub/example/util"

@@ -1,8 +1,8 @@
 package sls
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -62,21 +62,58 @@ func (s *LogstoreTestSuite) TestCheckConfigExist() {
 }
 
 func (s *LogstoreTestSuite) TestPutLogs() {
-	content := &LogContent{
-		Key:   proto.String("demo_key"),
-		Value: proto.String("demo_value"),
-	}
-	logRecord := &Log{
-		Time:     proto.Uint32(uint32(time.Now().Unix())),
-		Contents: []*LogContent{content},
-	}
-	lg := &LogGroup{
-		Topic:  proto.String("test"),
-		Source: proto.String("10.168.122.110"),
-		Logs:   []*Log{logRecord},
-	}
+	lg := generateLG()
 	err := s.Logstore.PutLogs(lg)
 	s.Nil(err)
+}
+
+func (s *LogstoreTestSuite) TestProjectNotExist() {
+	projectName := "no-exist-project"
+	slsProject, err := NewLogProject(projectName, s.endpoint, s.accessKeyID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "ProjectNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("The Project does not exist : %s", projectName))
+}
+
+func (s *LogstoreTestSuite) TestLogStoreNotExist() {
+	logstoreName := "no-exist-logstore"
+	slsLogstore, err := NewLogStore(logstoreName, s.Project)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "LogStoreNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("logstore %s not exist", logstoreName))
+}
+
+func (s *LogstoreTestSuite) TestAccessIDNotExist() {
+	accessID := "no-exist-key"
+	slsProject, err := NewLogProject(s.projectName, s.endpoint, accessID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "Unauthorized")
+	s.Require().Equal(e.HttpStatus, 401)
+	s.Require().Equal(e.Message, fmt.Sprintf("AccessKeyId not found: %s", accessID))
 }
 
 func (s *LogstoreTestSuite) TestEmptyLogGroup() {
@@ -200,4 +237,21 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	s.Equal(len(machineGroups), machineGroupCount)
 	err = s.Project.DeleteLogStore(logstoreName)
 	s.Nil(err)
+}
+
+func generateLG() *LogGroup {
+	content := &LogContent{
+		Key:   proto.String("demo_key"),
+		Value: proto.String("demo_value"),
+	}
+	logRecord := &Log{
+		Time:     proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{content},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("test"),
+		Source: proto.String("10.168.122.110"),
+		Logs:   []*Log{logRecord},
+	}
+	return lg
 }
