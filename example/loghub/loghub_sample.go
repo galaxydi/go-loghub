@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"strconv"
 	"math/rand"
+	"strconv"
+	"time"
 
+	sls "github.com/aliyun-fc/go-loghub"
 	"github.com/aliyun-fc/go-loghub/example/util"
 	"github.com/gogo/protobuf/proto"
-	sls "github.com/aliyun-fc/go-loghub"
 )
 
 func main() {
