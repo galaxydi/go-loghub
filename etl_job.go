@@ -1,13 +1,16 @@
 package sls
 
 type ETLJob struct {
-	JobName           string          `json:"etlJobName"`
-	SourceConfig      *SourceConfig   `json:"sourceConfig"`
-	TriggerConfig     *TriggerConfig  `json:"triggerConfig"`
-	FunctionConfig    *FunctionConfig `json:"functionConfig"`
-	FunctionParameter string          `json:"functionParameter"`
-	LogConfig         *JobLogConfig   `json:"logConfig"`
-	Enable            bool            `json:"enable"`
+	JobName           string                 `json:"etlJobName"`
+	SourceConfig      *SourceConfig          `json:"sourceConfig"`
+	TriggerConfig     *TriggerConfig         `json:"triggerConfig"`
+	FunctionConfig    *FunctionConfig        `json:"functionConfig"`
+	FunctionParameter map[string]interface{} `json:"functionParameter"`
+	LogConfig         *JobLogConfig          `json:"logConfig"`
+	Enable            bool                   `json:"enable"`
+
+	CreateTime int64 `json:"createTime"`
+	UpdateTime int64 `json:"updateTime"`
 }
 
 type SourceConfig struct {

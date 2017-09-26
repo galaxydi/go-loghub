@@ -479,12 +479,12 @@ func (p *LogProject) GetETLJob(name string) (*ETLJob, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &ETLJob{}
-	err = json.Unmarshal(buf, s)
+	job := &ETLJob{}
+	err = json.Unmarshal(buf, job)
 	if err != nil {
 		return nil, err
 	}
-	return s, nil
+	return job, nil
 }
 
 // UpdateETLJob updates an ETL job according to job name,
