@@ -52,7 +52,21 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 
 	// Initialize http request
 	reader := bytes.NewReader(body)
-	urlStr := fmt.Sprintf("https://%v.%v%v", project.Name, project.Endpoint, uri)
+
+	// Handle the endpoint
+	httpPrefix := "http://"
+	httpsPrefix := "https://"
+	defaultPrefix := httpsPrefix
+	host := project.Endpoint
+	if len(project.Endpoint) >= len(httpPrefix) && project.Endpoint[0:len(httpPrefix)] == httpPrefix {
+		host = project.Endpoint[len(httpPrefix):]
+		defaultPrefix = httpPrefix
+	} else if len(project.Endpoint) >= len(httpsPrefix) && project.Endpoint[0:len(httpsPrefix)] == httpsPrefix {
+		host = project.Endpoint[len(httpsPrefix):]
+		defaultPrefix = httpsPrefix
+	}
+
+	urlStr := fmt.Sprintf("%s%v.%v%v", defaultPrefix, project.Name, host, uri)
 	req, err := http.NewRequest(method, urlStr, reader)
 	if err != nil {
 		return nil, nil, NewClientError(err.Error())

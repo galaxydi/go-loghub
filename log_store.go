@@ -377,3 +377,20 @@ func (s *LogStore) GetIndex() (*Index, error) {
 
 	return index, nil
 }
+
+// CheckIndexExist check index exist or not
+func (s *LogStore) CheckIndexExist() (bool, error) {
+	_, err := s.GetIndex()
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "IndexConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+
+	return true, nil
+}
