@@ -113,7 +113,7 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	if r.StatusCode != http.StatusOK {
@@ -138,10 +138,10 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return
+		return "", err
 	}
 	cursor = body.Cursor
-	return
+	return cursor, nil
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
@@ -171,7 +171,7 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	if r.StatusCode != http.StatusOK {
@@ -212,7 +212,7 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	}
 	bodyRawSize, err := strconv.Atoi(v[0])
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	out = make([]byte, bodyRawSize)
@@ -358,7 +358,7 @@ func (s *LogStore) CreateIndex(index Index) error {
 		return err
 	}
 	r.Body.Close()
-	return err
+	return nil
 }
 
 // UpdateIndex ...
@@ -379,7 +379,7 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return err
+	return nil
 }
 
 // DeleteIndex ...
@@ -408,7 +408,7 @@ func (s *LogStore) DeleteIndex() error {
 	if r != nil {
 		r.Body.Close()
 	}
-	return err
+	return nil
 }
 
 func (s *LogStore) GetIndex() (*Index, error) {
@@ -444,5 +444,5 @@ func (s *LogStore) GetIndex() (*Index, error) {
 		return nil, err
 	}
 
-	return index, err
+	return index, nil
 }
