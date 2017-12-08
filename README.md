@@ -23,7 +23,7 @@ go get github.com/stretchr/testify/suite
 ### LogHub Golang SDK
 
 ```
-go get github.com/aliyun/go-loghub 
+go get github.com/aliyun/aliyun-log-go-sdk
 ```
 
 # Example 
