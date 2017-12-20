@@ -99,7 +99,11 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 		serverErr := new(Error)
 		err := json.Unmarshal(buf, serverErr)
 		if err != nil {
-			return nil, nil, err
+			badRespError := new(BadResponseError)
+			badRespError.RespHeader = resp.Header
+			badRespError.HttpStatus = resp.StatusCode
+			badRespError.RespBody = string(buf)
+			return nil, nil, badRespError
 		}
 		serverErr.RequestID = resp.Header.Get(RequestIDHeader)
 		serverErr.HttpStatus = resp.StatusCode

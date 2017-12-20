@@ -13,6 +13,14 @@ type Error struct {
 	HttpStatus int    `json:"httpStatus"`
 }
 
+// special sls error
+// bad response, not valid json format
+type BadResponseError struct {
+	RespBody   string
+	RespHeader string
+	HttpStatus int
+}
+
 // NewClientError new client error
 func NewClientError(message string) *Error {
 	err := new(Error)
