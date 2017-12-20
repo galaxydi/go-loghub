@@ -1,8 +1,8 @@
 package sls
 
 import (
-	"os"
 	"fmt"
+	"os"
 	"testing"
 	"time"
 
@@ -37,7 +37,7 @@ func (s *LogstoreTestSuite) SetupTest() {
 	s.Nil(err)
 	s.NotNil(slsProject)
 	s.Project = slsProject
-	slsLogstore, err := s.Project.GetLogStore(s.logstoreName)
+	slsLogstore, err := NewLogStore(s.logstoreName, s.Project)
 	s.Nil(err)
 	s.NotNil(slsLogstore)
 	s.Logstore = slsLogstore
@@ -62,21 +62,58 @@ func (s *LogstoreTestSuite) TestCheckConfigExist() {
 }
 
 func (s *LogstoreTestSuite) TestPutLogs() {
-	content := &LogContent{
-		Key:   proto.String("demo_key"),
-		Value: proto.String("demo_value"),
-	}
-	logRecord := &Log{
-		Time:     proto.Uint32(uint32(time.Now().Unix())),
-		Contents: []*LogContent{content},
-	}
-	lg := &LogGroup{
-		Topic:  proto.String("test"),
-		Source: proto.String("10.168.122.110"),
-		Logs:   []*Log{logRecord},
-	}
+	lg := generateLG()
 	err := s.Logstore.PutLogs(lg)
 	s.Nil(err)
+}
+
+func (s *LogstoreTestSuite) TestProjectNotExist() {
+	projectName := "no-exist-project"
+	slsProject, err := NewLogProject(projectName, s.endpoint, s.accessKeyID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "ProjectNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("The Project does not exist : %s", projectName))
+}
+
+func (s *LogstoreTestSuite) TestLogStoreNotExist() {
+	logstoreName := "no-exist-logstore"
+	slsLogstore, err := NewLogStore(logstoreName, s.Project)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "LogStoreNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("logstore %s not exist", logstoreName))
+}
+
+func (s *LogstoreTestSuite) TestAccessIDNotExist() {
+	accessID := "no-exist-key"
+	slsProject, err := NewLogProject(s.projectName, s.endpoint, accessID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "Unauthorized")
+	s.Require().Equal(e.HttpStatus, 401)
+	s.Require().Equal(e.Message, fmt.Sprintf("AccessKeyId not found: %s", accessID))
 }
 
 func (s *LogstoreTestSuite) TestEmptyLogGroup() {
@@ -133,17 +170,16 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 		return
 	}
 	fmt.Printf("GetIndex success, idx: %v\n", idx)
-	idxConf := Index {
-			TTL: 7,
-			Keys: map[string]IndexKey {
-			},
-			Line: &IndexLine {
-				Token: []string{",", ":", " "},
-				CaseSensitive: false,
-				IncludeKeys: []string{},
-				ExcludeKeys: []string{},
-			},
-		}
+	idxConf := Index{
+		TTL:  7,
+		Keys: map[string]IndexKey{},
+		Line: &IndexLine{
+			Token:         []string{",", ":", " "},
+			CaseSensitive: false,
+			IncludeKeys:   []string{},
+			ExcludeKeys:   []string{},
+		},
+	}
 	s.Logstore.CreateIndex(idxConf)
 	time.Sleep(1 * 1000 * time.Millisecond)
 	begin_time := uint32(time.Now().Unix())
@@ -170,10 +206,10 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 
 	time.Sleep(5 * 1000 * time.Millisecond)
 
-	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time + 2), "InternalServerError")
+	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time+2), "InternalServerError")
 	s.Nil(hErr)
 	s.Equal(hResp.Count, int64(1))
-	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time + 2), "InternalServerError", 100, 0, false)
+	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time+2), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
 	s.Equal(lResp.Count, int64(1))
 }
@@ -182,7 +218,7 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	logstoreName := "github-test"
 	err := s.Project.DeleteLogStore(logstoreName)
 	time.Sleep(5 * 1000 * time.Millisecond)
-	err = s.Project.CreateLogStore(logstoreName, 14, 2) 
+	err = s.Project.CreateLogStore(logstoreName, 14, 2)
 	s.Nil(err)
 	time.Sleep(10 * 1000 * time.Millisecond)
 	err = s.Project.UpdateLogStore(logstoreName, 7, 2)
@@ -201,4 +237,21 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	s.Equal(len(machineGroups), machineGroupCount)
 	err = s.Project.DeleteLogStore(logstoreName)
 	s.Nil(err)
+}
+
+func generateLG() *LogGroup {
+	content := &LogContent{
+		Key:   proto.String("demo_key"),
+		Value: proto.String("demo_value"),
+	}
+	logRecord := &Log{
+		Time:     proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{content},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("test"),
+		Source: proto.String("10.168.122.110"),
+		Logs:   []*Log{logRecord},
+	}
+	return lg
 }

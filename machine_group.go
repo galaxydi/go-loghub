@@ -3,11 +3,6 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httputil"
-
-	"github.com/golang/glog"
 )
 
 // MachinGroupAttribute defines machine group attribute
@@ -45,47 +40,27 @@ type MachineList struct {
 }
 
 // ListMachines returns machine list of this machine group.
-func (m *MachineGroup) ListMachines() (ms []*Machine, total int, err error) {
+func (m *MachineGroup) ListMachines() ([]*Machine, int, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 
 	uri := fmt.Sprintf("/machinegroups/%v/machines", m.Name)
-	r, err := request(m.project, "GET", uri, h, nil)
+	_, buf, err := request(m.project, "GET", uri, h, nil)
 	if err != nil {
-		return
-	}
-
-	buf, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
-	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to remove config from machine group")
-			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
-			}
-			return
-		}
-		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
-		return
+		return nil, 0, err
 	}
 
 	body := &MachineList{}
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return
+		return nil, 0, err
 	}
 
-	ms = body.Machines
-	total = body.Total
+	ms := body.Machines
+	total := body.Total
 
-	return
+	return ms, total, nil
 }
 
 // GetAppliedConfigs returns applied configs of this machine group.
