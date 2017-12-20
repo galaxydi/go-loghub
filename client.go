@@ -13,6 +13,25 @@ type Error struct {
 	HttpStatus int    `json:"httpStatus"`
 }
 
+// BadResponseError : special sls error, not valid json format
+type BadResponseError struct {
+	RespBody   string
+	RespHeader map[string][]string
+	HttpStatus int
+}
+
+func (e BadResponseError) String() string {
+	b, err := json.MarshalIndent(e, "", "    ")
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func (e BadResponseError) Error() string {
+	return e.String()
+}
+
 // NewClientError new client error
 func NewClientError(message string) *Error {
 	err := new(Error)
