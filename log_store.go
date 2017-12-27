@@ -282,7 +282,7 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		return nil, err
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 64)
 	if err != nil {
 		return nil, err
 	}
