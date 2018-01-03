@@ -78,6 +78,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	// Parse the sls error from body.
 	if resp.StatusCode != http.StatusOK {
 		err := &Error{}
+		defer resp.Body.Close()
 		buf, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(buf, err)
 		err.RequestID = resp.Header.Get("x-log-requestid")

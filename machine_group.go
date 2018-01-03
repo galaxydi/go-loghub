@@ -55,7 +55,7 @@ func (m *MachineGroup) ListMachines() (ms []*Machine, total int, err error) {
 	if err != nil {
 		return
 	}
-
+	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return

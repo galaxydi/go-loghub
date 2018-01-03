@@ -40,6 +40,7 @@ func (s *LogStore) ListShards() (shardIDs []int, err error) {
 	if err != nil {
 		return nil, NewClientError(err.Error())
 	}
+	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := &Error{}
@@ -117,7 +118,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	if err != nil {
 		return NewClientError(err.Error())
 	}
-
+	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
@@ -138,12 +139,12 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 		s.Name, shardID, from)
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return
+		return "", err
 	}
-
+	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
+		return "", err
 	}
 
 	if r.StatusCode != http.StatusOK {
@@ -168,10 +169,10 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return
+		return "", err
 	}
 	cursor = body.Cursor
-	return
+	return cursor, nil
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
@@ -196,12 +197,12 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return
+		return nil, "", err
 	}
-
+	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	if r.StatusCode != http.StatusOK {
@@ -242,7 +243,7 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	}
 	bodyRawSize, err := strconv.Atoi(v[0])
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
 	out = make([]byte, bodyRawSize)
@@ -299,7 +300,7 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	if err != nil {
 		return nil, NewClientError(err.Error())
 	}
-
+	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
@@ -313,7 +314,7 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		return nil, err
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +342,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	if err != nil {
 		return nil, NewClientError(err.Error())
 	}
-
+	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
@@ -383,8 +384,12 @@ func (s *LogStore) CreateIndex(index Index) error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "POST", uri, h, body)
-	return err
+	r, err := request(s.project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
 }
 
 // UpdateIndex ...
@@ -401,8 +406,11 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "PUT", uri, h, body)
-	return err
+	r, err := request(s.project, "PUT", uri, h, body)
+	if r != nil {
+		r.Body.Close()
+	}
+	return nil
 }
 
 // DeleteIndex ...
@@ -427,8 +435,11 @@ func (s *LogStore) DeleteIndex() error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "DELETE", uri, h, body)
-	return err
+	r, err := request(s.project, "DELETE", uri, h, body)
+	if r != nil {
+		r.Body.Close()
+	}
+	return nil
 }
 
 func (s *LogStore) GetIndex() (*Index, error) {
@@ -452,16 +463,17 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	resp, err := request(s.project, "GET", uri, h, body)
+	r, err := request(s.project, "GET", uri, h, body)
 	if err != nil {
+		return nil, err
 	}
-
 	index := &Index{}
-	data, _ := ioutil.ReadAll(resp.Body)
+	defer r.Body.Close()
+	data, _ := ioutil.ReadAll(r.Body)
 	err = json.Unmarshal(data, index)
 	if err != nil {
 		return nil, err
 	}
 
-	return index, err
+	return index, nil
 }
