@@ -8,9 +8,9 @@ import (
 	"net/http/httputil"
 	"strconv"
 
-	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
+	"github.com/pierrec/lz4"
 )
 
 // LogStore defines LogStore struct
@@ -55,6 +55,33 @@ func (s *LogStore) ListShards() (shardIDs []int, err error) {
 	return shardIDs, nil
 }
 
+func copyIncompressible(src, dst []byte) (int, error) {
+	lLen, dn := len(src), len(dst)
+
+	di := 0
+	if lLen < 0xF {
+		dst[di] = byte(lLen << 4)
+	} else {
+		dst[di] = 0xF0
+		if di++; di == dn {
+			return di, lz4.ErrShortBuffer
+		}
+		lLen -= 0xF
+		for ; lLen >= 0xFF; lLen -= 0xFF {
+			dst[di] = 0xFF
+			if di++; di == dn {
+				return di, lz4.ErrShortBuffer
+			}
+		}
+		dst[di] = byte(lLen)
+	}
+	if di++; di+len(src) > dn {
+		return di, lz4.ErrShortBuffer
+	}
+	di += copy(dst[di:], src)
+	return di, nil
+}
+
 // PutLogs put logs into logstore.
 // The callers should transform user logs into LogGroup.
 func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
@@ -69,10 +96,14 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	}
 
 	// Compresse body with lz4
-	out := make([]byte, lz4.CompressBound(body))
-	n, err := lz4.Compress(body, out)
+	out := make([]byte, lz4.CompressBlockBound(len(body)))
+	n, err := lz4.CompressBlock(body, out, 0)
 	if err != nil {
 		return NewClientError(err.Error())
+	}
+	// copy incompressible data as lz4 format
+	if n == 0 {
+		n, _ = copyIncompressible(body, out)
 	}
 
 	h := map[string]string{
@@ -215,8 +246,8 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	}
 
 	out = make([]byte, bodyRawSize)
-	err = lz4.Uncompress(buf, out)
-	if err != nil {
+	len, err := lz4.UncompressBlock(buf, out, 0)
+	if err != nil || len != bodyRawSize {
 		return
 	}
 
@@ -287,9 +318,9 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		return nil, err
 	}
 	getHistogramsResponse := GetHistogramsResponse{
-		Progress: r.Header[ProgressHeader][0],
-		Count:    count,
-		Histograms:     histograms,
+		Progress:   r.Header[ProgressHeader][0],
+		Count:      count,
+		Histograms: histograms,
 	}
 
 	return &getHistogramsResponse, nil

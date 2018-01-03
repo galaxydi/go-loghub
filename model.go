@@ -1,17 +1,25 @@
 package sls
 
+import (
+	"strings"
+)
+
 // GetHistogramsResponse defines response from GetHistograms call
 type SingleHistogram struct {
-	Progress string              `json:"progress"`
-	Count    int64               `json:"count"`
-	From     int64               `json:"from"`
-	To       int64               `json:"to"`
+	Progress string `json:"progress"`
+	Count    int64  `json:"count"`
+	From     int64  `json:"from"`
+	To       int64  `json:"to"`
 }
 
 type GetHistogramsResponse struct {
-	Progress string              `json:"progress"`
-	Count    int64               `json:"count"`
-	Histograms     []SingleHistogram `json:"histograms"`
+	Progress   string            `json:"progress"`
+	Count      int64             `json:"count"`
+	Histograms []SingleHistogram `json:"histograms"`
+}
+
+func (resp *GetHistogramsResponse) IsComplete() bool {
+	return strings.ToLower(resp.Progress) == "complete"
 }
 
 // GetLogsResponse defines response from GetLogs call
@@ -19,6 +27,10 @@ type GetLogsResponse struct {
 	Progress string              `json:"progress"`
 	Count    int64               `json:"count"`
 	Logs     []map[string]string `json:"logs"`
+}
+
+func (resp *GetLogsResponse) IsComplete() bool {
+	return strings.ToLower(resp.Progress) == "complete"
 }
 
 // IndexKey ...
