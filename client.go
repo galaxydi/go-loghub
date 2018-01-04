@@ -32,6 +32,16 @@ func (e BadResponseError) Error() string {
 	return e.String()
 }
 
+// mockErrorRetry : for mock the error retry logic
+type mockErrorRetry struct {
+	Err      Error
+	RetryCnt int // RetryCnt-- after each retry. When RetryCnt > 0, return Err, else return nil, if set it BigUint, it equivalents to always failing.
+}
+
+func (e mockErrorRetry) Error() string {
+	return e.Err.String()
+}
+
 // NewClientError new client error
 func NewClientError(message string) *Error {
 	err := new(Error)
