@@ -26,7 +26,7 @@ go get github.com/stretchr/testify/suite
 go get github.com/aliyun-fc/go-loghub 
 ```
 
-# Example 
+# Example2
 
 ### Write and Read LogHub
 
