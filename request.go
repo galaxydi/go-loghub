@@ -10,11 +10,118 @@ import (
 	"encoding/json"
 	"io/ioutil"
 
+	"net/url"
+	"time"
+
+	"golang.org/x/net/context"
+
+	"github.com/cenkalti/backoff"
 	"github.com/golang/glog"
 )
 
+// define api const
+const (
+	requestTimeout = 10 * time.Second
+)
+
+func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
+	if err == nil {
+		return false, nil
+	}
+
+	switch e := err.(type) {
+	case *url.Error:
+		return true, e
+	case *Error:
+		if e.HttpStatus >= 500 && e.HttpStatus <= 599 {
+			return true, e
+		} else {
+			return false, e
+		}
+	case *BadResponseError:
+		if e.HttpStatus >= 500 && e.HttpStatus <= 599 {
+			return true, e
+		} else {
+			return false, e
+		}
+	default:
+		return false, e
+	}
+}
+
+func retryWriteErrorCheck(ctx context.Context, err error) (bool, error) {
+	if err == nil {
+		return false, nil
+	}
+
+	switch e := err.(type) {
+	case *Error:
+		if e.HttpStatus == 502 || e.HttpStatus == 503 {
+			return true, e
+		} else {
+			return false, e
+		}
+	case *BadResponseError:
+		if e.HttpStatus == 502 || e.HttpStatus == 503 {
+			return true, e
+		} else {
+			return false, e
+		}
+	default:
+		return false, e
+	}
+}
+
 // request sends a request to SLS.
 func request(project *LogProject, method, uri string, headers map[string]string,
+	body []byte, mock ...interface{}) (http.Header, []byte, error) {
+
+	// mock param only for test
+
+	var respHeader http.Header
+	var respBody []byte
+	var slsErr error
+
+	// all GET method is read function
+	if method == "GET" {
+		cctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+		defer cancel()
+		err := RetryWithCondition(cctx, backoff.NewExponentialBackOff(), func() (bool, error) {
+			if len(mock) == 0 {
+				respHeader, respBody, slsErr = realRequest(project, method, uri, headers, body)
+			} else {
+				respHeader, respBody, slsErr = nil, nil, mock[0].(*BadResponseError)
+			}
+			return retryReadErrorCheck(cctx, slsErr)
+		})
+		if err != nil {
+			return respHeader, respBody, err
+		} else {
+			return respHeader, respBody, slsErr
+		}
+
+	} else {
+		cctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+		defer cancel()
+		err := RetryWithCondition(cctx, backoff.NewExponentialBackOff(), func() (bool, error) {
+			if len(mock) == 0 {
+				respHeader, respBody, slsErr = realRequest(project, method, uri, headers, body)
+			} else {
+				respHeader, respBody, slsErr = nil, nil, mock[0].(*BadResponseError)
+			}
+			return retryWriteErrorCheck(cctx, slsErr)
+		})
+
+		if err != nil {
+			return respHeader, respBody, err
+		} else {
+			return respHeader, respBody, slsErr
+		}
+	}
+}
+
+// request sends a request to SLS.
+func realRequest(project *LogProject, method, uri string, headers map[string]string,
 	body []byte) (http.Header, []byte, error) {
 
 	// The caller should provide 'x-log-bodyrawsize' header

@@ -3,9 +3,11 @@ package sls
 import (
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
+	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
@@ -204,7 +206,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	putErr := s.Logstore.PutLogs(lg)
 	s.Nil(putErr)
 
-	time.Sleep(5 * 1000 * time.Millisecond)
+	time.Sleep(60 * 1000 * time.Millisecond)
 
 	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time+2), "InternalServerError")
 	s.Nil(hErr)
@@ -254,4 +256,107 @@ func generateLG() *LogGroup {
 		Logs:   []*Log{logRecord},
 	}
 	return lg
+}
+
+func (s *LogstoreTestSuite) TestLogStoreReadErrorMock() {
+	topic := ""
+	begin_time := uint32(time.Now().Unix())
+	from := int64(begin_time)
+	to := int64(begin_time + 2)
+	queryExp := "InternalServerError"
+	maxLineNum := 100
+	offset := 0
+	reverse := false
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Logstore.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
+
+	badRespError := new(BadResponseError)
+	mp := map[string][]string{"hi": {"map", "global"}, "hello": {"girl", "body"}}
+	badRespError.RespHeader = mp
+	badRespError.HttpStatus = 502
+	badRespError.RespBody = "unmarshal error"
+
+	_, _, err := request(s.Logstore.project, "GET", uri, h, nil, badRespError)
+
+	s.NotNil(err)
+	s.True(strings.Contains(string(err.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err.Error()), "502"))
+	s.True(strings.Contains(string(err.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err.Error()), "girl"))
+	s.True(strings.Contains(string(err.Error()), "stopped retrying err"))
+
+	badRespError.HttpStatus = 501
+	_, _, err2 := request(s.Logstore.project, "GET", uri, h, nil, badRespError)
+
+	s.NotNil(err2)
+	s.True(strings.Contains(string(err2.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err2.Error()), "501"))
+	s.True(strings.Contains(string(err2.Error()), "stopped retrying err"))
+	s.True(strings.Contains(string(err2.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err2.Error()), "girl"))
+
+}
+
+func (s *LogstoreTestSuite) TestLogStoreWriteErrorMock() {
+	c := &LogContent{
+		Key:   proto.String("error code"),
+		Value: proto.String("InternalServerError"),
+	}
+	l := &Log{
+		Time: proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{
+			c,
+		},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("demo topic"),
+		Source: proto.String("10.230.201.117"),
+		Logs: []*Log{
+			l,
+		},
+	}
+
+	body, _ := proto.Marshal(lg)
+
+	// Compresse body with lz4
+	out := make([]byte, lz4.CompressBound(body))
+	n, _ := lz4.Compress(body, out)
+
+	h := map[string]string{
+		"x-log-compresstype": "lz4",
+		"x-log-bodyrawsize":  fmt.Sprintf("%v", len(body)),
+		"Content-Type":       "application/x-protobuf",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v", s.Logstore.Name)
+
+	badRespError := new(BadResponseError)
+	mp := map[string][]string{"hi": {"map", "global"}, "hello": {"girl", "body"}}
+	badRespError.RespHeader = mp
+	badRespError.HttpStatus = 502
+	badRespError.RespBody = "unmarshal error"
+
+	_, _, err := request(s.Logstore.project, "POST", uri, h, out[:n], badRespError)
+
+	s.NotNil(err)
+	s.True(strings.Contains(string(err.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err.Error()), "502"))
+	s.True(strings.Contains(string(err.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err.Error()), "girl"))
+	s.True(strings.Contains(string(err.Error()), "stopped retrying err"))
+
+	badRespError.HttpStatus = 504
+	_, _, err2 := request(s.Logstore.project, "POST", uri, h, out[:n], badRespError)
+
+	// 504 no retry
+	s.NotNil(err2)
+	s.True(strings.Contains(string(err2.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err2.Error()), "504"))
+	s.False(strings.Contains(string(err2.Error()), "stopped retrying err"))
+	s.False(strings.Contains(string(err2.Error()), "context deadline exceeded"))
 }
