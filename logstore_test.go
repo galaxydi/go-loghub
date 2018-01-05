@@ -1,11 +1,13 @@
 package sls
 
 import (
-	"os"
 	"fmt"
+	"os"
+	"strings"
 	"testing"
 	"time"
 
+	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
@@ -37,7 +39,7 @@ func (s *LogstoreTestSuite) SetupTest() {
 	s.Nil(err)
 	s.NotNil(slsProject)
 	s.Project = slsProject
-	slsLogstore, err := s.Project.GetLogStore(s.logstoreName)
+	slsLogstore, err := NewLogStore(s.logstoreName, s.Project)
 	s.Nil(err)
 	s.NotNil(slsLogstore)
 	s.Logstore = slsLogstore
@@ -62,21 +64,58 @@ func (s *LogstoreTestSuite) TestCheckConfigExist() {
 }
 
 func (s *LogstoreTestSuite) TestPutLogs() {
-	content := &LogContent{
-		Key:   proto.String("demo_key"),
-		Value: proto.String("demo_value"),
-	}
-	logRecord := &Log{
-		Time:     proto.Uint32(uint32(time.Now().Unix())),
-		Contents: []*LogContent{content},
-	}
-	lg := &LogGroup{
-		Topic:  proto.String("test"),
-		Source: proto.String("10.168.122.110"),
-		Logs:   []*Log{logRecord},
-	}
+	lg := generateLG()
 	err := s.Logstore.PutLogs(lg)
 	s.Nil(err)
+}
+
+func (s *LogstoreTestSuite) TestProjectNotExist() {
+	projectName := "no-exist-project"
+	slsProject, err := NewLogProject(projectName, s.endpoint, s.accessKeyID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "ProjectNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("The Project does not exist : %s", projectName))
+}
+
+func (s *LogstoreTestSuite) TestLogStoreNotExist() {
+	logstoreName := "no-exist-logstore"
+	slsLogstore, err := NewLogStore(logstoreName, s.Project)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "LogStoreNotExist")
+	s.Require().Equal(e.HttpStatus, 404)
+	s.Require().Equal(e.Message, fmt.Sprintf("logstore %s not exist", logstoreName))
+}
+
+func (s *LogstoreTestSuite) TestAccessIDNotExist() {
+	accessID := "no-exist-key"
+	slsProject, err := NewLogProject(s.projectName, s.endpoint, accessID, s.accessKeySecret)
+	s.Nil(err)
+	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
+	s.Nil(err)
+
+	lg := generateLG()
+	err = slsLogstore.PutLogs(lg)
+	s.Require().NotNil(err)
+	e, ok := err.(*Error)
+	s.Require().True(ok)
+	s.Require().Equal(e.Code, "Unauthorized")
+	s.Require().Equal(e.HttpStatus, 401)
+	s.Require().Equal(e.Message, fmt.Sprintf("AccessKeyId not found: %s", accessID))
 }
 
 func (s *LogstoreTestSuite) TestEmptyLogGroup() {
@@ -133,17 +172,16 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 		return
 	}
 	fmt.Printf("GetIndex success, idx: %v\n", idx)
-	idxConf := Index {
-			TTL: 7,
-			Keys: map[string]IndexKey {
-			},
-			Line: &IndexLine {
-				Token: []string{",", ":", " "},
-				CaseSensitive: false,
-				IncludeKeys: []string{},
-				ExcludeKeys: []string{},
-			},
-		}
+	idxConf := Index{
+		TTL:  7,
+		Keys: map[string]IndexKey{},
+		Line: &IndexLine{
+			Token:         []string{",", ":", " "},
+			CaseSensitive: false,
+			IncludeKeys:   []string{},
+			ExcludeKeys:   []string{},
+		},
+	}
 	s.Logstore.CreateIndex(idxConf)
 	time.Sleep(1 * 1000 * time.Millisecond)
 	begin_time := uint32(time.Now().Unix())
@@ -168,12 +206,12 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	putErr := s.Logstore.PutLogs(lg)
 	s.Nil(putErr)
 
-	time.Sleep(5 * 1000 * time.Millisecond)
+	time.Sleep(60 * 1000 * time.Millisecond)
 
-	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time + 2), "InternalServerError")
+	hResp, hErr := s.Logstore.GetHistograms("", int64(begin_time), int64(begin_time+2), "InternalServerError")
 	s.Nil(hErr)
 	s.Equal(hResp.Count, int64(1))
-	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time + 2), "InternalServerError", 100, 0, false)
+	lResp, lErr := s.Logstore.GetLogs("", int64(begin_time), int64(begin_time+2), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
 	s.Equal(lResp.Count, int64(1))
 }
@@ -182,7 +220,7 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	logstoreName := "github-test"
 	err := s.Project.DeleteLogStore(logstoreName)
 	time.Sleep(5 * 1000 * time.Millisecond)
-	err = s.Project.CreateLogStore(logstoreName, 14, 2) 
+	err = s.Project.CreateLogStore(logstoreName, 14, 2)
 	s.Nil(err)
 	time.Sleep(10 * 1000 * time.Millisecond)
 	err = s.Project.UpdateLogStore(logstoreName, 7, 2)
@@ -201,4 +239,124 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	s.Equal(len(machineGroups), machineGroupCount)
 	err = s.Project.DeleteLogStore(logstoreName)
 	s.Nil(err)
+}
+
+func generateLG() *LogGroup {
+	content := &LogContent{
+		Key:   proto.String("demo_key"),
+		Value: proto.String("demo_value"),
+	}
+	logRecord := &Log{
+		Time:     proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{content},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("test"),
+		Source: proto.String("10.168.122.110"),
+		Logs:   []*Log{logRecord},
+	}
+	return lg
+}
+
+func (s *LogstoreTestSuite) TestLogStoreReadErrorMock() {
+	topic := ""
+	begin_time := uint32(time.Now().Unix())
+	from := int64(begin_time)
+	to := int64(begin_time + 2)
+	queryExp := "InternalServerError"
+	maxLineNum := 100
+	offset := 0
+	reverse := false
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Logstore.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
+
+	badRespError := new(BadResponseError)
+	mp := map[string][]string{"hi": {"map", "global"}, "hello": {"girl", "body"}}
+	badRespError.RespHeader = mp
+	badRespError.HttpStatus = 502
+	badRespError.RespBody = "unmarshal error"
+
+	_, _, err := request(s.Logstore.project, "GET", uri, h, nil, badRespError)
+
+	s.NotNil(err)
+	s.True(strings.Contains(string(err.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err.Error()), "502"))
+	s.True(strings.Contains(string(err.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err.Error()), "girl"))
+	s.True(strings.Contains(string(err.Error()), "stopped retrying err"))
+
+	badRespError.HttpStatus = 501
+	_, _, err2 := request(s.Logstore.project, "GET", uri, h, nil, badRespError)
+
+	s.NotNil(err2)
+	s.True(strings.Contains(string(err2.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err2.Error()), "501"))
+	s.True(strings.Contains(string(err2.Error()), "stopped retrying err"))
+	s.True(strings.Contains(string(err2.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err2.Error()), "girl"))
+
+}
+
+func (s *LogstoreTestSuite) TestLogStoreWriteErrorMock() {
+	c := &LogContent{
+		Key:   proto.String("error code"),
+		Value: proto.String("InternalServerError"),
+	}
+	l := &Log{
+		Time: proto.Uint32(uint32(time.Now().Unix())),
+		Contents: []*LogContent{
+			c,
+		},
+	}
+	lg := &LogGroup{
+		Topic:  proto.String("demo topic"),
+		Source: proto.String("10.230.201.117"),
+		Logs: []*Log{
+			l,
+		},
+	}
+
+	body, _ := proto.Marshal(lg)
+
+	// Compresse body with lz4
+	out := make([]byte, lz4.CompressBound(body))
+	n, _ := lz4.Compress(body, out)
+
+	h := map[string]string{
+		"x-log-compresstype": "lz4",
+		"x-log-bodyrawsize":  fmt.Sprintf("%v", len(body)),
+		"Content-Type":       "application/x-protobuf",
+	}
+
+	uri := fmt.Sprintf("/logstores/%v", s.Logstore.Name)
+
+	badRespError := new(BadResponseError)
+	mp := map[string][]string{"hi": {"map", "global"}, "hello": {"girl", "body"}}
+	badRespError.RespHeader = mp
+	badRespError.HttpStatus = 502
+	badRespError.RespBody = "unmarshal error"
+
+	_, _, err := request(s.Logstore.project, "POST", uri, h, out[:n], badRespError)
+
+	s.NotNil(err)
+	s.True(strings.Contains(string(err.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err.Error()), "502"))
+	s.True(strings.Contains(string(err.Error()), "context deadline exceeded"))
+	s.True(strings.Contains(string(err.Error()), "girl"))
+	s.True(strings.Contains(string(err.Error()), "stopped retrying err"))
+
+	badRespError.HttpStatus = 504
+	_, _, err2 := request(s.Logstore.project, "POST", uri, h, out[:n], badRespError)
+
+	// 504 no retry
+	s.NotNil(err2)
+	s.True(strings.Contains(string(err2.Error()), "unmarshal error"))
+	s.True(strings.Contains(string(err2.Error()), "504"))
+	s.False(strings.Contains(string(err2.Error()), "stopped retrying err"))
+	s.False(strings.Contains(string(err2.Error()), "context deadline exceeded"))
 }

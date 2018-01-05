@@ -7,9 +7,29 @@ import (
 
 // Error defines sls error
 type Error struct {
-	Code      string `json:"errorCode"`
-	Message   string `json:"errorMessage"`
-	RequestID string `json:"requestID"`
+	Code       string `json:"errorCode"`
+	Message    string `json:"errorMessage"`
+	RequestID  string `json:"requestID"`
+	HttpStatus int    `json:"httpStatus"`
+}
+
+// BadResponseError : special sls error, not valid json format
+type BadResponseError struct {
+	RespBody   string
+	RespHeader map[string][]string
+	HttpStatus int
+}
+
+func (e BadResponseError) String() string {
+	b, err := json.MarshalIndent(e, "", "    ")
+	if err != nil {
+		return ""
+	}
+	return string(b)
+}
+
+func (e BadResponseError) Error() string {
+	return e.String()
 }
 
 // NewClientError new client error
@@ -72,7 +92,7 @@ func (c *Client) CreateProject(name, description string) (*LogProject, error) {
 
 	uri := "/"
 	proj := convert(c, name)
-	_, err = request(proj, "POST", uri, h, body)
+	_, _, err = request(proj, "POST", uri, h, body)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +108,7 @@ func (c *Client) GetProject(name string) (*LogProject, error) {
 
 	uri := "/"
 	proj := convert(c, name)
-	_, err := request(proj, "GET", uri, h, nil)
+	_, _, err := request(proj, "GET", uri, h, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +123,7 @@ func (c *Client) CheckProjectExist(name string) (bool, error) {
 	}
 	uri := "/"
 	proj := convert(c, name)
-	_, err := request(proj, "GET", uri, h, nil)
+	_, _, err := request(proj, "GET", uri, h, nil)
 	if err != nil {
 		if _, ok := err.(*Error); ok {
 			slsErr := err.(*Error)
@@ -125,10 +145,6 @@ func (c *Client) DeleteProject(name string) error {
 
 	proj := convert(c, name)
 	uri := "/"
-	_, err := request(proj, "DELETE", uri, h, nil)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, _, err := request(proj, "DELETE", uri, h, nil)
+	return err
 }

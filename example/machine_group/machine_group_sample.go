@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	sls "github.com/galaxydi/go-loghub"
-	"github.com/galaxydi/go-loghub/example/util"
+	sls "github.com/aliyun-fc/go-loghub"
+	"github.com/aliyun-fc/go-loghub/example/util"
 )
 
 func main() {

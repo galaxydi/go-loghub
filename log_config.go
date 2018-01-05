@@ -14,6 +14,8 @@ type InputDetail struct {
 	FilterKeys    []string `json:"filterKey"`
 	FilterRegex   []string `json:"filterRegex"`
 	TopicFormat   string   `json:"topicFormat"`
+	Separator     string   `json:"separator"`
+	AutoExtend    bool     `json:"autoExtend"`
 }
 
 // OutputDetail defines output
@@ -29,6 +31,7 @@ type LogConfig struct {
 	InputDetail  InputDetail  `json:"inputDetail"`
 	OutputType   string       `json:"outputType"`
 	OutputDetail OutputDetail `json:"outputDetail"`
+	LogSample    string       `json:"logSample"`
 
 	CreateTime     uint32
 	LastModifyTime uint32

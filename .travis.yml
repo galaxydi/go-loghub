@@ -9,6 +9,9 @@ install:
  - go get github.com/cloudflare/golz4
  - go get github.com/golang/glog
  - go get github.com/stretchr/testify/suite
+ - go get github.com/cenkalti/backoff
+ - go get github.com/pkg/errors
+ - go get golang.org/x/net/context
 
-script:
- - $HOME/gopath/bin/goveralls -service=travis-ci
+# script:
+#  - $HOME/gopath/bin/goveralls -service=travis-ci
