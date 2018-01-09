@@ -18,6 +18,9 @@ go get github.com/cloudflare/golz4
 go get github.com/golang/glog
 go get github.com/gogo/protobuf/proto
 go get github.com/stretchr/testify/suite
+go get github.com/cenkalti/backoff
+go get github.com/pkg/errors
+go get golang.org/x/net/context
 ```
 
 ### LogHub Golang SDK
