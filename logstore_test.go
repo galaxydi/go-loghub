@@ -2,6 +2,8 @@ package sls
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -387,4 +389,39 @@ func (s *LogstoreTestSuite) TestLogStoreWriteErrorMock() {
 
 	_, _, err4 := request(s.Logstore.project, "POST", uri, h, out[:n], mockErr)
 	s.Nil(err4)
+}
+
+func (s *LogstoreTestSuite) TestReqTimeoutRetry() {
+	assert := s.Require()
+
+	oldRequestTimeout, oldRetryTimeout := requestTimeout, retryTimeout
+	defer func() {
+		requestTimeout, retryTimeout = oldRequestTimeout, oldRetryTimeout
+	}()
+
+	requestTimeout = 1 * time.Second
+	retryTimeout = 3 * time.Second
+
+	count := 0
+	ts := httptest.NewServer(
+		http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				count++
+				time.Sleep(3 * time.Second)
+			}),
+	)
+	defer ts.Close()
+
+	slsProject, err := NewLogProject("my-project", ts.URL, "id", "key")
+	assert.Nil(err)
+	assert.NotNil(slsProject)
+
+	slsLogstore, err := NewLogStore("my-store", slsProject)
+	assert.Nil(err)
+	assert.NotNil(slsLogstore)
+
+	_, err = slsLogstore.ListShards()
+	assert.NotNil(err)
+	assert.Contains(err.Error(), "context deadline exceeded")
+	assert.True(count >= 2, count)
 }

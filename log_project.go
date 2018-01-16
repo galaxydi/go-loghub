@@ -3,6 +3,8 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strings"
 )
 
 // LogProject defines log project
@@ -12,6 +14,7 @@ type LogProject struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
+	baseURL         string
 }
 
 // NewLogProject new a SLS project object.
@@ -22,6 +25,7 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 	}
+	p.parseEndpoint()
 	return p, nil
 }
 
@@ -539,4 +543,26 @@ func (p *LogProject) ListETLJobs() ([]string, error) {
 		return nil, err
 	}
 	return body.ETLJobs, nil
+}
+
+const (
+	httpScheme  = "http://"
+	httpsScheme = "https://"
+	ipRegex     = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*`
+)
+
+func (p *LogProject) parseEndpoint() {
+	scheme := httpScheme // default to http scheme
+	if strings.HasPrefix(p.Endpoint, httpScheme) {
+		scheme = httpScheme
+	} else if strings.HasPrefix(p.Endpoint, httpsScheme) {
+		scheme = httpsScheme
+	}
+	host := strings.TrimPrefix(p.Endpoint, scheme)
+	reg := regexp.MustCompile(ipRegex)
+	if reg.MatchString(host) { // ip format
+		p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+	} else {
+		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+	}
 }
