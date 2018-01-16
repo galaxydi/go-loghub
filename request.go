@@ -16,9 +16,10 @@ import (
 	"golang.org/x/net/context"
 )
 
-// define api const
-const (
+// timeout configs
+var (
 	requestTimeout = 10 * time.Second
+	retryTimeout   = 30 * time.Second
 )
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
@@ -76,7 +77,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	var err error
 	var mockErr *mockErrorRetry
 
-	cctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	cctx, cancel := context.WithTimeout(context.Background(), retryTimeout)
 	defer cancel()
 
 	// all GET method is read function
@@ -161,20 +162,11 @@ func realRequest(project *LogProject, method, uri string, headers map[string]str
 	reader := bytes.NewReader(body)
 
 	// Handle the endpoint
-	httpPrefix := "http://"
-	httpsPrefix := "https://"
-	defaultPrefix := httpsPrefix
-	host := project.Endpoint
-	if len(project.Endpoint) >= len(httpPrefix) && project.Endpoint[0:len(httpPrefix)] == httpPrefix {
-		host = project.Endpoint[len(httpPrefix):]
-		defaultPrefix = httpPrefix
-	} else if len(project.Endpoint) >= len(httpsPrefix) && project.Endpoint[0:len(httpsPrefix)] == httpsPrefix {
-		host = project.Endpoint[len(httpsPrefix):]
-		defaultPrefix = httpsPrefix
-	}
-
-	urlStr := fmt.Sprintf("%s%v.%v%v", defaultPrefix, project.Name, host, uri)
+	urlStr := fmt.Sprintf("%s%s", project.baseURL, uri)
 	req, err := http.NewRequest(method, urlStr, reader)
+	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	defer cancel()
+	req = req.WithContext(ctx)
 	if err != nil {
 		return nil, nil, NewClientError(err.Error())
 	}
