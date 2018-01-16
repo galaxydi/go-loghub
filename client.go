@@ -71,13 +71,10 @@ type Client struct {
 }
 
 func convert(c *Client, projName string) *LogProject {
-	return &LogProject{
-		Name:            projName,
-		Endpoint:        c.Endpoint,
-		AccessKeyID:     c.AccessKeyID,
-		AccessKeySecret: c.AccessKeySecret,
-		SecurityToken:   c.SecurityToken,
-	}
+	prj, _ := NewLogProject(
+		projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
+	prj.SecurityToken = c.SecurityToken
+	return prj
 }
 
 // CreateProject create a new loghub project.

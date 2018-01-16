@@ -39,3 +39,43 @@ func (s *ProjectTestSuite) TestCheckProjectExist() {
 	s.Nil(err)
 	s.False(exist)
 }
+
+func (s *ProjectTestSuite) TestParseEndpoint() {
+	assert := s.Require()
+
+	projectName := "my-project"
+	prj, err := NewLogProject(projectName, "127.0.0.1", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://127.0.0.1/my-project", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "http://127.0.0.1", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://127.0.0.1/my-project", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "http://127.0.0.1:8080", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://127.0.0.1:8080/my-project", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "log.aliyun.com", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://my-project.log.aliyun.com", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "http://log.aliyun.com", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://my-project.log.aliyun.com", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "http://log.aliyun.com:8000", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("http://my-project.log.aliyun.com:8000", prj.baseURL)
+
+	prj, err = NewLogProject(projectName, "https://log.aliyun.com:8000", "id", "key")
+	assert.Nil(err)
+	assert.NotNil(prj)
+	assert.Equal("https://my-project.log.aliyun.com:8000", prj.baseURL)
+}
