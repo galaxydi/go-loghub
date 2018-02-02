@@ -247,11 +247,12 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	}
 
 	out = make([]byte, bodyRawSize)
-	len, err := lz4.UncompressBlock(buf, out, 0)
-	if err != nil || len != bodyRawSize {
-		return
+	if bodyRawSize != 0 {
+		len := 0
+		if len, err = lz4.UncompressBlock(buf, out, 0); err != nil || len != bodyRawSize {
+			return
+		}
 	}
-
 	return
 }
 
