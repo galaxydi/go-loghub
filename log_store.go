@@ -339,6 +339,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	}
 
 	// fix url encode bug for parsing '+' to ' '
+	queryExp = strings.Replace(queryExp, "%", "%25", -1)
 	queryExp = strings.Replace(queryExp, "+", "%2B", -1)
 
 	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
