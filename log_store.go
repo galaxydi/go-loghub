@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/glog"
@@ -338,11 +338,17 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 		"Accept":            "application/json",
 	}
 
-	// fix url encode bug for parsing '+' to ' '
-	queryExp = strings.Replace(queryExp, "%", "%25", -1)
-	queryExp = strings.Replace(queryExp, "+", "%2B", -1)
+	urlVal := url.Values{}
+	urlVal.Add("type", "log")
+	urlVal.Add("from", strconv.Itoa(int(from)))
+	urlVal.Add("to", strconv.Itoa(int(to)))
+	urlVal.Add("topic", topic)
+	urlVal.Add("line", strconv.Itoa(int(maxLineNum)))
+	urlVal.Add("offset", strconv.Itoa(int(offset)))
+	urlVal.Add("reverse", strconv.FormatBool(reverse))
+	urlVal.Add("query", queryExp)
 
-	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
+	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
