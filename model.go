@@ -2,16 +2,16 @@ package sls
 
 // GetHistogramsResponse defines response from GetHistograms call
 type SingleHistogram struct {
-	Progress string              `json:"progress"`
-	Count    int64               `json:"count"`
-	From     int64               `json:"from"`
-	To       int64               `json:"to"`
+	Progress string `json:"progress"`
+	Count    int64  `json:"count"`
+	From     int64  `json:"from"`
+	To       int64  `json:"to"`
 }
 
 type GetHistogramsResponse struct {
-	Progress string              `json:"progress"`
-	Count    int64               `json:"count"`
-	Histograms     []SingleHistogram `json:"histograms"`
+	Progress   string            `json:"progress"`
+	Count      int64             `json:"count"`
+	Histograms []SingleHistogram `json:"histograms"`
 }
 
 // GetLogsResponse defines response from GetLogs call
@@ -26,6 +26,8 @@ type IndexKey struct {
 	Token         []string `json:"token"` // tokens that split the log line.
 	CaseSensitive bool     `json:"caseSensitive"`
 	Type          string   `json:"type"` // text, long, double
+	DocValue      bool     `json:"doc_value,omitempty"`
+	Alias         string   `json:"alias,omitempty"`
 }
 
 type IndexLine struct {

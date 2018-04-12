@@ -3,14 +3,10 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httputil"
 	"strconv"
 
 	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 )
 
 // LogStore defines LogStore struct
@@ -25,30 +21,37 @@ type LogStore struct {
 	project *LogProject
 }
 
+// NewLogProject new a SLS logStore object.
+func NewLogStore(logstoreName string, project *LogProject) (*LogStore, error) {
+	l := &LogStore{
+		Name:    logstoreName,
+		project: project,
+	}
+	return l, nil
+}
+
 // Shard defines shard struct
 type Shard struct {
 	ShardID int `json:"shardID"`
 }
 
 // ListShards returns shard id list of this logstore.
-func (s *LogStore) ListShards() (shardIDs []int, err error) {
+func (s *LogStore) ListShards() ([]int, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/logstores/%v/shards", s.Name)
-	r, err := request(s.project, "GET", uri, h, nil)
+	_, buf, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
-	}
-	buf, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := &Error{}
-		json.Unmarshal(buf, err)
 		return nil, err
 	}
 
 	var shards []*Shard
-	json.Unmarshal(buf, &shards)
+	err = json.Unmarshal(buf, &shards)
+	if err != nil {
+		return nil, err
+	}
+	shardIDs := []int{}
 	for _, v := range shards {
 		shardIDs = append(shardIDs, v.ShardID)
 	}
@@ -82,52 +85,23 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	}
 
 	uri := fmt.Sprintf("/logstores/%v", s.Name)
-	r, err := request(s.project, "POST", uri, h, out[:n])
-	if err != nil {
-		return NewClientError(err.Error())
-	}
+	_, _, err = request(s.project, "POST", uri, h, out[:n])
 
-	body, _ = ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		json.Unmarshal(body, err)
-		return err
-	}
-	return nil
+	return err
 }
 
 // GetCursor gets log cursor of one shard specified by shardId.
 // The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
 // For more detail please read: http://gitlab.alibaba-inc.com/sls/doc/blob/master/api/shard.md#logstore
-func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error) {
+func (s *LogStore) GetCursor(shardID int, from string) (string, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=cursor&from=%v",
 		s.Name, shardID, from)
-	r, err := request(s.project, "GET", uri, h, nil)
+	_, buf, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return
-	}
-
-	buf, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
-	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to get cursor")
-			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
-			}
-			return
-		}
-		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
-		return
+		return "", err
 	}
 
 	type Body struct {
@@ -137,17 +111,17 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return
+		return "", err
 	}
-	cursor = body.Cursor
-	return
+	cursor := body.Cursor
+	return cursor, nil
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
 func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
-	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+	logGroupMaxCount int) ([]byte, string, error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
@@ -163,64 +137,45 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 			s.Name, shardID, cursor, endCursor, logGroupMaxCount)
 	}
 
-	r, err := request(s.project, "GET", uri, h, nil)
+	header, buf, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
-	buf, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return
-	}
-
-	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to get cursor")
-			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
-			}
-			return
-		}
-		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
-		return
-	}
-	v, ok := r.Header["X-Log-Compresstype"]
+	v, ok := header["X-Log-Compresstype"]
 	if !ok || len(v) == 0 {
 		err = fmt.Errorf("can't find 'x-log-compresstype' header")
-		return
+		return nil, "", err
 	}
 	if v[0] != "lz4" {
 		err = fmt.Errorf("unexpected compress type:%v", v[0])
-		return
+		return nil, "", err
 	}
 
-	v, ok = r.Header["X-Log-Cursor"]
+	v, ok = header["X-Log-Cursor"]
 	if !ok || len(v) == 0 {
 		err = fmt.Errorf("can't find 'x-log-cursor' header")
-		return
+		return nil, "", err
 	}
-	nextCursor = v[0]
+	nextCursor := v[0]
 
-	v, ok = r.Header["X-Log-Bodyrawsize"]
+	v, ok = header["X-Log-Bodyrawsize"]
 	if !ok || len(v) == 0 {
 		err = fmt.Errorf("can't find 'x-log-bodyrawsize' header")
-		return
+		return nil, "", err
 	}
 	bodyRawSize, err := strconv.Atoi(v[0])
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
-	out = make([]byte, bodyRawSize)
+	out := make([]byte, bodyRawSize)
 	err = lz4.Uncompress(buf, out)
 	if err != nil {
-		return
+		return nil, "", err
 	}
 
-	return
+	return out, nextCursor, nil
 }
 
 // LogsBytesDecode decodes logs binary data returned by GetLogsBytes API
@@ -264,32 +219,25 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 
 	uri := fmt.Sprintf("/logstores/%v?type=histogram&topic=%v&from=%v&to=%v&query=%v", s.Name, topic, from, to, queryExp)
 
-	r, err := request(s.project, "GET", uri, h, nil)
+	header, buf, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
-	}
-
-	body, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		json.Unmarshal(body, err)
 		return nil, err
 	}
 
 	histograms := []SingleHistogram{}
-	err = json.Unmarshal(body, &histograms)
+	err = json.Unmarshal(buf, &histograms)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	count, err := strconv.ParseInt(header[GetLogsCountHeader][0], 10, 32)
 	if err != nil {
 		return nil, err
 	}
 	getHistogramsResponse := GetHistogramsResponse{
-		Progress: r.Header[ProgressHeader][0],
-		Count:    count,
-		Histograms:     histograms,
+		Progress:   header[ProgressHeader][0],
+		Count:      count,
+		Histograms: histograms,
 	}
 
 	return &getHistogramsResponse, nil
@@ -306,31 +254,24 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 
 	uri := fmt.Sprintf("/logstores/%v?type=log&topic=%v&from=%v&to=%v&query=%v&line=%v&offset=%v&reverse=%v", s.Name, topic, from, to, queryExp, maxLineNum, offset, reverse)
 
-	r, err := request(s.project, "GET", uri, h, nil)
+	header, buf, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
-	}
-
-	body, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		json.Unmarshal(body, err)
 		return nil, err
 	}
 
 	logs := []map[string]string{}
-	err = json.Unmarshal(body, &logs)
+	err = json.Unmarshal(buf, &logs)
 	if err != nil {
 		return nil, err
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	count, err := strconv.ParseInt(header[GetLogsCountHeader][0], 10, 32)
 	if err != nil {
 		return nil, err
 	}
 
 	getLogsResponse := GetLogsResponse{
-		Progress: r.Header[ProgressHeader][0],
+		Progress: header[ProgressHeader][0],
 		Count:    count,
 		Logs:     logs,
 	}
@@ -342,7 +283,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 func (s *LogStore) CreateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
-		return err
+		return NewClientError(err.Error())
 	}
 
 	h := map[string]string{
@@ -352,7 +293,8 @@ func (s *LogStore) CreateIndex(index Index) error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "POST", uri, h, body)
+	_, _, err = request(s.project, "POST", uri, h, body)
+
 	return err
 }
 
@@ -360,7 +302,7 @@ func (s *LogStore) CreateIndex(index Index) error {
 func (s *LogStore) UpdateIndex(index Index) error {
 	body, err := json.Marshal(index)
 	if err != nil {
-		return err
+		return NewClientError(err.Error())
 	}
 
 	h := map[string]string{
@@ -370,7 +312,8 @@ func (s *LogStore) UpdateIndex(index Index) error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "PUT", uri, h, body)
+	_, _, err = request(s.project, "PUT", uri, h, body)
+
 	return err
 }
 
@@ -386,7 +329,7 @@ func (s *LogStore) DeleteIndex() error {
 		store:   s.Name,
 	})
 	if err != nil {
-		return err
+		return NewClientError(err.Error())
 	}
 
 	h := map[string]string{
@@ -396,7 +339,7 @@ func (s *LogStore) DeleteIndex() error {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	_, err = request(s.project, "DELETE", uri, h, body)
+	_, _, err = request(s.project, "DELETE", uri, h, body)
 	return err
 }
 
@@ -411,7 +354,7 @@ func (s *LogStore) GetIndex() (*Index, error) {
 		store:   s.Name,
 	})
 	if err != nil {
-		return nil, err
+		return nil, NewClientError(err.Error())
 	}
 
 	h := map[string]string{
@@ -421,16 +364,33 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	resp, err := request(s.project, "GET", uri, h, body)
-	if err != nil {
-	}
-
-	index := &Index{}
-	data, _ := ioutil.ReadAll(resp.Body)
-	err = json.Unmarshal(data, index)
+	_, buf, err := request(s.project, "GET", uri, h, body)
 	if err != nil {
 		return nil, err
 	}
 
-	return index, err
+	index := &Index{}
+	err = json.Unmarshal(buf, index)
+	if err != nil {
+		return nil, err
+	}
+
+	return index, nil
+}
+
+// CheckIndexExist check index exist or not
+func (s *LogStore) CheckIndexExist() (bool, error) {
+	_, err := s.GetIndex()
+	if err != nil {
+		if _, ok := err.(*Error); ok {
+			slsErr := err.(*Error)
+			if slsErr.Code == "IndexConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+
+	return true, nil
 }
