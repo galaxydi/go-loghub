@@ -26,6 +26,8 @@ type IndexKey struct {
 	Token         []string `json:"token"` // tokens that split the log line.
 	CaseSensitive bool     `json:"caseSensitive"`
 	Type          string   `json:"type"` // text, long, double
+	DocValue      bool     `json:"doc_value,omitempty"`
+	Alias         string   `json:"alias,omitempty"`
 }
 
 type IndexLine struct {
