@@ -23,7 +23,13 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	}
 
 	// SLS public request headers
-	headers["Host"] = project.Name + "." + project.Endpoint
+	var hostStr string
+	if len(project.Name) == 0 {
+		hostStr = project.Endpoint
+	} else {
+		hostStr = project.Name + "." + project.Endpoint
+	}
+	headers["Host"] = hostStr
 	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
@@ -58,7 +64,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	} else {
 		urlStr = "https://"
 	}
-	urlStr += project.Name + "." + project.Endpoint + uri
+	urlStr += hostStr + uri
 	req, err := http.NewRequest(method, urlStr, reader)
 	if err != nil {
 		return nil, err

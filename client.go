@@ -3,6 +3,8 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 )
 
 // Error defines sls error
@@ -94,6 +96,45 @@ func (c *Client) GetProject(name string) (*LogProject, error) {
 	}
 
 	return proj, nil
+}
+
+// ListProject list all projects in specific region
+// the region is related with the client's endpoint
+func (c *Client) ListProject() (projectNames []string, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := "/"
+	proj := convert(c, "")
+
+	type Project struct {
+		ProjectName string `json:"projectName"`
+	}
+
+	type Body struct {
+		Projects []Project `json:"projects"`
+	}
+
+	r, err := request(proj, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err.Error())
+	}
+
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, err
+	}
+
+	body := &Body{}
+	err = json.Unmarshal(buf, body)
+	for _, project := range body.Projects {
+		projectNames = append(projectNames, project.ProjectName)
+	}
+	return projectNames, err
 }
 
 // CheckProjectExist check project exist or not
