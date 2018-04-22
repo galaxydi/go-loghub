@@ -167,7 +167,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 
 // GetCursor gets log cursor of one shard specified by shardId.
 // The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
-// For more detail please read: http://gitlab.alibaba-inc.com/sls/doc/blob/master/api/shard.md#logstore
+// For more detail please read: https://help.aliyun.com/document_detail/29024.html
 func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
@@ -308,6 +308,7 @@ func LogsBytesDecode(data []byte) (gl *LogGroupList, err error) {
 // PullLogs gets logs from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next cursor can be used to read logs at next time.
+// @note if you want to pull logs continuous, set endCursor = ""
 func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
 
