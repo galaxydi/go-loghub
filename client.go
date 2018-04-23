@@ -9,6 +9,7 @@ import (
 
 // Error defines sls error
 type Error struct {
+	HTTPCode  int32  `json:"httpCode"`
 	Code      string `json:"errorCode"`
 	Message   string `json:"errorMessage"`
 	RequestID string `json:"requestID"`

@@ -90,6 +90,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	// Parse the sls error from body.
 	if resp.StatusCode != http.StatusOK {
 		err := &Error{}
+		err.HTTPCode = (int32)(resp.StatusCode)
 		defer resp.Body.Close()
 		buf, _ := ioutil.ReadAll(resp.Body)
 		json.Unmarshal(buf, err)
@@ -97,7 +98,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 		return nil, err
 	}
 
-	if glog.V(1) {
+	if glog.V(4) {
 		dump, e := httputil.DumpResponse(resp, true)
 		if e != nil {
 			glog.Info(e)
