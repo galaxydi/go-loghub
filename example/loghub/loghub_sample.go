@@ -25,13 +25,13 @@ func main() {
 		if retry_times > 5 {
 			return
 		}
-		logstore, err = util.Project.GetLogStore(logstore_name)
+		logstore, err = util.Client.GetLogStore(util.ProjectName, logstore_name)
 		if err != nil {
 			fmt.Printf("GetLogStore fail, retry:%d, err:%v\n", retry_times, err)
 			if strings.Contains(err.Error(), sls.PROJECT_NOT_EXIST) {
 				return
 			} else if strings.Contains(err.Error(), sls.LOGSTORE_NOT_EXIST) {
-				err = util.Project.CreateLogStore(logstore_name, 1, 2)
+				err = util.Client.CreateLogStore(util.ProjectName, logstore_name, 1, 2)
 				if err != nil {
 					fmt.Printf("CreateLogStore fail, err: ", err.Error())
 				} else {
@@ -68,7 +68,7 @@ func main() {
 		}
 		// PostLogStoreLogs API Ref: https://intl.aliyun.com/help/doc-detail/29026.htm
 		for retry_times = 0; retry_times < 10; retry_times++ {
-			err := logstore.PutLogs(loggroup)
+			err := util.Client.PutLogs(util.ProjectName, logstore_name, loggroup)
 			if err == nil {
 				fmt.Printf("PutLogs success, retry: %d\n", retry_times)
 				break
@@ -91,7 +91,7 @@ func main() {
 		if retry_times > 5 {
 			return
 		}
-		shards, err = logstore.ListShards()
+		shards, err = util.Client.ListShards(util.ProjectName, logstore_name)
 		if err != nil {
 			fmt.Printf("ListShards fail, retry: %d, err:%v\n", retry_times, err)
 		} else {
@@ -112,7 +112,7 @@ func main() {
 				if retry_times > 5 {
 					return
 				}
-				begin_cursor, err = logstore.GetCursor(sh, "begin")
+				begin_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, "begin")
 				if err != nil {
 					fmt.Printf("GetCursor(begin) fail, retry: %d, err:%v\n", retry_times, err)
 				} else {
@@ -125,7 +125,7 @@ func main() {
 				if retry_times > 5 {
 					return
 				}
-				end_cursor, err = logstore.GetCursor(sh, "end")
+				end_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, "end")
 				if err != nil {
 					fmt.Printf("GetCursor(end) fail, retry: %d, err:%v\n", retry_times, err)
 				} else {
@@ -139,7 +139,7 @@ func main() {
 				if retry_times > 100 {
 					return
 				}
-				loggrouplist, next_cursor, err = logstore.PullLogs(sh, begin_cursor, end_cursor, 100)
+				loggrouplist, next_cursor, err = util.Client.PullLogs(util.ProjectName, logstore_name, sh, begin_cursor, end_cursor, 100)
 				if err == nil {
 					fmt.Printf("PullLogs success, retry: %d\n", retry_times)
 					break
@@ -168,7 +168,7 @@ func main() {
 				if retry_times > 5 {
 					return
 				}
-				begin_cursor, err = logstore.GetCursor(sh, strconv.Itoa(int(begin_time)+2))
+				begin_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, strconv.Itoa(int(begin_time)+2))
 				if err != nil {
 					fmt.Printf("GetCursor fail, retry: %d, err:%v\n", retry_times, err)
 				} else {
@@ -182,7 +182,7 @@ func main() {
 					if retry_times > 100 {
 						return
 					}
-					loggrouplist, next_cursor, err = logstore.PullLogs(sh, begin_cursor, "", 2)
+					loggrouplist, next_cursor, err = util.Client.PullLogs(util.ProjectName, logstore_name, sh, begin_cursor, "", 2)
 					if err == nil {
 						fmt.Printf("PullLogs success, retry: %d\n", retry_times)
 						break

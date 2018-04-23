@@ -11,21 +11,21 @@ import (
 func main() {
 
 	fmt.Println("etl_meta example begin")
-	util.Project.UsingHTTP = true
+	util.Client.UsingHTTP = true
 	metaKey := "test-meta-key"
 	createMeta := &sls.EtlMeta{
 		MetaName: "xx-log",
-		MetaKey: metaKey,
-		MetaTag: "123456",
-		MetaValue : map[string]string {
-			"aliuid" : "123456",
-			"region" : "cn-shenzhen",
-			"project" : "test-project",
-			"logstore" : "test-logstore",
-			"roleArn" : "acs:ram::123456:role/aliyunlogarchiverole",
+		MetaKey:  metaKey,
+		MetaTag:  "123456",
+		MetaValue: map[string]string{
+			"aliuid":   "123456",
+			"region":   "cn-shenzhen",
+			"project":  "test-project",
+			"logstore": "test-logstore",
+			"roleArn":  "acs:ram::123456:role/aliyunlogarchiverole",
 		},
 	}
-	err := util.Project.CreateEtlMeta(createMeta)
+	err := util.Client.CreateEtlMeta(createMeta)
 	if err != nil {
 		fmt.Printf("CreateEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -34,7 +34,7 @@ func main() {
 	} else {
 		fmt.Printf("CreateEtlMeta success\n")
 	}
-	etlMeta, err := util.Project.GetEtlMeta("xx-log", metaKey);
+	etlMeta, err := util.Client.GetEtlMeta("xx-log", metaKey)
 	if err != nil {
 		fmt.Printf("GetEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -51,17 +51,17 @@ func main() {
 
 	updateMeta := &sls.EtlMeta{
 		MetaName: "xx-log",
-		MetaKey: metaKey,
-		MetaTag: "123456",
-		MetaValue : map[string]string {
-			"aliuid" : "123456",
-			"region" : "cn-qingdao",
-			"project" : "test-project-2",
-			"logstore" : "test-logstore-2",
-			"roleArn" : "acs:ram::123456:role/aliyunlogarchiverole",
+		MetaKey:  metaKey,
+		MetaTag:  "123456",
+		MetaValue: map[string]string{
+			"aliuid":   "123456",
+			"region":   "cn-qingdao",
+			"project":  "test-project-2",
+			"logstore": "test-logstore-2",
+			"roleArn":  "acs:ram::123456:role/aliyunlogarchiverole",
 		},
 	}
-	err = util.Project.UpdateEtlMeta(updateMeta)
+	err = util.Client.UpdateEtlMeta(updateMeta)
 	if err != nil {
 		fmt.Printf("UpdateEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -70,7 +70,7 @@ func main() {
 	} else {
 		fmt.Printf("UpdateEtlMeta success\n")
 	}
-	etlMeta, err = util.Project.GetEtlMeta("xx-log", metaKey);
+	etlMeta, err = util.Client.GetEtlMeta("xx-log", metaKey)
 	if err != nil {
 		fmt.Printf("GetEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -85,7 +85,7 @@ func main() {
 		}
 	}
 
-	err = util.Project.DeleteEtlMeta("xx-log", metaKey)
+	err = util.Client.DeleteEtlMeta("xx-log", metaKey)
 	if err != nil {
 		fmt.Printf("DeletEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -94,7 +94,7 @@ func main() {
 	} else {
 		fmt.Printf("DeleteEtlMeta success\n")
 	}
-	etlMeta, err = util.Project.GetEtlMeta("xx-log", metaKey);
+	etlMeta, err = util.Client.GetEtlMeta("xx-log", metaKey)
 	if err != nil {
 		fmt.Printf("GetEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -109,7 +109,7 @@ func main() {
 		}
 	}
 
-	total, count, etlMetaNameList, err := util.Project.ListEtlMetaName(0, 100)
+	total, count, etlMetaNameList, err := util.Client.ListEtlMetaName(0, 100)
 	if err != nil {
 		fmt.Printf("ListEtlMetaName fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -122,7 +122,7 @@ func main() {
 		}
 	}
 
-	total, count, etlMetaList, err := util.Project.ListEtlMeta("xx-log", 0, 100)
+	total, count, etlMetaList, err := util.Client.ListEtlMeta("xx-log", 0, 100)
 	if err != nil {
 		fmt.Printf("ListEtlMeta fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -132,11 +132,11 @@ func main() {
 		fmt.Printf("ListEtlMeta success, total: %d, count: %d\n", total, len(etlMetaList))
 		for index, value := range etlMetaList {
 			fmt.Printf("index: %d, metaName: %s, metaKey: %s, metaTag: %s, metaValue:%s\n",
-			index, value.MetaName, value.MetaKey, value.MetaTag, value.MetaValue)
+				index, value.MetaName, value.MetaKey, value.MetaTag, value.MetaValue)
 		}
 	}
 
-	total, count, etlMetaList, err = util.Project.ListEtlMetaWithTag("xx-log", "123456", 0, 100)
+	total, count, etlMetaList, err = util.Client.ListEtlMetaWithTag("xx-log", "123456", 0, 100)
 	if err != nil {
 		fmt.Printf("ListEtlMetaWithTag fail, err:%v\n", err)
 		if strings.Contains(err.Error(), sls.POST_BODY_INVALID) {
@@ -146,7 +146,7 @@ func main() {
 		fmt.Printf("ListEtlMetaWithTag success, total: %d, count: %d\n", total, len(etlMetaList))
 		for index, value := range etlMetaList {
 			fmt.Printf("index: %d, metaName: %s, metaKey: %s, metaTag: %s, metaValue:%s\n",
-			index, value.MetaName, value.MetaKey, value.MetaTag, value.MetaValue)
+				index, value.MetaName, value.MetaKey, value.MetaTag, value.MetaValue)
 		}
 	}
 

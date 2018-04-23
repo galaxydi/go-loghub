@@ -57,7 +57,7 @@ func main() {
 }
 
 func checkConfigExist(confName string) (exist bool, err error) {
-	exist, err = util.Project.CheckConfigExist(confName)
+	exist, err = util.Client.CheckConfigExist(util.ProjectName, confName)
 	if err != nil {
 		return false, err
 	}
@@ -65,7 +65,7 @@ func checkConfigExist(confName string) (exist bool, err error) {
 }
 
 func deleteConfig(confName string) (err error) {
-	err = util.Project.DeleteConfig(confName)
+	err = util.Client.DeleteConfig(util.ProjectName, confName)
 	if err != nil {
 		return err
 	}
@@ -73,16 +73,16 @@ func deleteConfig(confName string) (err error) {
 }
 
 func updateConfig(configName string) (err error) {
-	config, _ := util.Project.GetConfig(configName)
+	config, _ := util.Client.GetConfig(util.ProjectName, configName)
 	config.InputDetail.FilePattern = "*.log"
-	err = util.Project.UpdateConfig(config)
+	err = util.Client.UpdateConfig(util.ProjectName, config)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 func getConfig(configName string) (err error) {
-	_, err = util.Project.GetConfig(configName)
+	_, err = util.Client.GetConfig(util.ProjectName, configName)
 	if err != nil {
 		return err
 	}
@@ -114,7 +114,7 @@ func createConfig(configName string, projectName string, logstore string, servic
 		InputDetail:  inputDetail,
 		OutputDetail: outputDetail,
 	}
-	err = util.Project.CreateConfig(config)
+	err = util.Client.CreateConfig(util.ProjectName, config)
 	if err != nil {
 		return err
 	}
