@@ -2,7 +2,6 @@ package sls
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -15,20 +14,14 @@ import (
 	"github.com/pierrec/lz4"
 )
 
-// compress type
-const (
-	Compress_LZ4  = iota // 0
-	Compress_None        // 1
-	Compress_Max         // max compress type(just for filter invalid compress type)
-)
-
-var InvalidCompressError = errors.New("Invalid Compress Type")
+// this file is deprecated and no maintenance
+// see client_logstore.go
 
 // LogStore defines LogStore struct
 type LogStore struct {
 	Name       string `json:"logstoreName"`
-	TTL        int
-	ShardCount int
+	TTL        int    `json:"ttl"`
+	ShardCount int    `json:"shardCount"`
 
 	CreateTime     uint32
 	LastModifyTime uint32

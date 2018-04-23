@@ -2,10 +2,23 @@ package sls
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 )
+
+// GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
+var GlobalForceUsingHTTP = false
+
+// compress type
+const (
+	Compress_LZ4  = iota // 0
+	Compress_None        // 1
+	Compress_Max         // max compress type(just for filter invalid compress type)
+)
+
+var InvalidCompressError = errors.New("Invalid Compress Type")
 
 // Error defines sls error
 type Error struct {

@@ -7,8 +7,8 @@ import (
 	"net/http"
 )
 
-// GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
-var GlobalForceUsingHTTP = false
+// this file is deprecated and no maintenance
+// see client_project.go
 
 // LogProject defines log project
 type LogProject struct {
@@ -658,7 +658,7 @@ func (p *LogProject) DeleteEtlMeta(etlMetaName, etlMetaKey string) (err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
-	uri := fmt.Sprintf("/%v?etlMetaName=%v&etlMetaKey=%v&etlMetaTag=%v", EtlMetaURI, etlMetaName, etlMetaKey, EtlMetaAllTagMatch) 
+	uri := fmt.Sprintf("/%v?etlMetaName=%v&etlMetaKey=%v&etlMetaTag=%v", EtlMetaURI, etlMetaName, etlMetaKey, EtlMetaAllTagMatch)
 	r, err := request(p, "DELETE", uri, h, nil)
 	if err != nil {
 		return NewClientError(err.Error())
@@ -690,14 +690,14 @@ func (p *LogProject) listEtlMeta(etlMetaName, etlMetaKey, etlMetaTag string, off
 		return 0, 0, nil, err
 	}
 	type BodyMeta struct {
-		MetaName string `json:"etlMetaName"`
-		MetaKey string `json:"etlMetaKey"`
-		MetaTag string `json:"etlMetaTag"`
+		MetaName  string `json:"etlMetaName"`
+		MetaKey   string `json:"etlMetaKey"`
+		MetaTag   string `json:"etlMetaTag"`
 		MetaValue string `json:"etlMetaValue"`
 	}
 	type Body struct {
-		Total int `json:"total"`
-		Count int `json:"count"`
+		Total    int         `json:"total"`
+		Count    int         `json:"count"`
 		MetaList []*BodyMeta `json:"etlMetaList"`
 	}
 	body := &Body{}
@@ -709,21 +709,21 @@ func (p *LogProject) listEtlMeta(etlMetaName, etlMetaKey, etlMetaTag string, off
 	for index, value := range body.MetaList {
 		var metaValueMap map[string]string
 		err := json.Unmarshal([]byte(value.MetaValue), &metaValueMap)
-		if (err != nil) {
+		if err != nil {
 			return 0, 0, nil, NewClientError(err.Error())
 		}
-		etlMetaList[index] = &EtlMeta {
-			MetaName : value.MetaName,
-			MetaKey : value.MetaKey,
-			MetaTag : value.MetaTag,
-			MetaValue : metaValueMap,
+		etlMetaList[index] = &EtlMeta{
+			MetaName:  value.MetaName,
+			MetaKey:   value.MetaKey,
+			MetaTag:   value.MetaTag,
+			MetaValue: metaValueMap,
 		}
 	}
 	return body.Total, body.Count, etlMetaList, nil
 }
 
 func (p *LogProject) GetEtlMeta(etlMetaName, etlMetaKey string) (etlMeta *EtlMeta, err error) {
-	_, count, etlMetaList,err := p.listEtlMeta(etlMetaName, etlMetaKey, EtlMetaAllTagMatch, 0, 1);
+	_, count, etlMetaList, err := p.listEtlMeta(etlMetaName, etlMetaKey, EtlMetaAllTagMatch, 0, 1)
 	if err != nil {
 		return nil, err
 	} else if count == 0 {
@@ -733,11 +733,11 @@ func (p *LogProject) GetEtlMeta(etlMetaName, etlMetaKey string) (etlMeta *EtlMet
 }
 
 func (p *LogProject) ListEtlMeta(etlMetaName string, offset, size int) (total int, count int, etlMetaList []*EtlMeta, err error) {
-	return p.listEtlMeta(etlMetaName, "", EtlMetaAllTagMatch, offset, size);
+	return p.listEtlMeta(etlMetaName, "", EtlMetaAllTagMatch, offset, size)
 }
 
 func (p *LogProject) ListEtlMetaWithTag(etlMetaName, etlMetaTag string, offset, size int) (total int, count int, etlMetaList []*EtlMeta, err error) {
-	return p.listEtlMeta(etlMetaName, "", etlMetaTag, offset, size);
+	return p.listEtlMeta(etlMetaName, "", etlMetaTag, offset, size)
 }
 
 func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, etlMetaNameList []string, err error) {
@@ -757,8 +757,8 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 		return 0, 0, nil, err
 	}
 	type Body struct {
-		Total int `json:"total"`
-		Count int `json:"count"`
+		Total        int      `json:"total"`
+		Count        int      `json:"count"`
 		MetaNameList []string `json:"etlMetaNameList"`
 	}
 	body := &Body{}
