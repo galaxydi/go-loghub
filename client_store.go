@@ -1,6 +1,7 @@
 package sls
 
 func convertLogstore(c *Client, project, logstore string) *LogStore {
+	c.accessKeyLock.RLock()
 	proj := &LogProject{
 		Name:            project,
 		Endpoint:        c.Endpoint,
@@ -8,6 +9,7 @@ func convertLogstore(c *Client, project, logstore string) *LogStore {
 		AccessKeySecret: c.AccessKeySecret,
 		SecurityToken:   c.SecurityToken,
 	}
+	c.accessKeyLock.RUnlock()
 	return &LogStore{
 		project: proj,
 		Name:    logstore,

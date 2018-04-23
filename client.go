@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 )
 
 // GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
@@ -54,9 +55,13 @@ type Client struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	SecurityToken   string
+
+	accessKeyLock sync.RWMutex
 }
 
 func convert(c *Client, projName string) *LogProject {
+	c.accessKeyLock.RLock()
+	defer c.accessKeyLock.RUnlock()
 	return &LogProject{
 		Name:            projName,
 		Endpoint:        c.Endpoint,
@@ -64,6 +69,14 @@ func convert(c *Client, projName string) *LogProject {
 		AccessKeySecret: c.AccessKeySecret,
 		SecurityToken:   c.SecurityToken,
 	}
+}
+
+func (c *Client) ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string) {
+	c.accessKeyLock.Lock()
+	c.AccessKeyID = accessKeyID
+	c.AccessKeySecret = accessKeySecret
+	c.SecurityToken = securityToken
+	c.accessKeyLock.Unlock()
 }
 
 // CreateProject create a new loghub project.

@@ -1,42 +1,57 @@
 package sls
 
+// request sends a request to SLS.
 import (
 	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
-
-	"encoding/json"
-	"io/ioutil"
+	"strings"
 
 	"github.com/golang/glog"
 )
 
-// request sends a request to SLS.
-func request(project *LogProject, method, uri string, headers map[string]string,
-	body []byte) (*http.Response, error) {
-
+func (c *Client) request(project, method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
 	// The caller should provide 'x-log-bodyrawsize' header
 	if _, ok := headers["x-log-bodyrawsize"]; !ok {
 		return nil, fmt.Errorf("Can't find 'x-log-bodyrawsize' header")
 	}
 
+	var endpoint string
+	var usingHttps bool
+	if strings.HasPrefix(c.Endpoint, "https://") {
+		endpoint = c.Endpoint[8:]
+		usingHttps = true
+	} else if strings.HasPrefix(c.Endpoint, "http://") {
+		endpoint = c.Endpoint[7:]
+	} else {
+		endpoint = c.Endpoint
+	}
+
 	// SLS public request headers
 	var hostStr string
-	if len(project.Name) == 0 {
-		hostStr = project.Endpoint
+	if len(project) == 0 {
+		hostStr = project
 	} else {
-		hostStr = project.Name + "." + project.Endpoint
+		hostStr = project + "." + endpoint
 	}
 	headers["Host"] = hostStr
 	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
 
+	c.accessKeyLock.RLock()
+	stsToken := c.SecurityToken
+	accessKeyID := c.AccessKeyID
+	accessKeySecret := c.AccessKeySecret
+	c.accessKeyLock.RUnlock()
+
 	// Access with token
-	if project.SecurityToken != "" {
-		headers["x-acs-security-token"] = project.SecurityToken
+	if stsToken != "" {
+		headers["x-acs-security-token"] = stsToken
 	}
 
 	if body != nil {
@@ -49,20 +64,21 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 
 	// Calc Authorization
 	// Authorization = "SLS <AccessKeyId>:<Signature>"
-	digest, err := signature(project.AccessKeySecret, method, uri, headers)
+	digest, err := signature(accessKeySecret, method, uri, headers)
 	if err != nil {
 		return nil, err
 	}
-	auth := fmt.Sprintf("SLS %v:%v", project.AccessKeyID, digest)
+	auth := fmt.Sprintf("SLS %v:%v", accessKeyID, digest)
 	headers["Authorization"] = auth
 
 	// Initialize http request
 	reader := bytes.NewReader(body)
 	var urlStr string
-	if GlobalForceUsingHTTP || project.UsingHTTP {
-		urlStr = "http://"
-	} else {
+	// using http as default
+	if !GlobalForceUsingHTTP && usingHttps {
 		urlStr = "https://"
+	} else {
+		urlStr = "http://"
 	}
 	urlStr += hostStr + uri
 	req, err := http.NewRequest(method, urlStr, reader)
