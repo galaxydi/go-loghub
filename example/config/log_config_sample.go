@@ -74,7 +74,8 @@ func deleteConfig(confName string) (err error) {
 
 func updateConfig(configName string) (err error) {
 	config, _ := util.Client.GetConfig(util.ProjectName, configName)
-	config.InputDetail.FilePattern = "*.log"
+	inputDetail, _ := sls.ConvertToInputDetail(config.InputDetail)
+	inputDetail.FilePattern = "*.log"
 	err = util.Client.UpdateConfig(util.ProjectName, config)
 	if err != nil {
 		return err

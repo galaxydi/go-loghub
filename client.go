@@ -109,6 +109,35 @@ func (c *Client) CreateProject(name, description string) (*LogProject, error) {
 	return proj, nil
 }
 
+// UpdateProject create a new loghub project.
+// func (c *Client) UpdateProject(name, description string) (*LogProject, error) {
+// 	type Body struct {
+// 		ProjectName string `json:"projectName"`
+// 		Description string `json:"description"`
+// 	}
+// 	body, err := json.Marshal(Body{
+// 		ProjectName: name,
+// 		Description: description,
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	h := map[string]string{
+// 		"x-log-bodyrawsize": fmt.Sprintf("%d", len(body)),
+// 		"Content-Type":      "application/json",
+// 		"Accept-Encoding":   "deflate", // TODO: support lz4
+// 	}
+// 	uri := "/"
+// 	proj := convert(c, name)
+// 	_, err = request(proj, "PUT", uri, h, body)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return proj, nil
+// }
+
 // GetProject ...
 func (c *Client) GetProject(name string) (*LogProject, error) {
 	h := map[string]string{

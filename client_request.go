@@ -89,7 +89,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		req.Header.Add(k, v)
 	}
 
-	if glog.V(1) {
+	if glog.V(5) {
 		dump, e := httputil.DumpRequest(req, true)
 		if e != nil {
 			glog.Info(e)
@@ -114,7 +114,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		return nil, err
 	}
 
-	if glog.V(4) {
+	if glog.V(5) {
 		dump, e := httputil.DumpResponse(resp, true)
 		if e != nil {
 			glog.Info(e)

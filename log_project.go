@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/golang/glog"
 )
 
 // this file is deprecated and no maintenance
@@ -430,7 +432,11 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 
 	c = &LogConfig{}
 	json.Unmarshal(buf, c)
-	c.project = p
+
+	if glog.V(4) {
+		glog.Info("Get logtail config, result", *c)
+	}
+
 	return c, nil
 }
 

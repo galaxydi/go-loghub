@@ -39,3 +39,9 @@ func (s *ProjectTestSuite) TestCheckProjectExist() {
 	s.Nil(err)
 	s.False(exist)
 }
+
+// func (s *ProjectTestSuite) TestUpdateProject() {
+// 	projectName := os.Getenv("LOG_TEST_PROJECT")
+// 	_, err := s.client.UpdateProject(projectName, "aliyun log go sdk test.")
+// 	s.Nil(err)
+// }
