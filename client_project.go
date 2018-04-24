@@ -1,5 +1,15 @@
 package sls
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+
+	"github.com/golang/glog"
+)
+
 // ListLogStore returns all logstore names of project p.
 func (c *Client) ListLogStore(project string) ([]string, error) {
 	proj := convert(c, project)
@@ -39,6 +49,49 @@ func (c *Client) UpdateLogStore(project string, logstore string, ttl, shardCnt i
 func (c *Client) ListMachineGroup(project string, offset, size int) (m []string, total int, err error) {
 	proj := convert(c, project)
 	return proj.ListMachineGroup(offset, size)
+}
+
+func (c *Client) ListMachines(project, machineGroupName string) (ms []*Machine, total int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/machinegroups/%v/machines", machineGroupName)
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to remove config from machine group")
+			dump, _ := httputil.DumpResponse(r, true)
+			if glog.V(1) {
+				glog.Error(string(dump))
+			}
+			return
+		}
+		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
+		return
+	}
+
+	body := &MachineList{}
+	err = json.Unmarshal(buf, body)
+	if err != nil {
+		return
+	}
+
+	ms = body.Machines
+	total = body.Total
+
+	return
 }
 
 // CheckLogstoreExist check logstore exist or not

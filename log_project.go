@@ -284,7 +284,6 @@ func (p *LogProject) GetMachineGroup(name string) (m *MachineGroup, err error) {
 
 	m = new(MachineGroup)
 	json.Unmarshal(buf, m)
-	m.project = p
 	return m, nil
 }
 

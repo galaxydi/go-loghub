@@ -1,6 +1,35 @@
 package sls
 
-import "encoding/json"
+import (
+	"encoding/json"
+)
+
+// const InputTypes
+const (
+	InputTypeSyslog    = "syslog"
+	InputTypeStreamlog = "streamlog"
+	InputTypePlugin    = "plugin"
+	InputTypeFile      = "file"
+)
+
+// const LogFileTypes
+const (
+	LogFileTypeApsaraLog    = "apsara_log"
+	LogFileTypeRegexLog     = "common_reg_log"
+	LogFileTypeJSONLog      = "json_log"
+	LogFileTypeDelimiterLog = "delimiter_log"
+)
+
+// const OutputType
+const (
+	OutputTypeLogService = "LogService"
+)
+
+// const MergeType
+const (
+	MergeTypeTopic    = "topic"
+	MergeTypeLogstore = "logstore"
+)
 
 // InputDetail defines log_config input
 // @note : deprecated and no maintenance
@@ -56,7 +85,7 @@ type ApsaraLogConfigInputDetail struct {
 func InitApsaraLogConfigInputDetail(detail *ApsaraLogConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
 	detail.LogBeginRegex = ".*"
-	detail.LogType = "apsara_log"
+	detail.LogType = LogFileTypeApsaraLog
 }
 
 func ConvertToApsaraLogConfigInputDetail(detail InputDetailInterface) (*ApsaraLogConfigInputDetail, bool) {
@@ -89,7 +118,7 @@ type RegexConfigInputDetail struct {
 func InitRegexConfigInputDetail(detail *RegexConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
 	detail.LogBeginRegex = ".*"
-	detail.LogType = "common_reg_log"
+	detail.LogType = LogFileTypeRegexLog
 }
 
 func ConvertToRegexConfigInputDetail(detail InputDetailInterface) (*RegexConfigInputDetail, bool) {
@@ -119,7 +148,7 @@ type JSONConfigInputDetail struct {
 // InitJSONConfigInputDetail ...
 func InitJSONConfigInputDetail(detail *JSONConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
-	detail.LogType = "json_log"
+	detail.LogType = LogFileTypeJSONLog
 }
 
 func ConvertToJSONConfigInputDetail(detail InputDetailInterface) (*JSONConfigInputDetail, bool) {
@@ -146,7 +175,7 @@ type DelimiterConfigInputDetail struct {
 	Separator  string   `json:"separator"`
 	Quote      string   `json:"quote"`
 	Key        []string `json:"key"`
-	TimeKey    string   `json:"timeKey"`
+	TimeKey    string   `json:"timeKey,omitempty"`
 	AutoExtend bool     `json:"autoExtend"`
 }
 
@@ -155,7 +184,7 @@ func InitDelimiterConfigInputDetail(detail *DelimiterConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
 	detail.Quote = `\u001`
 	detail.AutoExtend = true
-	detail.LogType = "delimiter_log"
+	detail.LogType = LogFileTypeDelimiterLog
 }
 
 func ConvertToDelimiterConfigInputDetail(detail InputDetailInterface) (*DelimiterConfigInputDetail, bool) {
@@ -183,20 +212,20 @@ type LocalFileConfigInputDetail struct {
 	LogPath            string            `json:"logPath"`
 	FilePattern        string            `json:"filePattern"`
 	TimeFormat         string            `json:"timeFormat"`
-	TopicFormat        string            `json:"topicFormat"`
+	TopicFormat        string            `json:"topicFormat,omitempty"`
 	Preserve           bool              `json:"preserve"`
 	PreserveDepth      int               `json:"preserveDepth"`
-	FileEncoding       string            `json:"fileEncoding"`
+	FileEncoding       string            `json:"fileEncoding,omitempty"`
 	DiscardUnmatch     bool              `json:"discardUnmatch"`
 	MaxDepth           int               `json:"maxDepth"`
 	TailExisted        bool              `json:"tailExisted"`
 	DiscardNonUtf8     bool              `json:"discardNonUtf8"`
 	DelaySkipBytes     int               `json:"delaySkipBytes"`
 	IsDockerFile       bool              `json:"dockerFile"`
-	DockerIncludeLabel map[string]string `json:"dockerIncludeLabel"`
-	DockerExcludeLabel map[string]string `json:"dockerExcludeLabel"`
-	DockerIncludeEnv   map[string]string `json:"dockerIncludeEnv"`
-	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv"`
+	DockerIncludeLabel map[string]string `json:"dockerIncludeLabel,omitempty"`
+	DockerExcludeLabel map[string]string `json:"dockerExcludeLabel,omitempty"`
+	DockerIncludeEnv   map[string]string `json:"dockerIncludeEnv,omitempty"`
+	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv,omitempty"`
 }
 
 // InitLocalFileConfigInputDetail ...
@@ -206,12 +235,13 @@ func InitLocalFileConfigInputDetail(detail *LocalFileConfigInputDetail) {
 	detail.MaxDepth = 100
 	detail.TopicFormat = "none"
 	detail.Preserve = true
+	detail.DiscardUnmatch = true
 }
 
 // PluginLogConfigInputDetail plugin log config, eg: docker stdout, binlog, mysql, http...
 type PluginLogConfigInputDetail struct {
 	CommonConfigInputDetail
-	PluginDetail string `json:"plugin"`
+	PluginDetail LogConfigPluginInput `json:"plugin"`
 }
 
 // InitPluginLogConfigInputDetail ...
@@ -269,19 +299,19 @@ func ConvertToStreamLogConfigInputDetail(detail InputDetailInterface) (*StreamLo
 // CommonConfigInputDetail is all input detail's basic config
 type CommonConfigInputDetail struct {
 	LocalStorage    bool           `json:"localStorage"`
-	FilterKeys      []string       `json:"filterKey"`
-	FilterRegex     []string       `json:"filterRegex"`
-	ShardHashKey    []string       `json:"shardHashKey"`
+	FilterKeys      []string       `json:"filterKey,omitempty"`
+	FilterRegex     []string       `json:"filterRegex,omitempty"`
+	ShardHashKey    []string       `json:"shardHashKey,omitempty"`
 	EnableTag       bool           `json:"enableTag"`
 	EnableRawLog    bool           `json:"enableRawLog"`
 	MaxSendRate     int            `json:"maxSendRate"`
 	SendRateExpire  int            `json:"sendRateExpire"`
-	SensitiveKeys   []SensitiveKey `json:"sensitive_keys"`
-	MergeType       string         `json:"mergeType"`
-	DelayAlarmBytes int            `json:"delayAlarmBytes"`
+	SensitiveKeys   []SensitiveKey `json:"sensitive_keys,omitempty"`
+	MergeType       string         `json:"mergeType,omitempty"`
+	DelayAlarmBytes int            `json:"delayAlarmBytes,omitempty"`
 	AdjustTimeZone  bool           `json:"adjustTimezone"`
-	LogTimeZone     string         `json:"logTimezone"`
-	Priority        int            `json:"priority"`
+	LogTimeZone     string         `json:"logTimezone,omitempty"`
+	Priority        int            `json:"priority,omitempty"`
 }
 
 // InitCommonConfigInputDetail ...
@@ -289,6 +319,7 @@ func InitCommonConfigInputDetail(detail *CommonConfigInputDetail) {
 	detail.LocalStorage = true
 	detail.EnableTag = true
 	detail.MaxSendRate = -1
+	detail.MergeType = "logstore"
 }
 
 // OutputDetail defines output
@@ -310,6 +341,6 @@ type LogConfig struct {
 	OutputType   string               `json:"outputType"`
 	OutputDetail OutputDetail         `json:"outputDetail"`
 
-	CreateTime     uint32 `json:"createTime"`
-	LastModifyTime uint32 `json:"lastModifyTime"`
+	CreateTime     uint32 `json:"createTime,omitempty`
+	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`
 }

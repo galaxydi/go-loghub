@@ -23,8 +23,8 @@ type LogStore struct {
 	TTL        int    `json:"ttl"`
 	ShardCount int    `json:"shardCount"`
 
-	CreateTime     uint32
-	LastModifyTime uint32
+	CreateTime     uint32 `json:"createTime,omitempty`
+	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`
 
 	project            *LogProject
 	putLogCompressType int
