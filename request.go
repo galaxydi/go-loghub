@@ -13,7 +13,8 @@ import (
 	"github.com/golang/glog"
 )
 
-// request sends a request to SLS.
+// request sends a request to alibaba cloud Log Service.
+// @note if error is nil, you must call http.Response.Body.Close() to finalize reader
 func request(project *LogProject, method, uri string, headers map[string]string,
 	body []byte) (*http.Response, error) {
 

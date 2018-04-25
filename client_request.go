@@ -14,6 +14,8 @@ import (
 	"github.com/golang/glog"
 )
 
+// request sends a request to alibaba cloud Log Service.
+// @note if error is nil, you must call http.Response.Body.Close() to finalize reader
 func (c *Client) request(project, method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
 	// The caller should provide 'x-log-bodyrawsize' header
 	if _, ok := headers["x-log-bodyrawsize"]; !ok {
@@ -21,10 +23,10 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	var endpoint string
-	var usingHttps bool
+	var usingHTTPS bool
 	if strings.HasPrefix(c.Endpoint, "https://") {
 		endpoint = c.Endpoint[8:]
-		usingHttps = true
+		usingHTTPS = true
 	} else if strings.HasPrefix(c.Endpoint, "http://") {
 		endpoint = c.Endpoint[7:]
 	} else {
@@ -75,7 +77,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	reader := bytes.NewReader(body)
 	var urlStr string
 	// using http as default
-	if !GlobalForceUsingHTTP && usingHttps {
+	if !GlobalForceUsingHTTP && usingHTTPS {
 		urlStr = "https://"
 	} else {
 		urlStr = "http://"
