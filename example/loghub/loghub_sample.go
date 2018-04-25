@@ -33,7 +33,7 @@ func main() {
 			} else if strings.Contains(err.Error(), sls.LOGSTORE_NOT_EXIST) {
 				err = util.Client.CreateLogStore(util.ProjectName, logstore_name, 1, 2)
 				if err != nil {
-					fmt.Printf("CreateLogStore fail, err: ", err.Error())
+					fmt.Printf("CreateLogStore fail, err: %s ", err.Error())
 				} else {
 					fmt.Println("CreateLogStore success")
 				}

@@ -18,14 +18,14 @@ func main() {
 	time.Sleep(15 * 1000 * time.Millisecond)
 	err := util.Client.CreateLogStore(util.ProjectName, logstore_name, 1, 2)
 	if err != nil {
-		fmt.Printf("CreateLogStore fail, err: ", err)
+		fmt.Printf("CreateLogStore fail, err: %s", err)
 		return
 	}
 	time.Sleep(15 * 1000 * time.Millisecond)
 	fmt.Println("CreateLogStore success")
 	logstore, err := util.Client.GetLogStore(util.ProjectName, logstore_name)
 	if err != nil {
-		fmt.Printf("GetLogStore fail, err: ", err)
+		fmt.Printf("GetLogStore fail, err: %s", err)
 		return
 	}
 	fmt.Printf("GetLogStore success, name: %s, ttl: %d, shardCount: %d, createTime: %d, lastModifyTime: %d\n", logstore.Name, logstore.TTL, logstore.ShardCount, logstore.CreateTime, logstore.LastModifyTime)
@@ -53,7 +53,7 @@ func main() {
 	}
 	err = util.Client.CreateIndex(util.ProjectName, logstore_name, index)
 	if err != nil {
-		fmt.Printf("CreateIndex fail, err: ", err)
+		fmt.Printf("CreateIndex fail, err: %s", err)
 		return
 	}
 	fmt.Println("CreateIndex success")
