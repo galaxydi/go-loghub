@@ -156,7 +156,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	s.Logstore.CreateIndex(idxConf)
 
 	beginTime := uint32(time.Now().Unix())
-	time.Sleep(1 * 1000 * time.Millisecond)
+	time.Sleep(10 * 1000 * time.Millisecond)
 	c := &LogContent{
 		Key:   proto.String("error code"),
 		Value: proto.String("InternalServerError"),
@@ -183,6 +183,9 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 
 	hResp, hErr := s.Logstore.GetHistograms("", int64(beginTime), int64(endTime), "InternalServerError")
 	s.Nil(hErr)
+	if hErr != nil {
+		fmt.Printf("Get log error %v \n", hErr)
+	}
 	s.Equal(hResp.Count, int64(1))
 	lResp, lErr := s.Logstore.GetLogs("", int64(beginTime), int64(endTime), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
