@@ -30,11 +30,15 @@ type Error struct {
 }
 
 // NewClientError new client error
-func NewClientError(message string) *Error {
-	err := new(Error)
-	err.Code = "ClientError"
-	err.Message = message
-	return err
+func NewClientError(err error) *Error {
+	if clientError, ok := err.(*Error); ok {
+		return clientError
+	}
+	clientError := new(Error)
+	clientError.HTTPCode = -1
+	clientError.Code = "ClientError"
+	clientError.Message = err.Error()
+	return clientError
 }
 
 func (e Error) String() string {
@@ -175,7 +179,7 @@ func (c *Client) ListProject() (projectNames []string, err error) {
 
 	r, err := request(proj, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 
 	defer r.Body.Close()

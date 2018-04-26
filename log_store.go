@@ -52,7 +52,7 @@ func (s *LogStore) ListShards() (shardIDs []int, err error) {
 	uri := fmt.Sprintf("/logstores/%v/shards", s.Name)
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -107,7 +107,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 
 	body, err := proto.Marshal(lg)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	var out []byte
@@ -119,7 +119,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 		out = make([]byte, lz4.CompressBlockBound(len(body)))
 		n, err := lz4.CompressBlock(body, out, 0)
 		if err != nil {
-			return NewClientError(err.Error())
+			return NewClientError(err)
 		}
 		// copy incompressible data as lz4 format
 		if n == 0 {
@@ -146,7 +146,7 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	uri := fmt.Sprintf("/logstores/%v", s.Name)
 	r, err := request(s.project, "POST", uri, h, out[:outLen])
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -330,7 +330,7 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -382,7 +382,7 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)

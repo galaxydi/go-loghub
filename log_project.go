@@ -48,7 +48,7 @@ func (p *LogProject) ListLogStore() ([]string, error) {
 	uri := fmt.Sprintf("/logstores")
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -76,7 +76,7 @@ func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 
 	r, err := request(p, "GET", "/logstores/"+name, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -110,7 +110,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int) error {
 	}
 	body, err := json.Marshal(store)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -121,7 +121,7 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int) error {
 
 	r, err := request(p, "POST", "/logstores", h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -141,7 +141,7 @@ func (p *LogProject) DeleteLogStore(name string) (err error) {
 
 	r, err := request(p, "DELETE", "/logstores/"+name, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -168,7 +168,7 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 	}
 	body, err := json.Marshal(store)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -178,7 +178,7 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 	}
 	r, err := request(p, "PUT", "/logstores/"+name, h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -202,7 +202,7 @@ func (p *LogProject) ListMachineGroup(offset, size int) (m []string, total int, 
 	uri := fmt.Sprintf("/machinegroups?offset=%v&size=%v", offset, size)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return nil, 0, NewClientError(err.Error())
+		return nil, 0, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -272,7 +272,7 @@ func (p *LogProject) GetMachineGroup(name string) (m *MachineGroup, err error) {
 	}
 	r, err := request(p, "GET", "/machinegroups/"+name, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -291,7 +291,7 @@ func (p *LogProject) GetMachineGroup(name string) (m *MachineGroup, err error) {
 func (p *LogProject) CreateMachineGroup(m *MachineGroup) error {
 	body, err := json.Marshal(m)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -301,7 +301,7 @@ func (p *LogProject) CreateMachineGroup(m *MachineGroup) error {
 	}
 	r, err := request(p, "POST", "/machinegroups", h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -317,7 +317,7 @@ func (p *LogProject) CreateMachineGroup(m *MachineGroup) error {
 func (p *LogProject) UpdateMachineGroup(m *MachineGroup) (err error) {
 	body, err := json.Marshal(m)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -327,7 +327,7 @@ func (p *LogProject) UpdateMachineGroup(m *MachineGroup) (err error) {
 	}
 	r, err := request(p, "PUT", "/machinegroups/"+m.Name, h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -346,7 +346,7 @@ func (p *LogProject) DeleteMachineGroup(name string) (err error) {
 	}
 	r, err := request(p, "DELETE", "/machinegroups/"+name, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -371,7 +371,7 @@ func (p *LogProject) ListConfig(offset, size int) (cfgNames []string, total int,
 	uri := fmt.Sprintf("/configs?offset=%v&size=%v", offset, size)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return nil, 0, NewClientError(err.Error())
+		return nil, 0, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -419,7 +419,7 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 	}
 	r, err := request(p, "GET", "/configs/"+name, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -443,7 +443,7 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 func (p *LogProject) UpdateConfig(c *LogConfig) (err error) {
 	body, err := json.Marshal(c)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -453,7 +453,7 @@ func (p *LogProject) UpdateConfig(c *LogConfig) (err error) {
 	}
 	r, err := request(p, "PUT", "/configs/"+c.Name, h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -469,7 +469,7 @@ func (p *LogProject) UpdateConfig(c *LogConfig) (err error) {
 func (p *LogProject) CreateConfig(c *LogConfig) (err error) {
 	body, err := json.Marshal(c)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -479,7 +479,7 @@ func (p *LogProject) CreateConfig(c *LogConfig) (err error) {
 	}
 	r, err := request(p, "POST", "/configs", h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, err = ioutil.ReadAll(r.Body)
@@ -498,7 +498,7 @@ func (p *LogProject) DeleteConfig(name string) (err error) {
 	}
 	r, err := request(p, "DELETE", "/configs/"+name, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -519,7 +519,7 @@ func (p *LogProject) GetAppliedMachineGroups(confName string) (groupNames []stri
 	uri := fmt.Sprintf("/configs/%v/machinegroups", confName)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -547,7 +547,7 @@ func (p *LogProject) GetAppliedConfigs(groupName string) (confNames []string, er
 	uri := fmt.Sprintf("/machinegroups/%v/configs", groupName)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return nil, NewClientError(err.Error())
+		return nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -575,7 +575,7 @@ func (p *LogProject) ApplyConfigToMachineGroup(confName, groupName string) (err 
 	uri := fmt.Sprintf("/machinegroups/%v/configs/%v", groupName, confName)
 	r, err := request(p, "PUT", uri, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -596,7 +596,7 @@ func (p *LogProject) RemoveConfigFromMachineGroup(confName, groupName string) (e
 	uri := fmt.Sprintf("/machinegroups/%v/configs/%v", groupName, confName)
 	r, err := request(p, "DELETE", uri, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -612,7 +612,7 @@ func (p *LogProject) RemoveConfigFromMachineGroup(confName, groupName string) (e
 func (p *LogProject) CreateEtlMeta(etlMeta *EtlMeta) (err error) {
 	body, err := json.Marshal(etlMeta)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -622,7 +622,7 @@ func (p *LogProject) CreateEtlMeta(etlMeta *EtlMeta) (err error) {
 	}
 	r, err := request(p, "POST", fmt.Sprintf("/%v", EtlMetaURI), h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, err = ioutil.ReadAll(r.Body)
@@ -637,7 +637,7 @@ func (p *LogProject) CreateEtlMeta(etlMeta *EtlMeta) (err error) {
 func (p *LogProject) UpdateEtlMeta(etlMeta *EtlMeta) (err error) {
 	body, err := json.Marshal(etlMeta)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 
 	h := map[string]string{
@@ -647,7 +647,7 @@ func (p *LogProject) UpdateEtlMeta(etlMeta *EtlMeta) (err error) {
 	}
 	r, err := request(p, "PUT", fmt.Sprintf("/%v", EtlMetaURI), h, body)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ = ioutil.ReadAll(r.Body)
@@ -666,7 +666,7 @@ func (p *LogProject) DeleteEtlMeta(etlMetaName, etlMetaKey string) (err error) {
 	uri := fmt.Sprintf("/%v?etlMetaName=%v&etlMetaKey=%v&etlMetaTag=%v", EtlMetaURI, etlMetaName, etlMetaKey, EtlMetaAllTagMatch)
 	r, err := request(p, "DELETE", uri, h, nil)
 	if err != nil {
-		return NewClientError(err.Error())
+		return NewClientError(err)
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
@@ -685,7 +685,7 @@ func (p *LogProject) listEtlMeta(etlMetaName, etlMetaKey, etlMetaTag string, off
 	uri := fmt.Sprintf("/%v?offset=%v&size=%v&etlMetaName=%v&etlMetaKey=%v&etlMetaTag=%v", EtlMetaURI, offset, size, etlMetaName, etlMetaKey, etlMetaTag)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return 0, 0, nil, NewClientError(err.Error())
+		return 0, 0, nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
@@ -715,7 +715,7 @@ func (p *LogProject) listEtlMeta(etlMetaName, etlMetaKey, etlMetaTag string, off
 		var metaValueMap map[string]string
 		err := json.Unmarshal([]byte(value.MetaValue), &metaValueMap)
 		if err != nil {
-			return 0, 0, nil, NewClientError(err.Error())
+			return 0, 0, nil, NewClientError(err)
 		}
 		etlMetaList[index] = &EtlMeta{
 			MetaName:  value.MetaName,
@@ -752,7 +752,7 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	uri := fmt.Sprintf("/%v?offset=%v&size=%v", EtlMetaNameURI, offset, size)
 	r, err := request(p, "GET", uri, h, nil)
 	if err != nil {
-		return 0, 0, nil, NewClientError(err.Error())
+		return 0, 0, nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
