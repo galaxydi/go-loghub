@@ -51,7 +51,16 @@ type IndexLine struct {
 
 // Index is an index config for a log store.
 type Index struct {
-	TTL  int                 `json:"ttl"`
 	Keys map[string]IndexKey `json:"keys,omitempty"`
 	Line *IndexLine          `json:"line,omitempty"`
+}
+
+// CreateDefaultIndex return a full text index config
+func CreateDefaultIndex() *Index {
+	return &Index{
+		Line: &IndexLine{
+			Token:         []string{" ", "\n", "\t", "\r", ",", ";", "[", "]", "{", "}", "(", ")", "&", "^", "*", "#", "@", "~", "=", "<", ">", "/", "\\", "?", ":"},
+			CaseSensitive: false,
+		},
+	}
 }

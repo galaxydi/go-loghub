@@ -31,6 +31,15 @@ const (
 	MergeTypeLogstore = "logstore"
 )
 
+// IsValidInputType check if specific inputType is valid
+func IsValidInputType(inputType string) bool {
+	switch inputType {
+	case InputTypeSyslog, InputTypeStreamlog, InputTypePlugin, InputTypeFile:
+		return true
+	}
+	return false
+}
+
 // InputDetail defines log_config input
 // @note : deprecated and no maintenance
 type InputDetail struct {
