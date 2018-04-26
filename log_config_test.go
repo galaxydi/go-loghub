@@ -113,9 +113,14 @@ func (s *ConfigTestSuite) TestNormalFileConfig() {
 	regexConfig.Key = []string{"content"}
 	regexConfig.Regex = "(.*)"
 	regexConfig.LogBeginRegex = ".*"
-	regexConfig.LogPath = "/var/log/log"
-	regexConfig.FilePattern = "xxxx.log"
+	regexConfig.LogPath = "/user/local/ilogtail"
+	regexConfig.FilePattern = "ilogtail.LOG"
 	regexConfig.DiscardUnmatch = false
+	regexConfig.IsDockerFile = true
+	// 采集所有K8S logtail的日志，自循环
+	regexConfig.DockerIncludeEnv = map[string]string{
+		"ALIYUN_LOGTAIL_USER_DEFINED_ID": "",
+	}
 	s.Equal(regexConfig.LogType, LogFileTypeRegexLog)
 	err := s.client.CreateConfig(s.projectName, config)
 	s.Nil(err)
