@@ -144,7 +144,6 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 		fmt.Printf("GetIndex success, idx: %v\n", idx)
 	}
 	idxConf := Index{
-		TTL:  7,
 		Keys: map[string]IndexKey{},
 		Line: &IndexLine{
 			Token:         []string{",", ":", " "},
@@ -153,7 +152,8 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 			ExcludeKeys:   []string{},
 		},
 	}
-	s.Logstore.CreateIndex(idxConf)
+	err = s.Logstore.CreateIndex(idxConf)
+	fmt.Print(err)
 
 	beginTime := uint32(time.Now().Unix())
 	time.Sleep(10 * 1000 * time.Millisecond)
