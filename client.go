@@ -53,6 +53,15 @@ func (e Error) Error() string {
 	return e.String()
 }
 
+func IsTokenError(err error) bool {
+	if clientErr, ok := err.(*Error); ok {
+		if clientErr.HTTPCode == 401 {
+			return true
+		}
+	}
+	return false
+}
+
 // Client ...
 type Client struct {
 	Endpoint        string // IP or hostname of SLS endpoint
@@ -75,6 +84,7 @@ func convert(c *Client, projName string) *LogProject {
 	}
 }
 
+// ResetAccessKeyToken reset client's access key token
 func (c *Client) ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string) {
 	c.accessKeyLock.Lock()
 	c.AccessKeyID = accessKeyID
