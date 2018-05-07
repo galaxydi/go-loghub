@@ -10,7 +10,7 @@ import (
 
 type TokenAutoUpdateClient struct {
 	logClient              ClientInterface
-	shutdown               chan struct{}
+	shutdown               <-chan struct{}
 	tokenUpdateFunc        UpdateTokenFunction
 	maxTryTimes            int
 	waitIntervalMin        time.Duration

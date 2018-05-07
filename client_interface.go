@@ -19,7 +19,7 @@ type UpdateTokenFunction func() (accessKeyID, accessKeySecret, securityToken str
 // CreateTokenAutoUpdateClient crate a TokenAutoUpdateClient
 // this client will auto fetch security token and retry when operation is `Unauthorized`
 // @note TokenAutoUpdateClient will destroy when shutdown channel is closed
-func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFunction, shutdown chan struct{}) (client ClientInterface, err error) {
+func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFunction, shutdown <-chan struct{}) (client ClientInterface, err error) {
 	accessKeyID, accessKeySecret, securityToken, expireTime, err := tokenUpdateFunc()
 	if err != nil {
 		return nil, err
