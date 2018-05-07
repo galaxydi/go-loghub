@@ -11,15 +11,6 @@ API Reference :
 
 # Install Instruction
 
-### Third Dependencies
-
-```
-go get github.com/cloudflare/golz4
-go get github.com/golang/glog
-go get github.com/gogo/protobuf/proto
-go get github.com/stretchr/testify/suite
-```
-
 ### LogHub Golang SDK
 
 ```
@@ -43,3 +34,7 @@ go get github.com/aliyun/aliyun-log-go-sdk
 ### Create Machine Group for Logtail
 
 [machine_group_sample.go](example/machine_group/machine_group_sample.go)
+
+# For developer
+### Update log protobuf
+`protoc -I=. -I=$GOPATH/src -I=$GOPATH/src/github.com/gogo/protobuf/protobuf --gofast_out=. log.proto`
