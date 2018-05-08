@@ -113,7 +113,7 @@ func (s *ConfigTestSuite) TestNormalFileConfig() {
 	regexConfig.Key = []string{"content"}
 	regexConfig.Regex = "(.*)"
 	regexConfig.LogBeginRegex = ".*"
-	regexConfig.LogPath = "/user/local/ilogtail"
+	regexConfig.LogPath = "/usr/local/ilogtail"
 	regexConfig.FilePattern = "ilogtail.LOG"
 	regexConfig.DiscardUnmatch = false
 	regexConfig.IsDockerFile = true

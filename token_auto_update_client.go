@@ -32,7 +32,7 @@ func (c *TokenAutoUpdateClient) flushSTSToken() {
 		c.lock.Lock()
 		sleepTime := c.nextExpire.Sub(nowTime)
 		if sleepTime < time.Duration(time.Minute) {
-			sleepTime = time.Duration(time.Second * 5)
+			sleepTime = time.Duration(time.Second * 30)
 
 		} else if sleepTime < time.Duration(time.Minute*10) {
 			sleepTime = sleepTime / 10 * 7
