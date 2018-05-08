@@ -42,7 +42,6 @@ func main() {
 		},
 	}
 	index := sls.Index{
-		TTL:  7,
 		Keys: indexKeys,
 		Line: &sls.IndexLine{
 			Token:         []string{",", ":", " "},
