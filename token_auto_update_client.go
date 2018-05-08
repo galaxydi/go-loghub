@@ -65,18 +65,18 @@ func (c *TokenAutoUpdateClient) fetchSTSToken() error {
 		skip = true
 	} else {
 		c.lastFetch = nowTime
-	}
-	if c.lastRetryFailCount == 0 {
-		sleepTime = 0
-	} else {
-		c.lastRetryInterval *= 2
-		if c.lastRetryInterval < c.waitIntervalMin {
-			c.lastRetryInterval = c.waitIntervalMin
+		if c.lastRetryFailCount == 0 {
+			sleepTime = 0
+		} else {
+			c.lastRetryInterval *= 2
+			if c.lastRetryInterval < c.waitIntervalMin {
+				c.lastRetryInterval = c.waitIntervalMin
+			}
+			if c.lastRetryInterval >= c.waitIntervalMax {
+				c.lastRetryInterval = c.waitIntervalMax
+			}
+			sleepTime = c.lastRetryInterval
 		}
-		if c.lastRetryInterval >= c.waitIntervalMax {
-			c.lastRetryInterval = c.waitIntervalMax
-		}
-		sleepTime = c.lastRetryInterval
 	}
 	c.lock.Unlock()
 	if skip {

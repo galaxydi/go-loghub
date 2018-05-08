@@ -107,7 +107,7 @@ func (s *TolenAutoUpdateClientTestSuite) TestAutoUpdateSTSToken() {
 	s.client.ResetAccessKeyToken("this-is", "invalid", "token")
 
 	// wait for auto update access key
-	time.Sleep(time.Second * 8)
+	time.Sleep(time.Second * 35)
 	s.Equal(2, s.tokenUpdateCount)
 	_, err := s.client.CheckProjectExist(s.projectName)
 	s.Nil(err)
