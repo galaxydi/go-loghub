@@ -87,7 +87,7 @@ func (s *TolenAutoUpdateClientTestSuite) TestUpdateSTSTokenFailed() {
 	lastCount := s.tokenUpdateCount
 	_, err = s.client.CheckProjectExist(s.projectName)
 	s.NotNil(err)
-	s.Equal(s.tokenUpdateCount, lastCount)
+	s.True(s.tokenUpdateCount >= lastCount)
 
 	// test recover
 	s.tokenUpdateResult = nil

@@ -97,6 +97,12 @@ func InitApsaraLogConfigInputDetail(detail *ApsaraLogConfigInputDetail) {
 	detail.LogType = LogFileTypeApsaraLog
 }
 
+func AddNecessaryApsaraLogInputConfigField(inputConfigDetail map[string]interface{}) {
+	if _, ok := inputConfigDetail["logBeginRegex"]; !ok {
+		inputConfigDetail["logBeginRegex"] = ".*"
+	}
+}
+
 func ConvertToApsaraLogConfigInputDetail(detail InputDetailInterface) (*ApsaraLogConfigInputDetail, bool) {
 	// ConvertToPluginLogConfigInputDetail need a plugin
 	if mapVal, ok := detail.(map[string]interface{}); ok {
@@ -127,7 +133,22 @@ type RegexConfigInputDetail struct {
 func InitRegexConfigInputDetail(detail *RegexConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
 	detail.LogBeginRegex = ".*"
+	detail.Regex = "(.*)"
 	detail.LogType = LogFileTypeRegexLog
+}
+
+func AddNecessaryRegexLogInputConfigField(inputConfigDetail map[string]interface{}) {
+	if _, ok := inputConfigDetail["logBeginRegex"]; !ok {
+		inputConfigDetail["logBeginRegex"] = ".*"
+	}
+
+	if _, ok := inputConfigDetail["regex"]; !ok {
+		inputConfigDetail["regex"] = "(.*)"
+	}
+
+	if _, ok := inputConfigDetail["key"]; !ok {
+		inputConfigDetail["key"] = []string{"content"}
+	}
 }
 
 func ConvertToRegexConfigInputDetail(detail InputDetailInterface) (*RegexConfigInputDetail, bool) {
@@ -158,6 +179,10 @@ type JSONConfigInputDetail struct {
 func InitJSONConfigInputDetail(detail *JSONConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
 	detail.LogType = LogFileTypeJSONLog
+}
+
+func AddNecessaryJSONLogInputConfigField(inputConfigDetail map[string]interface{}) {
+
 }
 
 func ConvertToJSONConfigInputDetail(detail InputDetailInterface) (*JSONConfigInputDetail, bool) {
@@ -194,6 +219,16 @@ func InitDelimiterConfigInputDetail(detail *DelimiterConfigInputDetail) {
 	detail.Quote = `\u001`
 	detail.AutoExtend = true
 	detail.LogType = LogFileTypeDelimiterLog
+}
+
+func AddNecessaryDelimiterLogInputConfigField(inputConfigDetail map[string]interface{}) {
+	if _, ok := inputConfigDetail["quote"]; !ok {
+		inputConfigDetail["quote"] = `\u001`
+	}
+
+	if _, ok := inputConfigDetail["autoExtend"]; !ok {
+		inputConfigDetail["autoExtend"] = true
+	}
 }
 
 func ConvertToDelimiterConfigInputDetail(detail InputDetailInterface) (*DelimiterConfigInputDetail, bool) {
@@ -245,6 +280,32 @@ func InitLocalFileConfigInputDetail(detail *LocalFileConfigInputDetail) {
 	detail.TopicFormat = "none"
 	detail.Preserve = true
 	detail.DiscardUnmatch = true
+}
+
+func AddNecessaryLocalFileInputConfigField(inputConfigDetail map[string]interface{}) {
+	if _, ok := inputConfigDetail["fileEncoding"]; !ok {
+		inputConfigDetail["fileEncoding"] = "utf8"
+	}
+
+	if _, ok := inputConfigDetail["maxDepth"]; !ok {
+		inputConfigDetail["maxDepth"] = 100
+	}
+
+	if _, ok := inputConfigDetail["topicFormat"]; !ok {
+		inputConfigDetail["topicFormat"] = "none"
+	}
+
+	if _, ok := inputConfigDetail["preserve"]; !ok {
+		inputConfigDetail["preserve"] = true
+	}
+
+	if _, ok := inputConfigDetail["discardUnmatch"]; !ok {
+		inputConfigDetail["discardUnmatch"] = true
+	}
+
+	if _, ok := inputConfigDetail["timeFormat"]; !ok {
+		inputConfigDetail["timeFormat"] = ""
+	}
 }
 
 // PluginLogConfigInputDetail plugin log config, eg: docker stdout, binlog, mysql, http...
@@ -329,6 +390,38 @@ func InitCommonConfigInputDetail(detail *CommonConfigInputDetail) {
 	detail.EnableTag = true
 	detail.MaxSendRate = -1
 	detail.MergeType = "logstore"
+}
+
+// AddNecessaryInputConfigField ...
+func AddNecessaryInputConfigField(inputConfigDetail map[string]interface{}) {
+	if _, ok := inputConfigDetail["localStorage"]; !ok {
+		inputConfigDetail["localStorage"] = true
+	}
+	if _, ok := inputConfigDetail["enableTag"]; !ok {
+		inputConfigDetail["enableTag"] = true
+	}
+	if _, ok := inputConfigDetail["maxSendRate"]; !ok {
+		inputConfigDetail["maxSendRate"] = -1
+	}
+	if _, ok := inputConfigDetail["mergeType"]; !ok {
+		inputConfigDetail["mergeType"] = "logstore"
+	}
+
+	if logTypeInterface, ok := inputConfigDetail["logType"]; ok {
+		if logType, ok := logTypeInterface.(string); ok {
+			AddNecessaryLocalFileInputConfigField(inputConfigDetail)
+			switch logType {
+			case LogFileTypeApsaraLog:
+				AddNecessaryApsaraLogInputConfigField(inputConfigDetail)
+			case LogFileTypeRegexLog:
+				AddNecessaryRegexLogInputConfigField(inputConfigDetail)
+			case LogFileTypeJSONLog:
+				AddNecessaryJSONLogInputConfigField(inputConfigDetail)
+			case LogFileTypeDelimiterLog:
+				AddNecessaryDelimiterLogInputConfigField(inputConfigDetail)
+			}
+		}
+	}
 }
 
 // OutputDetail defines output
