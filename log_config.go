@@ -216,14 +216,14 @@ type DelimiterConfigInputDetail struct {
 // InitDelimiterConfigInputDetail ...
 func InitDelimiterConfigInputDetail(detail *DelimiterConfigInputDetail) {
 	InitLocalFileConfigInputDetail(&detail.LocalFileConfigInputDetail)
-	detail.Quote = `\u001`
+	detail.Quote = "\u0001"
 	detail.AutoExtend = true
 	detail.LogType = LogFileTypeDelimiterLog
 }
 
 func AddNecessaryDelimiterLogInputConfigField(inputConfigDetail map[string]interface{}) {
 	if _, ok := inputConfigDetail["quote"]; !ok {
-		inputConfigDetail["quote"] = `\u001`
+		inputConfigDetail["quote"] = "\u0001"
 	}
 
 	if _, ok := inputConfigDetail["autoExtend"]; !ok {
