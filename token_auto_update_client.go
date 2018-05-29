@@ -505,6 +505,17 @@ func (c *TokenAutoUpdateClient) PutLogs(project, logstore string, lg *LogGroup) 
 	return
 }
 
+// PutRawLogWithCompressType put raw log data to log service, no marshal
+func (c *TokenAutoUpdateClient) PutRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.PutRawLogWithCompressType(project, logstore, rawLogData, compressType)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) PutLogsWithCompressType(project, logstore string, lg *LogGroup, compressType int) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.PutLogsWithCompressType(project, logstore, lg, compressType)

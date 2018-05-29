@@ -97,6 +97,61 @@ func copyIncompressible(src, dst []byte) (int, error) {
 	return di, nil
 }
 
+// PutRawLog put raw log data to log service, no marshal
+func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
+	if len(rawLogData) == 0 {
+		// empty log group
+		return nil
+	}
+
+	var out []byte
+	var h map[string]string
+	var outLen int
+	switch s.putLogCompressType {
+	case Compress_LZ4:
+		// Compresse body with lz4
+		out = make([]byte, lz4.CompressBlockBound(len(rawLogData)))
+		n, err := lz4.CompressBlock(rawLogData, out, 0)
+		if err != nil {
+			return NewClientError(err)
+		}
+		// copy incompressible data as lz4 format
+		if n == 0 {
+			n, _ = copyIncompressible(rawLogData, out)
+		}
+
+		h = map[string]string{
+			"x-log-compresstype": "lz4",
+			"x-log-bodyrawsize":  strconv.Itoa(len(rawLogData)),
+			"Content-Type":       "application/x-protobuf",
+		}
+		outLen = n
+		break
+	case Compress_None:
+		// no compress
+		out = rawLogData
+		h = map[string]string{
+			"x-log-bodyrawsize": strconv.Itoa(len(rawLogData)),
+			"Content-Type":      "application/x-protobuf",
+		}
+		outLen = len(out)
+	}
+
+	uri := fmt.Sprintf("/logstores/%v", s.Name)
+	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
 // PutLogs put logs into logstore.
 // The callers should transform user logs into LogGroup.
 func (s *LogStore) PutLogs(lg *LogGroup) (err error) {

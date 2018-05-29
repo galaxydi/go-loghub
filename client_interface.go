@@ -128,6 +128,8 @@ type ClientInterface interface {
 	// PutLogsWithCompressType put logs into logstore with specific compress type.
 	// The callers should transform user logs into LogGroup.
 	PutLogsWithCompressType(project, logstore string, lg *LogGroup, compressType int) (err error)
+	// PutRawLogWithCompressType put raw log data to log service, no marshal
+	PutRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int) (err error)
 	// GetCursor gets log cursor of one shard specified by shardId.
 	// The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
 	// For more detail please read: https://help.aliyun.com/document_detail/29024.html

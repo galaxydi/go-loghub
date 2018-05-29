@@ -39,6 +39,15 @@ func (c *Client) PutLogsWithCompressType(project, logstore string, lg *LogGroup,
 	return ls.PutLogs(lg)
 }
 
+// PutRawLogWithCompressType put raw log data to log service, no marshal
+func (c *Client) PutRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int) (err error) {
+	ls := convertLogstore(c, project, logstore)
+	if err := ls.SetPutLogCompressType(compressType); err != nil {
+		return err
+	}
+	return ls.PutRawLog(rawLogData)
+}
+
 // GetCursor gets log cursor of one shard specified by shardId.
 // The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
 // For more detail please read: https://help.aliyun.com/document_detail/29024.html
