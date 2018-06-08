@@ -162,11 +162,17 @@ func (c *Client) GetProject(name string) (*LogProject, error) {
 	proj := convert(c, name)
 	resp, err := request(proj, "GET", uri, h, nil)
 	if err != nil {
-		return nil, err
+		return nil, NewClientError(err)
 	}
 	defer resp.Body.Close()
-
-	return proj, nil
+	buf, _ := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, err
+	}
+	err = json.Unmarshal(buf, proj)
+	return proj, err
 }
 
 // ListProject list all projects in specific region
