@@ -1,14 +1,13 @@
 package sls
 
 import (
+	base64E "encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
-	"net/http/httputil"
 	"net/url"
-
-	"github.com/golang/glog"
+	"strconv"
+	"time"
 )
 
 func convertLogstore(c *Client, project, logstore string) *LogStore {
@@ -50,23 +49,8 @@ func (c *Client) SplitShard(project, logstore string, shardID int, splitKey stri
 	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
+		return nil, NewClientError(err)
 	}
-
-	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to split shards")
-			if glog.V(1) {
-				dump, _ := httputil.DumpResponse(r, true)
-				glog.Error(string(dump))
-			}
-			return
-		}
-		return shards, errMsg
-	}
-
 	err = json.Unmarshal(buf, &shards)
 	return
 }
@@ -87,21 +71,7 @@ func (c *Client) MergeShards(project, logstore string, shardID int) (shards []*S
 	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return
-	}
-
-	if r.StatusCode != http.StatusOK {
-		errMsg := &Error{}
-		err = json.Unmarshal(buf, errMsg)
-		if err != nil {
-			err = fmt.Errorf("failed to merge shards")
-			if glog.V(1) {
-				dump, _ := httputil.DumpResponse(r, true)
-				glog.Error(string(dump))
-			}
-			return
-		}
-		return shards, errMsg
+		return nil, NewClientError(err)
 	}
 	err = json.Unmarshal(buf, &shards)
 	return
@@ -139,6 +109,48 @@ func (c *Client) PutRawLogWithCompressType(project, logstore string, rawLogData 
 func (c *Client) GetCursor(project, logstore string, shardID int, from string) (cursor string, err error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.GetCursor(shardID, from)
+}
+
+// GetCursorTime ...
+func (c *Client) GetCursorTime(project, logstore string, shardID int, cursor string) (cursorTime time.Time, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("cursor", cursor)
+	urlVal.Add("type", "cursor_time")
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?%v", logstore, shardID, urlVal.Encode())
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return cursorTime, NewClientError(err)
+	}
+	type getCursorResult struct {
+		CursorTime int `json:"cursor_time"`
+	}
+	var rst getCursorResult
+	err = json.Unmarshal(buf, &rst)
+	return time.Unix(int64(rst.CursorTime), 0), err
+}
+
+// GetPrevCursorTime ...
+func (c *Client) GetPrevCursorTime(project, logstore string, shardID int, cursor string) (cursorTime time.Time, err error) {
+	realCursor, err := base64E.StdEncoding.DecodeString(cursor)
+	if err != nil {
+		return cursorTime, NewClientError(err)
+	}
+	cursorVal, err := strconv.Atoi(string(realCursor))
+	if err != nil {
+		return cursorTime, NewClientError(err)
+	}
+	cursorVal--
+	nextCursor := base64E.StdEncoding.EncodeToString([]byte(strconv.Itoa(cursorVal)))
+	return c.GetCursorTime(project, logstore, shardID, nextCursor)
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
