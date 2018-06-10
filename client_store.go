@@ -1,5 +1,16 @@
 package sls
 
+import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+
+	"github.com/golang/glog"
+)
+
 func convertLogstore(c *Client, project, logstore string) *LogStore {
 	c.accessKeyLock.RLock()
 	proj := &LogProject{
@@ -17,9 +28,83 @@ func convertLogstore(c *Client, project, logstore string) *LogStore {
 }
 
 // ListShards returns shard id list of this logstore.
-func (c *Client) ListShards(project, logstore string) (shardIDs []int, err error) {
+func (c *Client) ListShards(project, logstore string) (shardIDs []*Shard, err error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.ListShards()
+}
+
+// SplitShard https://help.aliyun.com/document_detail/29021.html
+func (c *Client) SplitShard(project, logstore string, shardID int, splitKey string) (shards []*Shard, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("action", "split")
+	urlVal.Add("key", splitKey)
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?%v", logstore, shardID, urlVal.Encode())
+	r, err := c.request(project, "POST", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to split shards")
+			if glog.V(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				glog.Error(string(dump))
+			}
+			return
+		}
+		return shards, errMsg
+	}
+
+	err = json.Unmarshal(buf, &shards)
+	return
+}
+
+// MergeShards https://help.aliyun.com/document_detail/29022.html
+func (c *Client) MergeShards(project, logstore string, shardID int) (shards []*Shard, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("action", "merge")
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?%v", logstore, shardID, urlVal.Encode())
+	r, err := c.request(project, "POST", uri, h, nil)
+	if err != nil {
+		return
+	}
+	defer r.Body.Close()
+	buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return
+	}
+
+	if r.StatusCode != http.StatusOK {
+		errMsg := &Error{}
+		err = json.Unmarshal(buf, errMsg)
+		if err != nil {
+			err = fmt.Errorf("failed to merge shards")
+			if glog.V(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				glog.Error(string(dump))
+			}
+			return
+		}
+		return shards, errMsg
+	}
+	err = json.Unmarshal(buf, &shards)
+	return
 }
 
 // PutLogs put logs into logstore.
