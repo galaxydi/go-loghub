@@ -162,4 +162,13 @@ type ClientInterface interface {
 	DeleteIndex(project, logstore string) error
 	// GetIndex ...
 	GetIndex(project, logstore string) (*Index, error)
+	ListDashboard(project string, dashboardName string, offset, size int) (dashboardList []string, count, total int, err error)
+	GetDashboard(project, name string) (dashboard *Dashboard, err error)
+	DeleteDashboard(project, name string) error
+	UpdateDashboard(project string, dashboard Dashboard) error
+	CreateDashboard(project string, dashboard Dashboard) error
+	GetChart(project, dashboardName, chartName string) (chart *Chart, err error)
+	DeleteChart(project, dashboardName, chartName string) error
+	UpdateChart(project, dashboardName string, chart Chart) error
+	CreateChart(project, dashboardName string, chart Chart) error
 }

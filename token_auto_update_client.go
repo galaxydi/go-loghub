@@ -638,3 +638,85 @@ func (c *TokenAutoUpdateClient) GetIndex(project, logstore string) (index *Index
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) ListDashboard(project string, dashboardName string, offset, size int) (dashboardList []string, count, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		dashboardList, count, total, err = c.logClient.ListDashboard(project, dashboardName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetDashboard(project, name string) (dashboard *Dashboard, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		dashboard, err = c.logClient.GetDashboard(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) DeleteDashboard(project, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteDashboard(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateDashboard(project string, dashboard Dashboard) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateDashboard(project, dashboard)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) CreateDashboard(project string, dashboard Dashboard) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateDashboard(project, dashboard)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetChart(project, dashboardName, chartName string) (chart *Chart, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		chart, err = c.logClient.GetChart(project, dashboardName, chartName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) DeleteChart(project, dashboardName, chartName string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteChart(project, dashboardName, chartName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateChart(project, dashboardName string, chart Chart) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateChart(project, dashboardName, chart)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) CreateChart(project, dashboardName string, chart Chart) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateChart(project, dashboardName, chart)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
