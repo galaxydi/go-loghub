@@ -80,19 +80,19 @@ func copyIncompressible(src, dst []byte) (int, error) {
 	} else {
 		dst[di] = 0xF0
 		if di++; di == dn {
-			return di, lz4.ErrShortBuffer
+			return di, nil
 		}
 		lLen -= 0xF
 		for ; lLen >= 0xFF; lLen -= 0xFF {
 			dst[di] = 0xFF
 			if di++; di == dn {
-				return di, lz4.ErrShortBuffer
+				return di, nil
 			}
 		}
 		dst[di] = byte(lLen)
 	}
 	if di++; di+len(src) > dn {
-		return di, lz4.ErrShortBuffer
+		return di, nil
 	}
 	di += copy(dst[di:], src)
 	return di, nil
@@ -112,7 +112,8 @@ func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
 	case Compress_LZ4:
 		// Compresse body with lz4
 		out = make([]byte, lz4.CompressBlockBound(len(rawLogData)))
-		n, err := lz4.CompressBlock(rawLogData, out, 0)
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(rawLogData, out, hashTable[:])
 		if err != nil {
 			return NewClientError(err)
 		}
@@ -173,7 +174,8 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	case Compress_LZ4:
 		// Compresse body with lz4
 		out = make([]byte, lz4.CompressBlockBound(len(body)))
-		n, err := lz4.CompressBlock(body, out, 0)
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(body, out, hashTable[:])
 		if err != nil {
 			return NewClientError(err)
 		}
@@ -335,7 +337,7 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	out = make([]byte, bodyRawSize)
 	if bodyRawSize != 0 {
 		len := 0
-		if len, err = lz4.UncompressBlock(buf, out, 0); err != nil || len != bodyRawSize {
+		if len, err = lz4.UncompressBlock(buf, out); err != nil || len != bodyRawSize {
 			return
 		}
 	}

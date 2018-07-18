@@ -3,6 +3,48 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "Ij8Xl8AyDw3+0+i7KJQySTpOvBQ=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "dNhuHQw5I9fmJL7NiVY7HR3SMiU=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/config",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "IxNjps+6nkydxj3lPil6lmeArpQ=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/etl",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "jTL4/QcnwrQ/g02UgdEB3B9/5Sg=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/index",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "bUpYwKcsAde44mf7/yKVuEn9s9M=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/loghub",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "IgCfemyJgXg3dJCLzKumhG0WJwM=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/machine_group",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
+			"checksumSHA1": "OwCX0QoBvIufFARvEn+F4gUrt1w=",
+			"path": "github.com/aliyun/aliyun-log-go-sdk/example/util",
+			"revision": "7663ea59fab7d0c407632ac8a41b890fead33af1",
+			"revisionTime": "2018-07-12T12:36:23Z"
+		},
+		{
 			"checksumSHA1": "pQdQAyva/nOnQXh4sQLui5rvsbQ=",
 			"path": "github.com/cloudflare/golz4",
 			"revision": "ef862a3cdc58a6f1fee4e3af3d44fbe279194cde",
@@ -46,10 +88,10 @@
 			"revisionTime": "2017-09-20T22:06:47Z"
 		},
 		{
-			"checksumSHA1": "FGg99nQ56Fo3radSCuU1AeEUJug=",
+			"checksumSHA1": "WDgX011m3uQMKWf8cHb5Ndyzmj8=",
 			"path": "github.com/pierrec/lz4",
-			"revision": "08c27939df1bd95e881e2c2367a749964ad1fceb",
-			"revisionTime": "2017-08-28T19:29:35Z"
+			"revision": "6b9367c9ff401dbc54fabce3fb8d972e799b702d",
+			"revisionTime": "2018-06-10T16:27:16Z"
 		},
 		{
 			"checksumSHA1": "zPWRjzsPeXCoqmidIcJtHbvrvRs=",
