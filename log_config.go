@@ -2,6 +2,7 @@ package sls
 
 import (
 	"encoding/json"
+	"errors"
 )
 
 // const InputTypes
@@ -30,6 +31,9 @@ const (
 	MergeTypeTopic    = "topic"
 	MergeTypeLogstore = "logstore"
 )
+
+var NoConfigFieldError = errors.New("no this config field")
+var InvalidTypeError = errors.New("invalid config type")
 
 // IsValidInputType check if specific inputType is valid
 func IsValidInputType(inputType string) bool {
@@ -272,6 +276,16 @@ type LocalFileConfigInputDetail struct {
 	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv,omitempty"`
 }
 
+func GetFileConfigInputDetailType(detail InputDetailInterface) (string, bool) {
+	// ConvertToPluginLogConfigInputDetail need a plugin
+	if mapVal, ok := detail.(map[string]interface{}); ok {
+		if logType, ok := mapVal["logType"]; ok {
+			return logType.(string), true
+		}
+	}
+	return "", false
+}
+
 // InitLocalFileConfigInputDetail ...
 func InitLocalFileConfigInputDetail(detail *LocalFileConfigInputDetail) {
 	InitCommonConfigInputDetail(&detail.CommonConfigInputDetail)
@@ -325,16 +339,18 @@ func ConvertToPluginLogConfigInputDetail(detail InputDetailInterface) (*PluginLo
 		if _, ok := mapVal["plugin"]; !ok {
 			return nil, false
 		}
-	} else {
-		return nil, false
+		if _, ok := mapVal["logType"]; ok {
+			return nil, false
+		}
+		buf, err := json.Marshal(detail)
+		if err != nil {
+			return nil, false
+		}
+		destDetail := &PluginLogConfigInputDetail{}
+		err = json.Unmarshal(buf, destDetail)
+		return destDetail, err == nil
 	}
-	buf, err := json.Marshal(detail)
-	if err != nil {
-		return nil, false
-	}
-	destDetail := &PluginLogConfigInputDetail{}
-	err = json.Unmarshal(buf, destDetail)
-	return destDetail, err == nil
+	return nil, false
 }
 
 // StreamLogConfigInputDetail syslog config
@@ -422,6 +438,18 @@ func AddNecessaryInputConfigField(inputConfigDetail map[string]interface{}) {
 			}
 		}
 	}
+}
+
+// UpdateInputConfigField ...
+func UpdateInputConfigField(detail InputDetailInterface, key string, val interface{}) error {
+	if mapVal, ok := detail.(map[string]interface{}); ok {
+		if _, ok := mapVal[key]; !ok {
+			return NoConfigFieldError
+		}
+		mapVal[key] = val
+		return nil
+	}
+	return InvalidTypeError
 }
 
 // OutputDetail defines output
