@@ -216,6 +216,74 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	return nil
 }
 
+
+// PostLogStoreLogs put logs into Shard logstore by hashKey.
+// The callers should transform user logs into LogGroup.
+func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey* string) (err error) {
+	if len(lg.Logs) == 0 {
+		// empty log group or empty hashkey
+		return nil
+	}
+
+	if hashKey == nil || *hashKey == "" {
+		// empty hash call PutLogs
+		return this.PutLogs(lg)
+	}
+
+	body, err := proto.Marshal(lg)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	var out []byte
+	var h map[string]string
+	var outLen int
+	switch s.putLogCompressType {
+	case Compress_LZ4:
+		// Compresse body with lz4
+		out = make([]byte, lz4.CompressBlockBound(len(body)))
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(body, out, hashTable[:])
+		if err != nil {
+			return NewClientError(err)
+		}
+		// copy incompressible data as lz4 format
+		if n == 0 {
+			n, _ = copyIncompressible(body, out)
+		}
+
+		h = map[string]string{
+			"x-log-compresstype": "lz4",
+			"x-log-bodyrawsize":  strconv.Itoa(len(body)),
+			"Content-Type":       "application/x-protobuf",
+		}
+		outLen = n
+		break
+	case Compress_None:
+		// no compress
+		out = body
+		h = map[string]string{
+			"x-log-bodyrawsize": strconv.Itoa(len(body)),
+			"Content-Type":      "application/x-protobuf",
+		}
+		outLen = len(out)
+	}
+
+	uri := fmt.Sprintf("/logstores/%v/shards/route?key=%v", s.Name, *hashKey)
+	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
 // GetCursor gets log cursor of one shard specified by shardId.
 // The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
 // For more detail please read: https://help.aliyun.com/document_detail/29024.html
