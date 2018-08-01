@@ -227,7 +227,7 @@ func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey* string) (err error) {
 
 	if hashKey == nil || *hashKey == "" {
 		// empty hash call PutLogs
-		return this.PutLogs(lg)
+		return s.PutLogs(lg)
 	}
 
 	body, err := proto.Marshal(lg)
