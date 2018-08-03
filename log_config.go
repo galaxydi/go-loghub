@@ -405,7 +405,7 @@ func InitCommonConfigInputDetail(detail *CommonConfigInputDetail) {
 	detail.LocalStorage = true
 	detail.EnableTag = true
 	detail.MaxSendRate = -1
-	detail.MergeType = "logstore"
+	detail.MergeType = MergeTypeTopic
 }
 
 // AddNecessaryInputConfigField ...
@@ -420,7 +420,7 @@ func AddNecessaryInputConfigField(inputConfigDetail map[string]interface{}) {
 		inputConfigDetail["maxSendRate"] = -1
 	}
 	if _, ok := inputConfigDetail["mergeType"]; !ok {
-		inputConfigDetail["mergeType"] = "logstore"
+		inputConfigDetail["mergeType"] = MergeTypeTopic
 	}
 
 	if logTypeInterface, ok := inputConfigDetail["logType"]; ok {
