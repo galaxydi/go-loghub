@@ -86,7 +86,7 @@ func main() {
 		time.Sleep(200 * time.Millisecond)
 	}
 	// pull logs from logstore
-	var shards []*Shard
+	var shards []*sls.Shard
 	for retry_times = 0; ; retry_times++ {
 		if retry_times > 5 {
 			return
@@ -104,7 +104,8 @@ func main() {
 	var end_cursor string
 	var next_cursor string
 	var loggrouplist *sls.LogGroupList
-	for _, sh := range shards {
+	for _, shard := range shards {
+		sh,_ := fmt.Printf("%d", shard)
 		if sh == 0 {
 			// sample of pulllogs from begin
 			// GetCursor API Ref: https://intl.aliyun.com/help/doc-detail/29024.htm
