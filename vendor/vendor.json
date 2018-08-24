@@ -45,6 +45,12 @@
 			"revisionTime": "2018-07-12T12:36:23Z"
 		},
 		{
+			"checksumSHA1": "uB9mw9vMHYJlJlmTBstl4Pi8ZwU=",
+			"path": "github.com/cenkalti/backoff",
+			"revision": "32cd0c5b3aef12c76ed64aaf678f6c79736be7dc",
+			"revisionTime": "2015-08-27T12:34:15Z"
+		},
+		{
 			"checksumSHA1": "pQdQAyva/nOnQXh4sQLui5rvsbQ=",
 			"path": "github.com/cloudflare/golz4",
 			"revision": "ef862a3cdc58a6f1fee4e3af3d44fbe279194cde",
@@ -100,6 +106,12 @@
 			"revisionTime": "2017-07-14T08:24:55Z"
 		},
 		{
+			"checksumSHA1": "ynJSWoF6v+3zMnh9R0QmmG6iGV8=",
+			"path": "github.com/pkg/errors",
+			"revision": "645ef00459ed84a119197bfb8d8205042c6df63d",
+			"revisionTime": "2016-09-29T01:48:01Z"
+		},
+		{
 			"checksumSHA1": "zKKp5SZ3d3ycKe4EKMNT0BqAWBw=",
 			"origin": "github.com/stretchr/testify/vendor/github.com/pmezard/go-difflib/difflib",
 			"path": "github.com/pmezard/go-difflib/difflib",
@@ -123,6 +135,12 @@
 			"path": "github.com/stretchr/testify/suite",
 			"revision": "2aa2c176b9dab406a6970f6a55f513e8a8c8b18f",
 			"revisionTime": "2017-08-14T20:04:35Z"
+		},
+		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"path": "golang.org/x/net/context",
+			"revision": "6250b412798208e6c90b03b7c4f226de5aa299e2",
+			"revisionTime": "2016-08-24T22:20:41Z"
 		}
 	],
 	"rootPath": "github.com/aliyun/aliyun-log-go-sdk"

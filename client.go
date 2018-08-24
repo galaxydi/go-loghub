@@ -78,14 +78,10 @@ type Client struct {
 func convert(c *Client, projName string) *LogProject {
 	c.accessKeyLock.RLock()
 	defer c.accessKeyLock.RUnlock()
-	return &LogProject{
-		Name:            projName,
-		Endpoint:        c.Endpoint,
-		AccessKeyID:     c.AccessKeyID,
-		AccessKeySecret: c.AccessKeySecret,
-		SecurityToken:   c.SecurityToken,
-		UserAgent:       c.UserAgent,
-	}
+	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
+	p.SecurityToken = c.SecurityToken
+	p.UserAgent = c.UserAgent
+	return p
 }
 
 // ResetAccessKeyToken reset client's access key token

@@ -30,12 +30,12 @@ func main() {
 	}
 	fmt.Printf("GetLogStore success, name: %s, ttl: %d, shardCount: %d, createTime: %d, lastModifyTime: %d\n", logstore.Name, logstore.TTL, logstore.ShardCount, logstore.CreateTime, logstore.LastModifyTime)
 	indexKeys := map[string]sls.IndexKey{
-		"col_0": sls.IndexKey{
+		"col_0": {
 			Token:         []string{" "},
 			CaseSensitive: false,
 			Type:          "long",
 		},
-		"col_1": sls.IndexKey{
+		"col_1": {
 			Token:         []string{",", ":", " "},
 			CaseSensitive: false,
 			Type:          "text",
