@@ -5,8 +5,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/golang/glog"
+)
+
+const (
+	httpScheme  = "http://"
+	httpsScheme = "https://"
+	ipRegexStr  = `\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}.*`
+)
+
+var (
+	ipRegex = regexp.MustCompile(ipRegexStr)
 )
 
 // this file is deprecated and no maintenance
@@ -22,6 +34,7 @@ type LogProject struct {
 	SecurityToken   string
 	UsingHTTP       bool   // default https
 	UserAgent       string // default defaultLogUserAgent
+	baseURL         string
 }
 
 // NewLogProject creates a new SLS project.
@@ -32,6 +45,7 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 	}
+	p.parseEndpoint()
 	return p, nil
 }
 
@@ -777,4 +791,26 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	body := &Body{}
 	json.Unmarshal(buf, body)
 	return body.Total, body.Count, body.MetaNameList, nil
+}
+
+func (p *LogProject) parseEndpoint() {
+	scheme := httpScheme // default to http scheme
+	host := p.Endpoint
+
+	if strings.HasPrefix(p.Endpoint, httpScheme) {
+		scheme = httpScheme
+		host = strings.TrimPrefix(p.Endpoint, scheme)
+	} else if strings.HasPrefix(p.Endpoint, httpsScheme) {
+		scheme = httpsScheme
+		host = strings.TrimPrefix(p.Endpoint, scheme)
+	}
+
+	if GlobalForceUsingHTTP || p.UsingHTTP {
+		scheme = httpScheme
+	}
+	if ipRegex.MatchString(host) { // ip format
+		p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+	} else {
+		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+	}
 }

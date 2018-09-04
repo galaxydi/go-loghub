@@ -78,10 +78,9 @@ func (c *Client) PutLogs(project, logstore string, lg *LogGroup) (err error) {
 	return ls.PutLogs(lg)
 }
 
-
 // PostLogStoreLogs put logs into Shard logstore by hashKey.
 // The callers should transform user logs into LogGroup.
-func (c *Client) PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKey* string) (err error) {
+func (c *Client) PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKey *string) (err error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.PostLogStoreLogs(lg, hashKey)
 }
