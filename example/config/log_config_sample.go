@@ -101,8 +101,6 @@ func createConfig(configName string, projectName string, logstore string, servic
 		LogBeginRegex: ".*",   // 日志首行特征
 		Regex:         "(.*)", // 日志对提取正则表达式
 		Keys:          keys,
-		FilterKeys:    make([]string, 1),
-		FilterRegex:   make([]string, 1),
 	}
 	outputDetail := sls.OutputDetail{
 		ProjectName:  projectName,
