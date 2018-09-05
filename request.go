@@ -20,7 +20,17 @@ import (
 var (
 	requestTimeout = 10 * time.Second
 	retryTimeout   = 30 * time.Second
+	httpClient     = &http.Client{
+		Timeout: requestTimeout,
+	}
 )
+
+func setRequestTimeout(timeout time.Duration) {
+	requestTimeout = timeout
+	httpClient = &http.Client{
+		Timeout: timeout,
+	}
+}
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
 	if err == nil {
@@ -96,7 +106,6 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 			}
 			return retryReadErrorCheck(ctx, slsErr)
 		})
-
 	} else {
 		err = RetryWithCondition(ctx, backoff.NewExponentialBackOff(), func() (bool, error) {
 			if len(mock) == 0 {
@@ -176,9 +185,6 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	// Handle the endpoint
 	urlStr := fmt.Sprintf("%s%s", project.baseURL, uri)
 	req, err := http.NewRequest(method, urlStr, reader)
-	cctx, cancel := context.WithTimeout(ctx, requestTimeout)
-	defer cancel()
-	req = req.WithContext(cctx)
 	if err != nil {
 		return nil, NewClientError(err)
 	}
@@ -195,7 +201,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	// Get ready to do request
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

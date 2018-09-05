@@ -212,9 +212,11 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	lg := &LogGroup{
 		Topic:  proto.String("demo topic"),
 		Source: proto.String("10.230.201.117"),
-		Logs: []*Log{
-			l,
-		},
+		Logs: []*Log{},
+	}
+	logCount := 50
+	for i := 0; i < logCount; i++ {
+		lg.Logs = append(lg.Logs, l)
 	}
 
 	putErr := s.Logstore.PutLogs(lg)
@@ -228,10 +230,10 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	if hErr != nil {
 		fmt.Printf("Get log error %v \n", hErr)
 	}
-	s.Equal(hResp.Count, int64(1))
+	s.Equal(hResp.Count, int64(logCount))
 	lResp, lErr := s.Logstore.GetLogs("", int64(beginTime), int64(endTime), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
-	s.Equal(lResp.Count, int64(1))
+	s.Equal(lResp.Count, int64(logCount))
 }
 
 func (s *LogstoreTestSuite) TestLogstore() {
@@ -424,6 +426,7 @@ func (s *LogstoreTestSuite) TestReqTimeoutRetry() {
 
 	requestTimeout = 1 * time.Second
 	retryTimeout = 3 * time.Second
+	setRequestTimeout(requestTimeout)
 
 	count := 0
 	ts := httptest.NewServer(
