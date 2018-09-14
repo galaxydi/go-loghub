@@ -18,19 +18,12 @@ import (
 
 // timeout configs
 var (
-	requestTimeout = 10 * time.Second
-	retryTimeout   = 30 * time.Second
-	httpClient     = &http.Client{
-		Timeout: requestTimeout,
+	defaultRequestTimeout      = 10 * time.Second
+	defaultRetryTimeout = 30 * time.Second
+	defaultHttpClient          = &http.Client{
+		Timeout: defaultRequestTimeout,
 	}
 )
-
-func setRequestTimeout(timeout time.Duration) {
-	requestTimeout = timeout
-	httpClient = &http.Client{
-		Timeout: timeout,
-	}
-}
 
 func retryReadErrorCheck(ctx context.Context, err error) (bool, error) {
 	if err == nil {
@@ -86,7 +79,7 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	var err error
 	var mockErr *mockErrorRetry
 
-	ctx, cancel := context.WithTimeout(context.Background(), retryTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), project.retryTimeout)
 	defer cancel()
 
 	// all GET method is read function
@@ -201,7 +194,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	// Get ready to do request
-	resp, err := httpClient.Do(req)
+	resp, err := project.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 )
@@ -35,6 +36,8 @@ type LogProject struct {
 	UsingHTTP       bool   // default https
 	UserAgent       string // default defaultLogUserAgent
 	baseURL         string
+	retryTimeout    time.Duration
+	httpClient      *http.Client
 }
 
 // NewLogProject creates a new SLS project.
@@ -44,6 +47,8 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
+		httpClient:      defaultHttpClient,
+		retryTimeout:    defaultRetryTimeout,
 	}
 	p.parseEndpoint()
 	return p, nil
@@ -53,6 +58,21 @@ func NewLogProject(name, endpoint, accessKeyID, accessKeySecret string) (p *LogP
 func (p *LogProject) WithToken(token string) (*LogProject, error) {
 	p.SecurityToken = token
 	return p, nil
+}
+
+// WithRequestTimeout with custom timeout for a request
+func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
+	p.httpClient = &http.Client{
+		Timeout: timeout,
+	}
+	return p
+}
+
+// WithRetryTimeout with custom timeout for a operation
+// each operation may send one or more HTTP requests in case of retry required.
+func (p *LogProject) WithRetryTimeout(timeout time.Duration) *LogProject {
+	p.retryTimeout = timeout
+	return p
 }
 
 // ListLogStore returns all logstore names of project p.

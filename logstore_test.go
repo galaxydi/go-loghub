@@ -419,14 +419,8 @@ func (s *LogstoreTestSuite) TestLogStoreWriteErrorMock() {
 func (s *LogstoreTestSuite) TestReqTimeoutRetry() {
 	assert := s.Require()
 
-	oldRequestTimeout, oldRetryTimeout := requestTimeout, retryTimeout
-	defer func() {
-		requestTimeout, retryTimeout = oldRequestTimeout, oldRetryTimeout
-	}()
-
-	requestTimeout = 1 * time.Second
-	retryTimeout = 3 * time.Second
-	setRequestTimeout(requestTimeout)
+	requestTimeout := 1 * time.Second
+	retryTimeout := 3 * time.Second
 
 	count := 0
 	ts := httptest.NewServer(
@@ -439,6 +433,7 @@ func (s *LogstoreTestSuite) TestReqTimeoutRetry() {
 	defer ts.Close()
 
 	slsProject, err := NewLogProject("my-project", ts.URL, "id", "key")
+	slsProject.WithRequestTimeout(requestTimeout).WithRetryTimeout(retryTimeout)
 	assert.Nil(err)
 	assert.NotNil(slsProject)
 
