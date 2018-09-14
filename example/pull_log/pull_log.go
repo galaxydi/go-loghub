@@ -6,13 +6,14 @@ import (
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk/example/util"
 )
 
 func main() {
 	sls.GlobalForceUsingHTTP = true
-	client := sls.CreateNormalInterface("cn-hangzhou.log.aliyuncs.com", "access-key-id", "access-key-secret", "")
-	project := "my-project"
-	logstore := "my-logstore"
+	client := sls.CreateNormalInterface(util.Endpoint, util.AccessKeyID, util.AccessKeySecret, "")
+	project := util.ProjectName
+	logstore := util.LogStoreName
 
 	shards, err := client.ListShards(project, logstore)
 	if err != nil {

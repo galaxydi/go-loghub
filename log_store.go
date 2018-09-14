@@ -39,6 +39,14 @@ type Shard struct {
 	CreateTime        int    `json:"createTime"`
 }
 
+// NewLogStore ...
+func NewLogStore(logStoreName string, project *LogProject) (*LogStore, error) {
+	return &LogStore{
+		Name:    logStoreName,
+		project: project,
+	}, nil
+}
+
 // SetPutLogCompressType set put log's compress type, default lz4
 func (s *LogStore) SetPutLogCompressType(compressType int) error {
 	if compressType < 0 || compressType >= Compress_Max {
@@ -62,13 +70,18 @@ func (s *LogStore) ListShards() (shardIDs []*Shard, err error) {
 	buf, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := &Error{}
-		json.Unmarshal(buf, err)
+		if jErr := json.Unmarshal(buf, err); jErr != nil {
+			return nil, NewBadResponseError(string(buf), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	var shards []*Shard
 	err = json.Unmarshal(buf, &shards)
-	return shards, err
+	if err != nil {
+		return nil, NewBadResponseError(string(buf), r.Header, r.StatusCode)
+	}
+	return shards, nil
 }
 
 func copyIncompressible(src, dst []byte) (int, error) {
@@ -148,7 +161,9 @@ func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return err
 	}
 	return nil
@@ -210,7 +225,9 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return err
 	}
 	return nil
@@ -277,7 +294,9 @@ func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey *string) (err error) {
 	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return err
 	}
 	return nil
@@ -324,7 +343,7 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 	err = json.Unmarshal(buf, body)
 	if err != nil {
-		return "", err
+		return "", NewBadResponseError(string(buf), r.Header, r.StatusCode)
 	}
 	cursor = body.Cursor
 	return cursor, nil
@@ -461,14 +480,16 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	histograms := []SingleHistogram{}
 	err = json.Unmarshal(body, &histograms)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 	}
 
 	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 64)
@@ -513,14 +534,16 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
-		json.Unmarshal(body, err)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
 		return nil, err
 	}
 
 	logs := []map[string]string{}
 	err = json.Unmarshal(body, &logs)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 	}
 
 	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
@@ -609,6 +632,7 @@ func (s *LogStore) DeleteIndex() error {
 	return nil
 }
 
+// GetIndex ...
 func (s *LogStore) GetIndex() (*Index, error) {
 	type Body struct {
 		project string `json:"projectName"`
@@ -639,8 +663,23 @@ func (s *LogStore) GetIndex() (*Index, error) {
 	data, _ := ioutil.ReadAll(r.Body)
 	err = json.Unmarshal(data, index)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(data), r.Header, r.StatusCode)
 	}
 
 	return index, nil
+}
+
+// CheckIndexExist check index exist or not
+func (s *LogStore) CheckIndexExist() (bool, error) {
+	if _, err := s.GetIndex(); err != nil {
+		if slsErr, ok := err.(*Error); ok {
+			if slsErr.Code == "IndexConfigNotExist" {
+				return false, nil
+			}
+			return false, slsErr
+		}
+		return false, err
+	}
+
+	return true, nil
 }

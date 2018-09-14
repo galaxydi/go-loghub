@@ -15,23 +15,23 @@ import (
 func main() {
 
 	fmt.Println("loghub sample begin")
-	begin_time := uint32(time.Now().Unix())
-	rand.Seed(int64(begin_time))
-	logstore_name := "test-logstore"
-	var retry_times int
+	beginTime := uint32(time.Now().Unix())
+	rand.Seed(int64(beginTime))
+	logstoreName := "test-logstore"
+	var retryTimes int
 	var logstore *sls.LogStore
 	var err error
-	for retry_times = 0; ; retry_times++ {
-		if retry_times > 5 {
+	for retryTimes = 0; ; retryTimes++ {
+		if retryTimes > 5 {
 			return
 		}
-		logstore, err = util.Client.GetLogStore(util.ProjectName, logstore_name)
+		logstore, err = util.Client.GetLogStore(util.ProjectName, logstoreName)
 		if err != nil {
-			fmt.Printf("GetLogStore fail, retry:%d, err:%v\n", retry_times, err)
+			fmt.Printf("GetLogStore fail, retry:%d, err:%v\n", retryTimes, err)
 			if strings.Contains(err.Error(), sls.PROJECT_NOT_EXIST) {
 				return
 			} else if strings.Contains(err.Error(), sls.LOGSTORE_NOT_EXIST) {
-				err = util.Client.CreateLogStore(util.ProjectName, logstore_name, 1, 2, true, 16)
+				err = util.Client.CreateLogStore(util.ProjectName, logstoreName, 1, 2, true, 16)
 				if err != nil {
 					fmt.Printf("CreateLogStore fail, err: %s ", err.Error())
 				} else {
@@ -39,7 +39,7 @@ func main() {
 				}
 			}
 		} else {
-			fmt.Printf("GetLogStore success, retry:%d, name: %s, ttl: %d, shardCount: %d, createTime: %d, lastModifyTime: %d\n", retry_times, logstore.Name, logstore.TTL, logstore.ShardCount, logstore.CreateTime, logstore.LastModifyTime)
+			fmt.Printf("GetLogStore success, retry:%d, name: %s, ttl: %d, shardCount: %d, createTime: %d, lastModifyTime: %d\n", retryTimes, logstore.Name, logstore.TTL, logstore.ShardCount, logstore.CreateTime, logstore.LastModifyTime)
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
@@ -67,13 +67,13 @@ func main() {
 			Logs:   logs,
 		}
 		// PostLogStoreLogs API Ref: https://intl.aliyun.com/help/doc-detail/29026.htm
-		for retry_times = 0; retry_times < 10; retry_times++ {
-			err := util.Client.PutLogs(util.ProjectName, logstore_name, loggroup)
+		for retryTimes = 0; retryTimes < 10; retryTimes++ {
+			err := util.Client.PutLogs(util.ProjectName, logstoreName, loggroup)
 			if err == nil {
-				fmt.Printf("PutLogs success, retry: %d\n", retry_times)
+				fmt.Printf("PutLogs success, retry: %d\n", retryTimes)
 				break
 			} else {
-				fmt.Printf("PutLogs fail, retry: %d, err: %s\n", retry_times, err)
+				fmt.Printf("PutLogs fail, retry: %d, err: %s\n", retryTimes, err)
 				//handle exception here, you can add retryable erorrCode, set appropriate put_retry
 				if strings.Contains(err.Error(), sls.WRITE_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.PROJECT_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.SHARD_WRITE_QUOTA_EXCEED) {
 					//mayby you should split shard
@@ -87,48 +87,47 @@ func main() {
 	}
 	// pull logs from logstore
 	var shards []*sls.Shard
-	for retry_times = 0; ; retry_times++ {
-		if retry_times > 5 {
+	for retryTimes = 0; ; retryTimes++ {
+		if retryTimes > 5 {
 			return
 		}
-		shards, err = util.Client.ListShards(util.ProjectName, logstore_name)
+		shards, err = util.Client.ListShards(util.ProjectName, logstoreName)
 		if err != nil {
-			fmt.Printf("ListShards fail, retry: %d, err:%v\n", retry_times, err)
+			fmt.Printf("ListShards fail, retry: %d, err:%v\n", retryTimes, err)
 		} else {
 			fmt.Printf("ListShards success\n")
 			break
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	var begin_cursor string
-	var end_cursor string
-	var next_cursor string
+	var beginCursor string
+	var endCursor string
+	var nextCursor string
 	var loggrouplist *sls.LogGroupList
-	for _, shard := range shards {
-		sh,_ := fmt.Printf("%d", shard)
-		if sh == 0 {
+	for _, sh := range shards {
+		if sh.ShardID == 0 {
 			// sample of pulllogs from begin
 			// GetCursor API Ref: https://intl.aliyun.com/help/doc-detail/29024.htm
-			for retry_times = 0; ; retry_times++ {
-				if retry_times > 5 {
+			for retryTimes = 0; ; retryTimes++ {
+				if retryTimes > 5 {
 					return
 				}
-				begin_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, "begin")
+				beginCursor, err = util.Client.GetCursor(util.ProjectName, logstoreName, sh.ShardID, "begin")
 				if err != nil {
-					fmt.Printf("GetCursor(begin) fail, retry: %d, err:%v\n", retry_times, err)
+					fmt.Printf("GetCursor(begin) fail, retry: %d, err:%v\n", retryTimes, err)
 				} else {
 					fmt.Printf("GetCursor(begin) success\n")
 					break
 				}
 				time.Sleep(200 * time.Millisecond)
 			}
-			for retry_times = 0; ; retry_times++ {
-				if retry_times > 5 {
+			for retryTimes = 0; ; retryTimes++ {
+				if retryTimes > 5 {
 					return
 				}
-				end_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, "end")
+				endCursor, err = util.Client.GetCursor(util.ProjectName, logstoreName, sh.ShardID, "end")
 				if err != nil {
-					fmt.Printf("GetCursor(end) fail, retry: %d, err:%v\n", retry_times, err)
+					fmt.Printf("GetCursor(end) fail, retry: %d, err:%v\n", retryTimes, err)
 				} else {
 					fmt.Printf("GetCursor(end) success\n")
 					break
@@ -136,16 +135,16 @@ func main() {
 				time.Sleep(200 * time.Millisecond)
 			}
 			// PullLogs API Ref: https://intl.aliyun.com/help/doc-detail/29025.htm
-			for retry_times = 0; ; retry_times++ {
-				if retry_times > 100 {
+			for retryTimes = 0; ; retryTimes++ {
+				if retryTimes > 100 {
 					return
 				}
-				loggrouplist, next_cursor, err = util.Client.PullLogs(util.ProjectName, logstore_name, sh, begin_cursor, end_cursor, 100)
+				loggrouplist, nextCursor, err = util.Client.PullLogs(util.ProjectName, logstoreName, sh.ShardID, beginCursor, endCursor, 100)
 				if err == nil {
-					fmt.Printf("PullLogs success, retry: %d\n", retry_times)
+					fmt.Printf("PullLogs success, retry: %d\n", retryTimes)
 					break
 				} else {
-					fmt.Printf("PullLogs fail, retry: %d, err: %s\n", retry_times, err)
+					fmt.Printf("PullLogs fail, retry: %d, err: %s\n", retryTimes, err)
 					//handle exception here, you can add retryable erorrCode, set appropriate put_retry
 					if strings.Contains(err.Error(), sls.READ_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.PROJECT_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.SHARD_READ_QUOTA_EXCEED) {
 						//mayby you should split shard
@@ -155,7 +154,7 @@ func main() {
 					}
 				}
 			}
-			fmt.Printf("shard: %d, begin_cursor: %s, end_cursor: %s, next_cursor: %s\n", sh, begin_cursor, end_cursor, next_cursor)
+			fmt.Printf("shard: %d, begin_cursor: %s, end_cursor: %s, next_cursor: %s\n", sh.ShardID, beginCursor, endCursor, nextCursor)
 			for _, loggroup := range loggrouplist.LogGroups {
 				for _, log := range loggroup.Logs {
 					for _, content := range log.Contents {
@@ -165,13 +164,13 @@ func main() {
 			}
 		} else {
 			// sample of pulllogs from setted time
-			for retry_times = 0; ; retry_times++ {
-				if retry_times > 5 {
+			for retryTimes = 0; ; retryTimes++ {
+				if retryTimes > 5 {
 					return
 				}
-				begin_cursor, err = util.Client.GetCursor(util.ProjectName, logstore_name, sh, strconv.Itoa(int(begin_time)+2))
+				beginCursor, err = util.Client.GetCursor(util.ProjectName, logstoreName, sh.ShardID, strconv.Itoa(int(beginTime)+2))
 				if err != nil {
-					fmt.Printf("GetCursor fail, retry: %d, err:%v\n", retry_times, err)
+					fmt.Printf("GetCursor fail, retry: %d, err:%v\n", retryTimes, err)
 				} else {
 					fmt.Printf("GetCursor success\n")
 					break
@@ -179,16 +178,16 @@ func main() {
 				time.Sleep(200 * time.Millisecond)
 			}
 			for {
-				for retry_times = 0; ; retry_times++ {
-					if retry_times > 100 {
+				for retryTimes = 0; ; retryTimes++ {
+					if retryTimes > 100 {
 						return
 					}
-					loggrouplist, next_cursor, err = util.Client.PullLogs(util.ProjectName, logstore_name, sh, begin_cursor, "", 2)
+					loggrouplist, nextCursor, err = util.Client.PullLogs(util.ProjectName, logstoreName, sh.ShardID, beginCursor, "", 2)
 					if err == nil {
-						fmt.Printf("PullLogs success, retry: %d\n", retry_times)
+						fmt.Printf("PullLogs success, retry: %d\n", retryTimes)
 						break
 					} else {
-						fmt.Printf("PullLogs fail, retry: %d, err: %s\n", retry_times, err)
+						fmt.Printf("PullLogs fail, retry: %d, err: %s\n", retryTimes, err)
 						//handle exception here, you can add retryable erorrCode, set appropriate put_retry
 						if strings.Contains(err.Error(), sls.READ_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.PROJECT_QUOTA_EXCEED) || strings.Contains(err.Error(), sls.SHARD_READ_QUOTA_EXCEED) {
 							//mayby you should split shard
@@ -198,7 +197,7 @@ func main() {
 						}
 					}
 				}
-				fmt.Printf("shard: %d, begin_cursor: %s, next_cursor: %s, len(loggrouplist.LogGroups): %d\n", sh, begin_cursor, next_cursor, len(loggrouplist.LogGroups))
+				fmt.Printf("shard: %d, begin_cursor: %s, next_cursor: %s, len(loggrouplist.LogGroups): %d\n", sh.ShardID, beginCursor, nextCursor, len(loggrouplist.LogGroups))
 				if len(loggrouplist.LogGroups) == 0 {
 					// means no more data in this shard, you can break out or sleep to wait new data
 					break
@@ -210,7 +209,7 @@ func main() {
 							}
 						}
 					}
-					begin_cursor = next_cursor
+					beginCursor = nextCursor
 				}
 			}
 		}
