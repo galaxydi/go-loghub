@@ -27,8 +27,14 @@ var (
 
 // LogProject defines log project
 type LogProject struct {
-	Name            string `json:"projectName"` // Project name
-	Description     string `json:"description"` // Project description
+	Name           string `json:"projectName"`    // Project name
+	Description    string `json:"description"`    // Project description
+	Status         string `json:"status"`         // Normal
+	Owner          string `json:"owner"`          // empty
+	Region         string `json:"region"`         // region id, eg cn-shanghai
+	CreateTime     string `json:"createTime"`     // unix time seconds, eg 1524539357
+	LastModifyTime string `json:"lastModifyTime"` // unix time seconds, eg 1524539357
+
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string
 	AccessKeySecret string
@@ -829,8 +835,18 @@ func (p *LogProject) parseEndpoint() {
 		scheme = httpScheme
 	}
 	if ipRegex.MatchString(host) { // ip format
-		p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+		if len(p.Name) == 0 {
+			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
+		} else {
+			p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+		}
+
 	} else {
-		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+		if len(p.Name) == 0 {
+			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
+		} else {
+			p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
+		}
+
 	}
 }

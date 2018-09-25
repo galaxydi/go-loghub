@@ -32,6 +32,13 @@ const (
 	MergeTypeLogstore = "logstore"
 )
 
+const (
+	TopicFormatNone         = "none"        // no topic
+	TopicFormatMachineGroup = "group_topic" // machine group's topic
+	// otherwise, file path regex.
+	// eg, file path /var/log/nginx/access.log, TopicFormat: /var/log/([^/]+)/access\.log, so topic is 'nginx'
+)
+
 var NoConfigFieldError = errors.New("no this config field")
 var InvalidTypeError = errors.New("invalid config type")
 
@@ -293,7 +300,7 @@ func InitLocalFileConfigInputDetail(detail *LocalFileConfigInputDetail) {
 	InitCommonConfigInputDetail(&detail.CommonConfigInputDetail)
 	detail.FileEncoding = "utf8"
 	detail.MaxDepth = 100
-	detail.TopicFormat = "none"
+	detail.TopicFormat = TopicFormatNone
 	detail.Preserve = true
 	detail.DiscardUnmatch = true
 }
@@ -308,7 +315,7 @@ func AddNecessaryLocalFileInputConfigField(inputConfigDetail map[string]interfac
 	}
 
 	if _, ok := inputConfigDetail["topicFormat"]; !ok {
-		inputConfigDetail["topicFormat"] = "none"
+		inputConfigDetail["topicFormat"] = TopicFormatNone
 	}
 
 	if _, ok := inputConfigDetail["preserve"]; !ok {

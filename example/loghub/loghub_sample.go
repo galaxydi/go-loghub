@@ -15,12 +15,33 @@ import (
 func main() {
 
 	fmt.Println("loghub sample begin")
+	var err error
+	offset := 0
+	fmt.Println("project list: ")
+	for {
+		projects, count, total, err := util.Client.ListProjectV2(offset, 100)
+		if err != nil {
+			panic(err)
+		}
+		for _, project := range projects {
+			fmt.Printf(" name : %s, description : %s, region : %s, ctime : %s, mtime : %s\n",
+				project.Name,
+				project.Description,
+				project.Region,
+				project.CreateTime,
+				project.LastModifyTime)
+		}
+		if offset+count >= total {
+			break
+		}
+		offset += count
+	}
+
 	beginTime := uint32(time.Now().Unix())
 	rand.Seed(int64(beginTime))
 	logstoreName := "test-logstore"
 	var retryTimes int
 	var logstore *sls.LogStore
-	var err error
 	for retryTimes = 0; ; retryTimes++ {
 		if retryTimes > 5 {
 			return

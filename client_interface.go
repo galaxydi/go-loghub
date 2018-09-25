@@ -51,6 +51,10 @@ type ClientInterface interface {
 	// ListProject list all projects in specific region
 	// the region is related with the client's endpoint
 	ListProject() (projectNames []string, err error)
+	// ListProjectV2 list all projects in specific region
+	// the region is related with the client's endpoint
+	// ref https://www.alibabacloud.com/help/doc-detail/74955.htm
+	ListProjectV2(offset, size int) (projects []LogProject, count, total int, err error)
 	// CheckProjectExist check project exist or not
 	CheckProjectExist(name string) (bool, error)
 	// DeleteProject ...

@@ -155,6 +155,16 @@ func (c *TokenAutoUpdateClient) ListProject() (projectNames []string, err error)
 	return
 }
 
+func (c *TokenAutoUpdateClient) ListProjectV2(offset, size int) (projects []LogProject, count, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		projects, count, total, err = c.logClient.ListProjectV2(offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) CheckProjectExist(name string) (ok bool, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		ok, err = c.logClient.CheckProjectExist(name)

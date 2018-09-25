@@ -204,8 +204,11 @@ func (s *ConfigTestSuite) TestJSONFileConfig() {
 			LogStoreName: s.logstoreName,
 		},
 	}
+	// TimeKey and TimeFormat are optional, use system time as log time if not configed
 	jsonConfig.TimeKey = "key_time"
 	jsonConfig.TimeFormat = "%Y/%m/%d %H:%M:%S"
+	jsonConfig.LogPath = "/cloud/log/"
+	jsonConfig.FilePattern = "access.log*"
 	s.Equal(jsonConfig.LogType, LogFileTypeJSONLog)
 	err := s.client.CreateConfig(s.projectName, config)
 	s.Nil(err)
@@ -253,6 +256,7 @@ func (s *ConfigTestSuite) TestDelimiterFileConfig() {
 	delimiterConfig.Quote = "\u0001"
 	delimiterConfig.Key = []string{"1", "2", "3", "4", "5"}
 	delimiterConfig.Separator = "\""
+	// TimeKey and TimeFormat are optional, use system time as log time if not configed
 	delimiterConfig.TimeKey = "1"
 	delimiterConfig.TimeFormat = "xxxx"
 	delimiterConfig.LogPath = "/var/log/log"

@@ -18,9 +18,9 @@ import (
 
 // timeout configs
 var (
-	defaultRequestTimeout      = 10 * time.Second
-	defaultRetryTimeout = 30 * time.Second
-	defaultHttpClient          = &http.Client{
+	defaultRequestTimeout = 10 * time.Second
+	defaultRetryTimeout   = 30 * time.Second
+	defaultHttpClient     = &http.Client{
 		Timeout: defaultRequestTimeout,
 	}
 )
@@ -86,7 +86,9 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	if method == http.MethodGet {
 		err = RetryWithCondition(ctx, backoff.NewExponentialBackOff(), func() (bool, error) {
 			if len(mock) == 0 {
+				fmt.Println("real request", project, method, uri, headers, body)
 				r, slsErr = realRequest(ctx, project, method, uri, headers, body)
+				fmt.Println("real request done")
 			} else {
 				r, mockErr = nil, mock[0].(*mockErrorRetry)
 				mockErr.RetryCnt--
@@ -134,13 +136,13 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	// SLS public request headers
-	var hostStr string
-	if len(project.Name) == 0 {
-		hostStr = project.Endpoint
-	} else {
-		hostStr = project.Name + "." + project.Endpoint
-	}
-	headers["Host"] = hostStr
+	// var hostStr string
+	// if len(project.Name) == 0 {
+	// 	hostStr = project.Endpoint
+	// } else {
+	// 	hostStr = project.Name + "." + project.Endpoint
+	// }
+	headers["Host"] = project.baseURL
 	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
