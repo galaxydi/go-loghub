@@ -142,7 +142,8 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	// } else {
 	// 	hostStr = project.Name + "." + project.Endpoint
 	// }
-	headers["Host"] = project.baseURL
+	baseURL := project.getBaseURL()
+	headers["Host"] = baseURL
 	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
@@ -178,7 +179,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	reader := bytes.NewReader(body)
 
 	// Handle the endpoint
-	urlStr := fmt.Sprintf("%s%s", project.baseURL, uri)
+	urlStr := fmt.Sprintf("%s%s", baseURL, uri)
 	req, err := http.NewRequest(method, urlStr, reader)
 	if err != nil {
 		return nil, NewClientError(err)

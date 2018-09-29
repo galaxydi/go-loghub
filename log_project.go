@@ -819,6 +819,14 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	return body.Total, body.Count, body.MetaNameList, nil
 }
 
+func (p *LogProject) getBaseURL() string {
+	if len(p.baseURL) > 0 {
+		return p.baseURL
+	}
+	p.parseEndpoint()
+	return p.baseURL
+}
+
 func (p *LogProject) parseEndpoint() {
 	scheme := httpScheme // default to http scheme
 	host := p.Endpoint
