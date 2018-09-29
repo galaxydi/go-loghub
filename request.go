@@ -79,16 +79,18 @@ func request(project *LogProject, method, uri string, headers map[string]string,
 	var err error
 	var mockErr *mockErrorRetry
 
+	project.init()
 	ctx, cancel := context.WithTimeout(context.Background(), project.retryTimeout)
 	defer cancel()
 
+	//fmt.Println("request ", project, method, uri, headers, body)
 	// all GET method is read function
 	if method == http.MethodGet {
 		err = RetryWithCondition(ctx, backoff.NewExponentialBackOff(), func() (bool, error) {
 			if len(mock) == 0 {
-				fmt.Println("real request", project, method, uri, headers, body)
+				//fmt.Println("real request", project, method, uri, headers, body)
 				r, slsErr = realRequest(ctx, project, method, uri, headers, body)
-				fmt.Println("real request done")
+				//fmt.Println("real request done")
 			} else {
 				r, mockErr = nil, mock[0].(*mockErrorRetry)
 				mockErr.RetryCnt--

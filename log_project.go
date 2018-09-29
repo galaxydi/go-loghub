@@ -819,6 +819,14 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	return body.Total, body.Count, body.MetaNameList, nil
 }
 
+func (p *LogProject) init() {
+	if p.retryTimeout == time.Duration(0) {
+		p.httpClient = defaultHttpClient
+		p.retryTimeout = defaultRetryTimeout
+		p.parseEndpoint()
+	}
+}
+
 func (p *LogProject) getBaseURL() string {
 	if len(p.baseURL) > 0 {
 		return p.baseURL
