@@ -36,6 +36,7 @@ type Dashboard struct {
 	DashboardName string  `json:"dashboardName"`
 	Description   string  `json:"description"`
 	ChartList     []Chart `json:"charts"`
+	DisplayName   string  `json:"displayName"`
 }
 
 func (c *Client) CreateChart(project, dashboardName string, chart Chart) error {
