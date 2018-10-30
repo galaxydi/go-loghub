@@ -33,6 +33,12 @@ func (c *Client) CreateLogStore(project string, logstore string, ttl, shardCnt i
 	return proj.CreateLogStore(logstore, ttl, shardCnt, autoSplit, maxSplitShard)
 }
 
+// CreateLogStoreV2 creates a new logstore in SLS
+func (c *Client) CreateLogStoreV2(project string, logstore *LogStore) error {
+	proj := convert(c, project)
+	return proj.CreateLogStoreV2(logstore)
+}
+
 // DeleteLogStore deletes a logstore according by logstore name.
 func (c *Client) DeleteLogStore(project string, logstore string) (err error) {
 	proj := convert(c, project)
@@ -44,6 +50,13 @@ func (c *Client) DeleteLogStore(project string, logstore string) (err error) {
 func (c *Client) UpdateLogStore(project string, logstore string, ttl, shardCnt int) (err error) {
 	proj := convert(c, project)
 	return proj.UpdateLogStore(logstore, ttl, shardCnt)
+}
+
+// UpdateLogStoreV2 updates a logstore according by logstore name,
+// obviously we can't modify the logstore name itself.
+func (c *Client) UpdateLogStoreV2(project string, logstore *LogStore) (err error) {
+	proj := convert(c, project)
+	return proj.UpdateLogStoreV2(logstore)
 }
 
 // ListMachineGroup returns machine group name list and the total number of machine groups.

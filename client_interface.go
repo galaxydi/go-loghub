@@ -65,18 +65,23 @@ type ClientInterface interface {
 	ListLogStore(project string) ([]string, error)
 	// GetLogStore returns logstore according by logstore name.
 	GetLogStore(project string, logstore string) (*LogStore, error)
-	// CreateLogStore creates a new logstore in SLS,
+	// CreateLogStore creates a new logstore in SLS
 	// where name is logstore name,
 	// and ttl is time-to-live(in day) of logs,
 	// and shardCnt is the number of shards,
 	// and autoSplit is auto split,
 	// and maxSplitShard is the max number of shard.
 	CreateLogStore(project string, logstore string, ttl, shardCnt int, autoSplit bool, maxSplitShard int) error
+	// CreateLogStoreV2 creates a new logstore in SLS
+	CreateLogStoreV2(project string, logstore *LogStore) error
 	// DeleteLogStore deletes a logstore according by logstore name.
 	DeleteLogStore(project string, logstore string) (err error)
 	// UpdateLogStore updates a logstore according by logstore name,
 	// obviously we can't modify the logstore name itself.
 	UpdateLogStore(project string, logstore string, ttl, shardCnt int) (err error)
+	// UpdateLogStoreV2 updates a logstore according by logstore name,
+	// obviously we can't modify the logstore name itself.
+	UpdateLogStoreV2(project string, logstore *LogStore) error
 	// CheckLogstoreExist check logstore exist or not
 	CheckLogstoreExist(project string, logstore string) (bool, error)
 

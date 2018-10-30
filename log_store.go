@@ -19,9 +19,13 @@ import (
 
 // LogStore defines LogStore struct
 type LogStore struct {
-	Name       string `json:"logstoreName"`
-	TTL        int    `json:"ttl"`
-	ShardCount int    `json:"shardCount"`
+	Name          string `json:"logstoreName"`
+	TTL           int    `json:"ttl"`
+	ShardCount    int    `json:"shardCount"`
+	WebTracking   bool   `json:"enable_tracking"`
+	AutoSplit     bool   `json:"autoSplit"`
+	MaxSplitShard int    `json:"maxSplitShard"`
+	AppendMeta    bool   `json:"appendMeta"`
 
 	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`

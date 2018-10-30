@@ -215,6 +215,16 @@ func (c *TokenAutoUpdateClient) CreateLogStore(project string, logstore string, 
 	return
 }
 
+func (c *TokenAutoUpdateClient) CreateLogStoreV2(project string, logstore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateLogStoreV2(project, logstore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) DeleteLogStore(project string, logstore string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.DeleteLogStore(project, logstore)
@@ -228,6 +238,16 @@ func (c *TokenAutoUpdateClient) DeleteLogStore(project string, logstore string) 
 func (c *TokenAutoUpdateClient) UpdateLogStore(project string, logstore string, ttl, shardCnt int) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.UpdateLogStore(project, logstore, ttl, shardCnt)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateLogStoreV2(project string, logstore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateLogStoreV2(project, logstore)
 		if !c.processError(err) {
 			return
 		}

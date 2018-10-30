@@ -181,6 +181,33 @@ func (p *LogProject) CreateLogStore(name string, ttl, shardCnt int, autoSplit bo
 	return nil
 }
 
+// CreateLogStoreV2 creates a new logstore in SLS
+func (p *LogProject) CreateLogStoreV2(logstore *LogStore) error {
+	body, err := json.Marshal(logstore)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+
+	r, err := request(p, "POST", "/logstores", h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
 // DeleteLogStore deletes a logstore according by logstore name.
 func (p *LogProject) DeleteLogStore(name string) (err error) {
 	h := map[string]string{
@@ -225,6 +252,33 @@ func (p *LogProject) UpdateLogStore(name string, ttl, shardCnt int) (err error) 
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
 	r, err := request(p, "PUT", "/logstores/"+name, h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+// UpdateLogStoreV2 updates a logstore according by logstore name
+// obviously we can't modify the logstore name itself.
+func (p *LogProject) UpdateLogStoreV2(logstore *LogStore) (err error) {
+	body, err := json.Marshal(logstore)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate", // TODO: support lz4
+	}
+	r, err := request(p, "PUT", "/logstores/"+logstore.Name, h, body)
 	if err != nil {
 		return NewClientError(err)
 	}
