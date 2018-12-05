@@ -133,7 +133,8 @@ func TestClient_DisableAndEnableAlert(t *testing.T) {
 }
 
 func TestClient_GetAlert(t *testing.T) {
-	getAlert, err := client().GetAlert("project-to-test-alert", "alert-test-name")
+	createAlert()
+	getAlert, err := client().GetAlert(testProject, testAlertName)
 	if err != nil {
 		t.Fatal(err)
 	}
