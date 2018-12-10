@@ -861,9 +861,29 @@ func (c *TokenAutoUpdateClient) GetAlert(project string, alertName string) (aler
 	return
 }
 
-func (c *TokenAutoUpdateClient) ListAlert(project string, alertName string, offset, size int) (alerts []string, total int, count int, err error) {
+func (c *TokenAutoUpdateClient) DisableAlert(project string, alertName string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		alerts, total, count, err = c.logClient.ListAlert(project, alertName, offset, size)
+		err = c.logClient.DisableAlert(project, alertName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) EnableAlert(project string, alertName string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.EnableAlert(project, alertName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListAlert(project string, alertName string, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		alerts, total, count, err = c.logClient.ListAlert(project, alertName, dashboard, offset, size)
 		if !c.processError(err) {
 			return
 		}

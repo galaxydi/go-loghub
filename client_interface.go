@@ -222,5 +222,7 @@ type ClientInterface interface {
 	UpdateAlert(project string, alert *Alert) error
 	DeleteAlert(project string, alertName string) error
 	GetAlert(project string, alertName string) (*Alert, error)
-	ListAlert(project string, alertName string, offset, size int) (alerts []string, total int, count int, err error)
+	DisableAlert(project string, alertName string) error
+	EnableAlert(project string, alertName string) error
+	ListAlert(project, alertName, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error)
 }
