@@ -195,7 +195,9 @@ func InitJSONConfigInputDetail(detail *JSONConfigInputDetail) {
 }
 
 func AddNecessaryJSONLogInputConfigField(inputConfigDetail map[string]interface{}) {
-
+	if _, ok := inputConfigDetail["timeKey"]; !ok {
+		inputConfigDetail["timeKey"] = ""
+	}
 }
 
 func ConvertToJSONConfigInputDetail(detail InputDetailInterface) (*JSONConfigInputDetail, bool) {
@@ -241,6 +243,10 @@ func AddNecessaryDelimiterLogInputConfigField(inputConfigDetail map[string]inter
 
 	if _, ok := inputConfigDetail["autoExtend"]; !ok {
 		inputConfigDetail["autoExtend"] = true
+	}
+
+	if _, ok := inputConfigDetail["timeKey"]; !ok {
+		inputConfigDetail["timeKey"] = ""
 	}
 }
 

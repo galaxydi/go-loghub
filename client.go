@@ -237,9 +237,7 @@ func (c *Client) ListProjectV2(offset, size int) (projects []LogProject, count, 
 		Total    int          `json:"total"`
 	}
 
-	fmt.Println("xxx", uri, h)
 	r, err := request(proj, "GET", uri, h, nil)
-	fmt.Printf("yyy")
 	if err != nil {
 		return nil, 0, 0, NewClientError(err)
 	}
