@@ -1,13 +1,11 @@
 package consumerLibrary
 
 import (
-	"fmt"
 	"time"
 )
 
 type ConsumerHeatBeat struct{
 	*ConsumerClient
-	*ConsumerCheckpointTracker
 	HeartShutDownFlag	bool
 	HeldShard		[]int
 	HeartShard 		[]int
@@ -18,7 +16,6 @@ type ConsumerHeatBeat struct{
 func InitConsumerHeatBeat(consumerClient *ConsumerClient)*ConsumerHeatBeat{
 	consumerHeatBeat := &ConsumerHeatBeat{
 		ConsumerClient:consumerClient,
-		ConsumerCheckpointTracker:InitConsumerCheckpointTracker(consumerClient),
 		HeartShutDownFlag:false,
 		HeldShard:[]int{},
 		HeartShard:[]int{},
@@ -54,29 +51,29 @@ func (consumerHeatBeat *ConsumerHeatBeat) RemoveHeartShard(shardId int){
 func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun(){
 	for !consumerHeatBeat.HeartShutDownFlag{
 		last_heatbeat_time := time.Now().Unix()
-		fmt.Println("1111")
-		if consumerHeatBeat.HeartShard == nil{
-			fmt.Println("caonima")
-		}
-		fmt.Println(consumerHeatBeat.HeartShard)
-		fmt.Println(consumerHeatBeat.Project)
 		response_shards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
-		fmt.Println("2222")
-		Info.Println("heart beat result: %v,get:%v",consumerHeatBeat.HeartShard,response_shards)
+		Info.Printf("heart beat result: %v,get:%v",consumerHeatBeat.HeartShard,response_shards)
 		// TODO 这为什么报错说不相等,想起来了，golang ，列表没办法判断是否相等
-		Info.Println(consumerHeatBeat.HeartShard,consumerHeatBeat.HeldShard)
+
 		if !IntSliceReflectEqual(consumerHeatBeat.HeartShard,consumerHeatBeat.HeldShard) {
 			current_set := Set(consumerHeatBeat.HeartShard)
+			Info.Println(current_set,"current_set")
 			response_set := Set(consumerHeatBeat.HeldShard)
+			Info.Println(response_set,"response_set")
 			// 获得的减去当前的，等于应该增加的
 			add := Subtract(current_set,response_set)
+			Info.Println(add)
 			// 当前的减去获得，等于应该放弃的
 			remove := Subtract(response_set,current_set)
+			Info.Println(remove)
 			Info.Printf("shard reorganize, adding: %v, removing: %v",add,remove)
 		}
 
 		consumerHeatBeat.HeldShard = response_shards
-		consumerHeatBeat.HeartShard = consumerHeatBeat.HeartShard[:]
+
+
+		consumerHeatBeat.HeartShard = consumerHeatBeat.HeldShard[:]
+
 
 		time_to_sleep := int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - last_heatbeat_time)
 		for time_to_sleep > 0 && !consumerHeatBeat.HeartShutDownFlag{

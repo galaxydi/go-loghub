@@ -19,15 +19,18 @@ func Set(slc []int) []int {
 	return result
 }
 
-// 检查后面的列表减去前面的列表，求差
+// 检查后面的列表减去前面的列表，求差 TODO 这个有问题
 func Subtract(a []int, b []int) (diffSlice []int) {
 
 	lengthA := len(a)
 
+	if len(a) == 0{
+		return b
+	}
+
 	for _, valueB := range b {
 
 		temp := valueB //遍历取出B中的元素
-
 		for j := 0; j < lengthA; j++ {
 			if temp == a[j] { //如果相同 比较下一个
 				break

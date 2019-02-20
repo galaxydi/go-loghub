@@ -4,45 +4,47 @@ import (
 	"time"
 )
 
-type ConsumerCheckpointTracker struct{
+type ConsumerCheckPointTracker struct{
 	*ConsumerClient
 	DefaultFlushCheckPointInterval int64
 	TempCheckPoint string
 	LastPersistentCheckPoint string
-	ShardId int
+	TrackerShardId int  // TODO 检查点追踪我为什么忘给分区了
 	LastCheckTime int64
 }
 
 
-func InitConsumerCheckpointTracker(consumerClient *ConsumerClient)*ConsumerCheckpointTracker{
-	checkpointTracker:= &ConsumerCheckpointTracker{
+func InitConsumerCheckpointTracker(shardId int,consumerClient *ConsumerClient)*ConsumerCheckPointTracker{
+	checkpointTracker:= &ConsumerCheckPointTracker{
 		DefaultFlushCheckPointInterval:60,
 		ConsumerClient:consumerClient,
+		TrackerShardId:shardId,
+
 	}
 	return checkpointTracker
 }
 
 
-func (checkPointTracker *ConsumerCheckpointTracker) SetMemoryCheckPoint(cursor string){
+func (checkPointTracker *ConsumerCheckPointTracker) SetMemoryCheckPoint(cursor string){
 	checkPointTracker.TempCheckPoint = cursor
 }
 
 
-func (checkPointTracker *ConsumerCheckpointTracker) SetPersistentCheckPoint(cursor string){
+func (checkPointTracker *ConsumerCheckPointTracker) SetPersistentCheckPoint(cursor string){
 	checkPointTracker.LastPersistentCheckPoint = cursor
 }
 
 
 
-func (checkPointTracker *ConsumerCheckpointTracker) MflushCheckPoint(){
+func (checkPointTracker *ConsumerCheckPointTracker) MflushCheckPoint(){
 	if checkPointTracker.TempCheckPoint != "" && checkPointTracker.TempCheckPoint != checkPointTracker.LastPersistentCheckPoint{
-		checkPointTracker.MupdateCheckPoint(checkPointTracker.ShardId,checkPointTracker.TempCheckPoint,true)
+		checkPointTracker.MupdateCheckPoint(checkPointTracker.TrackerShardId,checkPointTracker.TempCheckPoint,true)
 		checkPointTracker.LastPersistentCheckPoint = checkPointTracker.TempCheckPoint
 	}
 }
 
 
-func (checkPointTracker *ConsumerCheckpointTracker) FlushCheck(){
+func (checkPointTracker *ConsumerCheckPointTracker) FlushCheck(){
 	current_time := time.Now().Unix()
 	if current_time > checkPointTracker.LastCheckTime + checkPointTracker.DefaultFlushCheckPointInterval{
 		checkPointTracker.MflushCheckPoint()
@@ -51,6 +53,6 @@ func (checkPointTracker *ConsumerCheckpointTracker) FlushCheck(){
 }
 
 
-func (checkPointTracker *ConsumerCheckpointTracker) GetCheckPoint()string{
+func (checkPointTracker *ConsumerCheckPointTracker) GetCheckPoint()string{
 	return checkPointTracker.TempCheckPoint
 }

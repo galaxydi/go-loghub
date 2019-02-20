@@ -1,7 +1,6 @@
 package consumerLibrary
 
 import (
-	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 )
 
@@ -30,7 +29,7 @@ func InitConsumerClient(option LogHubConfig)*ConsumerClient{
 		client,
 		consumerGroup,
 	}
-	fmt.Println("jianlaile a ",consumerClient.Project)
+
 	return consumerClient
 }
 
@@ -44,8 +43,6 @@ func(consumer *ConsumerClient) McreateConsumerGroup(){
 }
 
 func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
-
-	fmt.Println(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	held_shard,err:=consumer.HeartBeat(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	if err != nil {
 		Info.Println(err)

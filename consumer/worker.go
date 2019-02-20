@@ -49,6 +49,7 @@ func (consumerWorker *ConsumerWorker)Worker(){
 
 
 func (consumerWorker *ConsumerWorker)WorkerShutDown(){
+	Info.Println("*** try to exit ***" )
 	consumerWorker.WorkerShutDownFlag = true
 	consumerWorker.ShutDownHeart()
 	for {
@@ -101,7 +102,7 @@ func (consumerWorker *ConsumerWorker)getShardConsumer(shardId int) *ShardConsume
 		return consumer
 	}
 	// TODO 别忘了放执行函数
-	new_cousumer := InitShardConsumerWorker(consumerWorker.ConsumerCheckpointTracker,consumerWorker.ConsumerClient,consumerWorker.Do)
+	new_cousumer := InitShardConsumerWorker(shardId,consumerWorker.ConsumerClient,consumerWorker.Do)
 	consumerWorker.ShardConsumer[shardId] = new_cousumer
 	return new_cousumer
 
