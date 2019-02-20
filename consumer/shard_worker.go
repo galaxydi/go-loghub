@@ -1,4 +1,4 @@
-package consumer
+package consumerLibrary
 
 import "github.com/aliyun/aliyun-log-go-sdk"
 
@@ -11,12 +11,18 @@ type ShardConsumerWorker struct{
 	LastFetchGroupCount int
 	LastFetchtime   int64
 	ConsumerStatus 	string // TODO 给一个初始化壮态
-	Process 			func(a int, logGroup *sls.LogGroupList)
+	Process 		func(a int, logGroup *sls.LogGroupList)
 }
 
 
-func InitShardConsumerWorker()*ShardConsumerWorker{
-
+func InitShardConsumerWorker(consumerCheckpointTracker *ConsumerCheckpointTracker,consumerClient *ConsumerClient,do func(a int, logGroup *sls.LogGroupList))*ShardConsumerWorker{
+	shardConsumeWorker := &ShardConsumerWorker{
+		ConsumerShutDownFlag:false,
+		Process:do,
+		ConsumerCheckpointTracker:consumerCheckpointTracker,
+		ConsumerClient:consumerClient,
+	}
+	return shardConsumeWorker
 }
 
 func (consumer *ShardConsumerWorker)consume(){
@@ -58,19 +64,21 @@ func (consumer *ShardConsumerWorker)consume(){
 		if ok{
 			consumer.LastFetchLogGroup,consumer.NextFetchCursor = consumer.ConsumerFetchTask()
 			consumer.SetMemoryCheckPoint(consumer.NextFetchCursor)
-			// TODO 少一个函数去获取日志的数量
+			consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
 			Info.Println("get log conut : %v",consumer.LastFetchGroupCount)
 		}
 	case _,ok:=<-c:
 		if ok{
 			consumer.ConsumerProcessTask()
 			consumer.LastFetchLogGroup = nil
+			consumer.LastFetchGroupCount = 0
 		}
 	case _,ok:= <-d:
 		if ok{
 			// 强制刷新当前的检查点
 			consumer.MflushCheckPoint()
 			consumer.ConsumerStatus = SHUTDOWN_COMPLETE
+			Info.Printf("shardworker %v are shut down complete",consumer.ShardId)
 
 		}
 	}

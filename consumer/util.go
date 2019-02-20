@@ -1,6 +1,9 @@
-package consumer
+package consumerLibrary
 
-import "reflect"
+import (
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"reflect"
+)
 
 // just like python function set
 func Set(slc []int) []int {
@@ -74,3 +77,22 @@ func Contain(obj interface{}, target interface{}) bool {
 
 	return false
 }
+
+func GetLogCount(logGroupList *sls.LogGroupList) int {
+	a:=0
+	for _,x:= range logGroupList.LogGroups{
+		a = a + len(x.Logs)
+	}
+	return a
+}
+
+
+
+
+
+
+
+
+
+
+

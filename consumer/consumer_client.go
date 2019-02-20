@@ -1,12 +1,40 @@
-package consumer
+package consumerLibrary
 
-import "github.com/aliyun/aliyun-log-go-sdk"
+import (
+	"fmt"
+	"github.com/aliyun/aliyun-log-go-sdk"
+)
 
 type ConsumerClient struct{
 	LogHubConfig
 	*sls.Client
 	sls.ConsumerGroup
 }
+
+func InitConsumerClient(option LogHubConfig)*ConsumerClient{
+	client := &sls.Client{
+		Endpoint:option.Endpoint,
+		AccessKeyID:option.AccessKeyID,
+		AccessKeySecret:option.AccessKeySecret,
+		SecurityToken:option.SecurityToken,
+		// TODO  UserAgent 是否用添加？
+	}
+	consumerGroup := sls.ConsumerGroup{
+		option.MConsumerGroupName,
+		option.HeartbeatInterval*2,
+		option.InOrder,
+
+	}
+	consumerClient := &ConsumerClient{
+		option,
+		client,
+		consumerGroup,
+	}
+	fmt.Println("jianlaile a ",consumerClient.Project)
+	return consumerClient
+}
+
+
 
 func(consumer *ConsumerClient) McreateConsumerGroup(){
 	err := consumer.CreateConsumerGroup(consumer.Project,consumer.Logstore,consumer.ConsumerGroup)
@@ -16,6 +44,8 @@ func(consumer *ConsumerClient) McreateConsumerGroup(){
 }
 
 func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
+
+	fmt.Println(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	held_shard,err:=consumer.HeartBeat(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	if err != nil {
 		Info.Println(err)

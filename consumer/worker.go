@@ -1,4 +1,4 @@
-package consumer
+package consumerLibrary
 
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
@@ -13,8 +13,28 @@ type ConsumerWorker struct{
 	WorkerShutDownFlag bool
 	ShardConsumer map[int]*ShardConsumerWorker // TODO
 	Do 		func(a int, logGroup *sls.LogGroupList)
-	// TODO 初始化的时候创建心跳，创建消费组
 }
+
+
+
+func InitConsumerWorker(option LogHubConfig,do func(int,*sls.LogGroupList)) *ConsumerWorker{
+
+	consumerClient := InitConsumerClient(option)
+	consumerHeatBeat := InitConsumerHeatBeat(consumerClient)
+	consumerWorker := &ConsumerWorker{
+		consumerHeatBeat,
+		consumerClient,
+		false,
+		make(map[int]*ShardConsumerWorker),
+		do,
+	}
+	consumerClient.McreateConsumerGroup()
+	return consumerWorker
+}
+
+
+
+
 
 
 func (consumerWorker *ConsumerWorker)Worker(){
@@ -81,7 +101,7 @@ func (consumerWorker *ConsumerWorker)getShardConsumer(shardId int) *ShardConsume
 		return consumer
 	}
 	// TODO 别忘了放执行函数
-	new_cousumer := InitShardConsumerWorker()
+	new_cousumer := InitShardConsumerWorker(consumerWorker.ConsumerCheckpointTracker,consumerWorker.ConsumerClient,consumerWorker.Do)
 	consumerWorker.ShardConsumer[shardId] = new_cousumer
 	return new_cousumer
 
@@ -114,9 +134,6 @@ func (consumerWorker *ConsumerWorker) ShutDownAndWait(){
 	consumerWorker.ShardConsumer = nil
 }
 
-func InitConsumerWorker(option LogHubConfig,do func(int,*sls.LogGroupList)) *ConsumerWorker{
-
-}
 
 
 

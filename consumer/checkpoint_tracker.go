@@ -1,4 +1,4 @@
-package consumer
+package consumerLibrary
 
 import (
 	"time"
@@ -12,6 +12,16 @@ type ConsumerCheckpointTracker struct{
 	ShardId int
 	LastCheckTime int64
 }
+
+
+func InitConsumerCheckpointTracker(consumerClient *ConsumerClient)*ConsumerCheckpointTracker{
+	checkpointTracker:= &ConsumerCheckpointTracker{
+		DefaultFlushCheckPointInterval:60,
+		ConsumerClient:consumerClient,
+	}
+	return checkpointTracker
+}
+
 
 func (checkPointTracker *ConsumerCheckpointTracker) SetMemoryCheckPoint(cursor string){
 	checkPointTracker.TempCheckPoint = cursor

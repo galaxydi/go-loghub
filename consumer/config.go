@@ -1,4 +1,4 @@
-package consumer
+package consumerLibrary
 
 
 
@@ -11,12 +11,13 @@ type LogHubConfig struct {
 	MConsumerGroupName string
 	ConsumerName string
 	CursorPosition string
-	HeartbeatInterval  int64
+	HeartbeatInterval  int
 	DataFetchInterval	int64
 	MaxFetchLogGroupSize int
 	CursorStarttime string
 	InOrder 		bool    // TODO 是否按序消费，我暂时没用到这个参数
 	// security_token 还有这个参数我没有用
+	SecurityToken string
 }
 
 const (

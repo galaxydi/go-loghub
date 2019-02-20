@@ -1,4 +1,4 @@
-package consumer
+package consumerLibrary
 
 import "github.com/aliyun/aliyun-log-go-sdk"
 
@@ -18,8 +18,11 @@ func (consumer *ShardConsumerWorker)ConsumerInitializeTask() string{
 		cursor := consumer.MgetEndCursor(consumer.ShardId)
 		return cursor
 	}
-	cursor := consumer.MgetCursor(consumer.ShardId)
-	return cursor
+	if consumer.CursorPosition == SPECIAL_TIMER_CURSOR {
+		cursor := consumer.MgetCursor(consumer.ShardId)
+		return cursor
+	}
+	return ""
 }
 
 

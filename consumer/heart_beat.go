@@ -1,7 +1,9 @@
-package consumer
+package consumerLibrary
 
-
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type ConsumerHeatBeat struct{
 	*ConsumerClient
@@ -13,8 +15,15 @@ type ConsumerHeatBeat struct{
 
 
 
-func InitConsumerHeatBeat()*ConsumerHeatBeat{
-
+func InitConsumerHeatBeat(consumerClient *ConsumerClient)*ConsumerHeatBeat{
+	consumerHeatBeat := &ConsumerHeatBeat{
+		ConsumerClient:consumerClient,
+		ConsumerCheckpointTracker:InitConsumerCheckpointTracker(consumerClient),
+		HeartShutDownFlag:false,
+		HeldShard:[]int{},
+		HeartShard:[]int{},
+	}
+	return consumerHeatBeat
 }
 
 
@@ -43,9 +52,16 @@ func (consumerHeatBeat *ConsumerHeatBeat) RemoveHeartShard(shardId int){
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun(){
-	for consumerHeatBeat.HeartShutDownFlag{
+	for !consumerHeatBeat.HeartShutDownFlag{
 		last_heatbeat_time := time.Now().Unix()
+		fmt.Println("1111")
+		if consumerHeatBeat.HeartShard == nil{
+			fmt.Println("caonima")
+		}
+		fmt.Println(consumerHeatBeat.HeartShard)
+		fmt.Println(consumerHeatBeat.Project)
 		response_shards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
+		fmt.Println("2222")
 		Info.Println("heart beat result: %v,get:%v",consumerHeatBeat.HeartShard,response_shards)
 		// TODO 这为什么报错说不相等,想起来了，golang ，列表没办法判断是否相等
 		Info.Println(consumerHeatBeat.HeartShard,consumerHeatBeat.HeldShard)
@@ -62,10 +78,10 @@ func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun(){
 		consumerHeatBeat.HeldShard = response_shards
 		consumerHeatBeat.HeartShard = consumerHeatBeat.HeartShard[:]
 
-		time_to_sleep := consumerHeatBeat.HeartbeatInterval - (time.Now().Unix() - last_heatbeat_time)
+		time_to_sleep := int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - last_heatbeat_time)
 		for time_to_sleep > 0 && !consumerHeatBeat.HeartShutDownFlag{
 			time.Sleep(time.Duration(Min(time_to_sleep,1))*time.Second)
-			time_to_sleep = consumerHeatBeat.HeartbeatInterval - (time.Now().Unix() - last_heatbeat_time)
+			time_to_sleep = int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - last_heatbeat_time)
 		}
 	}
 	Info.Println("heart beat exit")
