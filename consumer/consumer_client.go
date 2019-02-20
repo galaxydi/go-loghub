@@ -66,3 +66,34 @@ func (consumer *ConsumerClient) MgetEndCursor(shardId int) string{
 	}
 	return cursor
 }
+
+func (consumer *ConsumerClient) MpullLogs(shardId int,cursor string)(*sls.LogGroupList,string){
+	gl,next_cursor,err:=consumer.PullLogs(consumer.Project,consumer.Logstore,shardId,cursor,"",consumer.MaxFetchLogGroupSize)
+	if err != nil{
+		Info.Println(err)
+	}
+	return gl ,next_cursor
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

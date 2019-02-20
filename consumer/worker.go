@@ -1,1 +1,140 @@
 package consumer
+
+import (
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"os"
+	"os/signal"
+	"time"
+)
+
+type ConsumerWorker struct{
+	*ConsumerHeatBeat
+	*ConsumerClient
+	WorkerShutDownFlag bool
+	ShardConsumer map[int]*ShardConsumerWorker // TODO
+	Do 		func(a int, logGroup *sls.LogGroupList)
+	// TODO 初始化的时候创建心跳，创建消费组
+}
+
+
+func (consumerWorker *ConsumerWorker)Worker(){
+	ch := make(chan os.Signal)
+	signal.Notify(ch)
+	go consumerWorker.run()
+	if _,ok:=<-ch;ok{
+		Info.Printf("get stop signal, start to stop consumer worker:%v",consumerWorker.ConsumerName)
+		consumerWorker.WorkerShutDown()
+	}
+}
+
+
+func (consumerWorker *ConsumerWorker)WorkerShutDown(){
+	consumerWorker.WorkerShutDownFlag = true
+	consumerWorker.ShutDownHeart()
+	for {
+		time.Sleep(1*time.Second)
+		if consumerWorker.ShardConsumer == nil{
+			break
+		}
+	}
+}
+
+
+
+
+
+
+func (consumerWorker *ConsumerWorker) run(){
+	go consumerWorker.HeartBeatRun()
+
+	for !consumerWorker.WorkerShutDownFlag{
+		held_shards := consumerWorker.GetHeldShards()
+		last_fetch_time := time.Now().Unix()
+		sh := make(chan bool)
+		go func(sh chan bool) {
+			for _, shard := range held_shards {
+				if consumerWorker.WorkerShutDownFlag {
+					break
+				}
+				shard_consumer := consumerWorker.getShardConsumer(shard)
+				go shard_consumer.consume()
+			}
+			sh <- true
+		}(sh)
+		<- sh
+		consumerWorker.cleanShardConsumer(held_shards)
+		time_to_sleep := consumerWorker.DataFetchInterval - (time.Now().Unix() - last_fetch_time)
+		for time_to_sleep > 0 && !consumerWorker.HeartShutDownFlag{
+			time.Sleep(time.Duration(Min(time_to_sleep,1))*time.Second)
+			time_to_sleep = consumerWorker.DataFetchInterval - (time.Now().Unix() - last_fetch_time)
+		}
+	}
+	Info.Printf("consumer worker %v try to cleanup consumers",consumerWorker.ConsumerName)
+	consumerWorker.ShutDownAndWait()
+}
+
+
+func (consumerWorker *ConsumerWorker)getShardConsumer(shardId int) *ShardConsumerWorker {
+	var consumer *ShardConsumerWorker
+	consumer = consumerWorker.ShardConsumer[shardId]
+	if consumer != nil{
+		return consumer
+	}
+	// TODO 别忘了放执行函数
+	new_cousumer := InitShardConsumerWorker()
+	consumerWorker.ShardConsumer[shardId] = new_cousumer
+	return new_cousumer
+
+}
+
+func (consumerWorker *ConsumerWorker)cleanShardConsumer(owned_shards []int){
+	for shard,consumer := range consumerWorker.ShardConsumer{
+		if !Contain(shard,owned_shards){
+			Info.Printf("try to call shut down for unassigned consumer shard: %v",shard)
+			consumer.ConsumerShutDown()
+			Info.Printf("'Complete call shut down for unassigned consumer shard: %v",shard)
+		}
+		if consumer.IsShutDown() {
+
+			consumerWorker.RemoveHeartShard(shard)
+			Info.Printf("Remove an unassigned consumer shard: %v",shard)
+			delete(consumerWorker.ShardConsumer,shard)
+		}
+	}
+
+}
+
+
+func (consumerWorker *ConsumerWorker) ShutDownAndWait(){
+	for _,consumer := range consumerWorker.ShardConsumer{
+		if !consumer.IsShutDown(){
+			consumer.ConsumerShutDown()
+		}
+	}
+	consumerWorker.ShardConsumer = nil
+}
+
+func InitConsumerWorker(option LogHubConfig,do func(int,*sls.LogGroupList)) *ConsumerWorker{
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
