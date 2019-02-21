@@ -45,30 +45,26 @@ func (consumerHeatBeat *ConsumerHeatBeat) RemoveHeartShard(shardId int) {
 
 func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun() {
 	for !consumerHeatBeat.HeartShutDownFlag {
-		last_heatbeat_time := time.Now().Unix()
-		response_shards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
-		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.HeartShard, response_shards)
+		lastHeatbeatTime := time.Now().Unix()
+		responseShards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
+		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.HeartShard, responseShards)
 
 		if !IntSliceReflectEqual(consumerHeatBeat.HeartShard, consumerHeatBeat.HeldShard) {
-			current_set := Set(consumerHeatBeat.HeartShard)
-			Info.Println(current_set, "current_set")
-			response_set := Set(consumerHeatBeat.HeldShard)
-			Info.Println(response_set, "response_set")
-			add := Subtract(current_set, response_set)
-			Info.Println(add)
-			remove := Subtract(response_set, current_set)
-			Info.Println(remove)
+			currentSet := Set(consumerHeatBeat.HeartShard)
+			responseSet := Set(consumerHeatBeat.HeldShard)
+			add := Subtract(currentSet, responseSet)
+			remove := Subtract(responseSet, currentSet)
 			Info.Printf("shard reorganize, adding: %v, removing: %v", add, remove)
 		}
 
-		consumerHeatBeat.HeldShard = response_shards
+		consumerHeatBeat.HeldShard = responseShards
 
 		consumerHeatBeat.HeartShard = consumerHeatBeat.HeldShard[:]
 
-		time_to_sleep := int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - last_heatbeat_time)
-		for time_to_sleep > 0 && !consumerHeatBeat.HeartShutDownFlag {
-			time.Sleep(time.Duration(Min(time_to_sleep, 1)) * time.Second)
-			time_to_sleep = int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - last_heatbeat_time)
+		timeToSleep := int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - lastHeatbeatTime)
+		for timeToSleep > 0 && !consumerHeatBeat.HeartShutDownFlag {
+			time.Sleep(time.Duration(Min(timeToSleep, 1)) * time.Second)
+			timeToSleep = int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - lastHeatbeatTime)
 		}
 	}
 	Info.Println("heart beat exit")

@@ -58,25 +58,25 @@ func (consumerWorker *ConsumerWorker) run() {
 	go consumerWorker.HeartBeatRun()
 
 	for !consumerWorker.WorkerShutDownFlag {
-		held_shards := consumerWorker.GetHeldShards()
-		last_fetch_time := time.Now().Unix()
+		heldShards := consumerWorker.GetHeldShards()
+		lastFetchTime := time.Now().Unix()
 		sh := make(chan bool)
 		go func(sh chan bool) {
-			for _, shard := range held_shards {
+			for _, shard := range heldShards {
 				if consumerWorker.WorkerShutDownFlag {
 					break
 				}
-				shard_consumer := consumerWorker.getShardConsumer(shard)
-				go shard_consumer.consume()
+				mShardConsumer := consumerWorker.getShardConsumer(shard)
+				go mShardConsumer.consume()
 			}
 			sh <- true
 		}(sh)
 		<-sh
-		consumerWorker.cleanShardConsumer(held_shards)
-		time_to_sleep := consumerWorker.DataFetchInterval - (time.Now().Unix() - last_fetch_time)
-		for time_to_sleep > 0 && !consumerWorker.HeartShutDownFlag {
-			time.Sleep(time.Duration(Min(time_to_sleep, 1)) * time.Second)
-			time_to_sleep = consumerWorker.DataFetchInterval - (time.Now().Unix() - last_fetch_time)
+		consumerWorker.cleanShardConsumer(heldShards)
+		timeToSleep := consumerWorker.DataFetchInterval - (time.Now().Unix() - lastFetchTime)
+		for timeToSleep > 0 && !consumerWorker.HeartShutDownFlag {
+			time.Sleep(time.Duration(Min(timeToSleep, 1)) * time.Second)
+			timeToSleep = consumerWorker.DataFetchInterval - (time.Now().Unix() - lastFetchTime)
 		}
 	}
 	Info.Printf("consumer worker %v try to cleanup consumers", consumerWorker.ConsumerName)

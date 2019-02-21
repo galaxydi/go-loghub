@@ -5,6 +5,14 @@ import (
 	"time"
 )
 
+const (
+	i = iota
+	j
+	k
+	l
+)
+
+
 type ShardConsumerWorker struct {
 	*ConsumerClient
 	*ConsumerCheckPointTracker
@@ -42,22 +50,22 @@ func (consumer *ShardConsumerWorker) consume() {
 	}
 	if consumer.ConsumerStatus == SHUTTING_DOWN {
 		go func() {
-			d <- 4
+			d <- l
 		}()
 	}
 	if consumer.ConsumerStatus == INITIALIZ {
 		go func() {
-			a <- 1
+			a <- i
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup == nil {
 		go func() {
-			b <- 2
+			b <- j
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup != nil {
 		go func() {
-			c <- 3
+			c <- k
 		}()
 	}
 	// event loop，When the signal is obtained, the corresponding task is put into groutine to execute each time.
@@ -70,19 +78,19 @@ func (consumer *ShardConsumerWorker) consume() {
 	case _, ok := <-b:
 		if ok {
 
-			var is_generate_fetch_task = true
+			var isGenerateFetchTask = true
 			// throttling control, similar as Java's SDK
 			if consumer.LastFetchGroupCount < 100 {
 				// The time used here is in milliseconds.
-				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 500
+				isGenerateFetchTask = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 500
 			}
 			if consumer.LastFetchGroupCount < 500 {
-				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 200
+				isGenerateFetchTask = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 200
 			}
 			if consumer.LastFetchGroupCount < 1000 {
-				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 50
+				isGenerateFetchTask = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 50
 			}
-			if is_generate_fetch_task {
+			if isGenerateFetchTask {
 				consumer.LastFetchtime = time.Now().UnixNano() / 1e6
 				// Set the logback cursor. If the logs are not consumed, save the logback cursor.
 				consumer.RollBackCheckPoint = consumer.NextFetchCursor
