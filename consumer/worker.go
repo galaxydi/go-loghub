@@ -11,7 +11,7 @@ type ConsumerWorker struct {
 	*ConsumerHeatBeat
 	*ConsumerClient
 	WorkerShutDownFlag bool
-	ShardConsumer      map[int]*ShardConsumerWorker // TODO
+	ShardConsumer      map[int]*ShardConsumerWorker
 	Do                 func(shard int, logGroup *sls.LogGroupList)
 }
 

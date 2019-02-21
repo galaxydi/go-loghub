@@ -11,6 +11,15 @@ type ConsumerClient struct {
 }
 
 func InitConsumerClient(option LogHubConfig) *ConsumerClient {
+	if option.HeartbeatInterval == 0{
+		option.HeartbeatInterval = 20
+	}
+	if option.DataFetchInterval == 0{
+		option.DataFetchInterval = 2
+	}
+	if option.MaxFetchLogGroupSize == 0 {
+		option.MaxFetchLogGroupSize = 1000
+	}
 	client := &sls.Client{
 		Endpoint:        option.Endpoint,
 		AccessKeyID:     option.AccessKeyID,
@@ -48,7 +57,6 @@ func (consumer *ConsumerClient) McreateConsumerGroup() {
 func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
 	held_shard, err := consumer.HeartBeat(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, heart)
 	if err != nil {
-		// TODO This stopped with a 400-error report, and the failure to reproduce the error message was that the consumer did not exist.
 		Info.Println(err)
 	}
 	return held_shard
