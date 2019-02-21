@@ -45,7 +45,7 @@ func(consumer *ConsumerClient) McreateConsumerGroup(){
 func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
 	held_shard,err:=consumer.HeartBeat(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	if err != nil {
-		Info.Println(err)
+		Info.Println(err) // TODO 这在停止的时候报过一次400 错误，无法复现  报错信息是消费者不存在
 	}
 	return held_shard
 }
@@ -56,7 +56,6 @@ func (consumer *ConsumerClient) MupdateCheckPoint(shardId int,checkpoint string,
 		Info.Println(err)
 	}
 }
-// TODO 这个获得的是当前logstore 下面的所有分区的检查点,我写成只获取一个的,获取不到返回空字符串
 func (consumer *ConsumerClient) MgetChcekPoint(shardId int) string {
 	checkPonitList,err:=consumer.GetCheckpoint(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName)
 	if err != nil{
@@ -64,7 +63,7 @@ func (consumer *ConsumerClient) MgetChcekPoint(shardId int) string {
 	}
 	for _,x:= range checkPonitList{
 		if x.ShardID == shardId {
-			return x.CheckPoint // TODO 问题，如果有这个分区一样没有检查点，是不是也为空字符串？
+			return x.CheckPoint
 		}
 	}
 	return ""

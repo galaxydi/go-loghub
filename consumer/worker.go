@@ -58,6 +58,7 @@ func (consumerWorker *ConsumerWorker)WorkerShutDown(){
 			break
 		}
 	}
+	Info.Printf("consumer worker %v stopped",consumerWorker.ConsumerName)
 }
 
 
@@ -113,7 +114,7 @@ func (consumerWorker *ConsumerWorker)cleanShardConsumer(owned_shards []int){
 		if !Contain(shard,owned_shards){
 			Info.Printf("try to call shut down for unassigned consumer shard: %v",shard)
 			consumer.ConsumerShutDown()
-			Info.Printf("'Complete call shut down for unassigned consumer shard: %v",shard)
+			Info.Printf("Complete call shut down for unassigned consumer shard: %v",shard)
 		}
 		if consumer.IsShutDown() {
 

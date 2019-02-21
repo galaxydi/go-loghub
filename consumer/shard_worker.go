@@ -1,6 +1,9 @@
 package consumerLibrary
 
-import "github.com/aliyun/aliyun-log-go-sdk"
+import (
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"time"
+)
 
 type ShardConsumerWorker struct{
 	*ConsumerClient
@@ -10,7 +13,7 @@ type ShardConsumerWorker struct{
 	NextFetchCursor  string
 	LastFetchGroupCount int
 	LastFetchtime   int64
-	ConsumerStatus 	string // TODO 给一个初始化壮态
+	ConsumerStatus 	string
 	Process 		func(a int, logGroup *sls.LogGroupList)
 	ShardId			int
 }
@@ -24,6 +27,7 @@ func InitShardConsumerWorker(shardId int,consumerClient *ConsumerClient,do func(
 		ConsumerClient:consumerClient,
 		ConsumerStatus:INITIALIZ,
 		ShardId:shardId,
+		LastFetchtime:0,
 	}
 	return shardConsumeWorker
 }
@@ -66,21 +70,35 @@ func (consumer *ShardConsumerWorker)consume(){
 		}
 	case _,ok:= <-b:
 		if ok{
-			Info.Println("根本没执行过拉的动作")
-			consumer.LastFetchLogGroup,consumer.NextFetchCursor = consumer.ConsumerFetchTask()
-			consumer.SetMemoryCheckPoint(consumer.NextFetchCursor)
-			consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
-			if consumer.LastFetchGroupCount == 0{
-				consumer.LastFetchLogGroup = nil
+			Info.Println("执行过拉的动作")
+			var is_generate_fetch_task  = true
+			if consumer.LastFetchGroupCount < 100 {
+				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 500    //转换成500毫秒
 			}
-			Info.Printf("shard %v get log conut : %v",consumer.ShardId,consumer.LastFetchGroupCount)
+			if consumer.LastFetchGroupCount < 500 {
+				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 200
+			}
+			if consumer.LastFetchGroupCount < 1000 {
+				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 50
+			}
+			if is_generate_fetch_task {
+				consumer.LastFetchtime = time.Now().UnixNano()/1e6
+				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.ConsumerFetchTask()
+				consumer.SetMemoryCheckPoint(consumer.NextFetchCursor)
+				consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
+				if consumer.LastFetchGroupCount == 0{
+					consumer.LastFetchLogGroup = nil
+				}
+				Info.Printf("shard %v get log conut : %v",consumer.ShardId,consumer.LastFetchGroupCount)
+			}
+
 		}
 	case _,ok:=<-c:
 		if ok{
-			Info.Println("根本没执行过消费的动作")
+			Info.Println("执行过消费的动作")
 			consumer.ConsumerProcessTask()
 			consumer.LastFetchLogGroup = nil
-			consumer.LastFetchGroupCount = 0
+			// consumer.LastFetchGroupCount = 0 // 这应该不用给0
 		}
 	case _,ok:= <-d:
 		if ok{
