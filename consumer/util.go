@@ -5,21 +5,21 @@ import (
 	"reflect"
 )
 
-// just like python function set
+// List removal of duplicate elements
 func Set(slc []int) []int {
 	result := []int{}
-	tempMap := map[int]byte{}  // 存放不重复主键
+	tempMap := map[int]byte{}
 	for _, e := range slc{
 		l := len(tempMap)
 		tempMap[e] = 0
-		if len(tempMap) != l{  // 加入map后，map长度变化，则元素不重复
+		if len(tempMap) != l{
 			result = append(result, e)
 		}
 	}
 	return result
 }
 
-// 检查后面的列表减去前面的列表，求差 TODO 这个有问题
+// Get the difference between the two lists
 func Subtract(a []int, b []int) (diffSlice []int) {
 
 	lengthA := len(a)
@@ -30,12 +30,12 @@ func Subtract(a []int, b []int) (diffSlice []int) {
 
 	for _, valueB := range b {
 
-		temp := valueB //遍历取出B中的元素
+		temp := valueB
 		for j := 0; j < lengthA; j++ {
-			if temp == a[j] { //如果相同 比较下一个
+			if temp == a[j] {
 				break
 			} else {
-				if lengthA == (j + 1) { //如果不同 查看a的元素个数及当前比较元素的位置 将不同的元素添加到返回slice中
+				if lengthA == (j + 1) {
 					diffSlice = append(diffSlice, temp)
 
 				}
@@ -46,7 +46,7 @@ func Subtract(a []int, b []int) (diffSlice []int) {
 
 	return diffSlice
 }
-
+// Returns the smallest of two numbers
 func Min(a,b int64)int64{
 	if a > b {
 		return b
@@ -80,7 +80,7 @@ func Contain(obj interface{}, target interface{}) bool {
 
 	return false
 }
-
+// Get the total number of logs
 func GetLogCount(logGroupList *sls.LogGroupList) int {
 	a:=0
 	for _,x:= range logGroupList.LogGroups{
@@ -88,14 +88,4 @@ func GetLogCount(logGroupList *sls.LogGroupList) int {
 	}
 	return a
 }
-
-
-
-
-
-
-
-
-
-
 

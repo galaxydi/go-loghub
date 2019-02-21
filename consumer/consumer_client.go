@@ -16,7 +16,7 @@ func InitConsumerClient(option LogHubConfig)*ConsumerClient{
 		AccessKeyID:option.AccessKeyID,
 		AccessKeySecret:option.AccessKeySecret,
 		SecurityToken:option.SecurityToken,
-		// TODO  UserAgent 是否用添加？
+		// TODO  UserAgent Whether to add ？
 	}
 	consumerGroup := sls.ConsumerGroup{
 		option.MConsumerGroupName,
@@ -45,7 +45,8 @@ func(consumer *ConsumerClient) McreateConsumerGroup(){
 func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
 	held_shard,err:=consumer.HeartBeat(consumer.Project,consumer.Logstore,consumer.ConsumerGroup.ConsumerGroupName,consumer.ConsumerName,heart)
 	if err != nil {
-		Info.Println(err) // TODO 这在停止的时候报过一次400 错误，无法复现  报错信息是消费者不存在
+		// TODO This stopped with a 400-error report, and the failure to reproduce the error message was that the consumer did not exist.
+		Info.Println(err)
 	}
 	return held_shard
 }

@@ -34,6 +34,11 @@ func (consumer *ShardConsumerWorker) ConsumerFetchTask()(*sls.LogGroupList, stri
 func (consumer *ShardConsumerWorker) ConsumerProcessTask(){
 	// TODO 消费完以后 刷先检查点,如果距离上次持久化检查超过60s
 	// TODO 需要一个回退的检查点
+	defer func(){
+		if r := recover(); r!=nil{
+			Error.Printf("get panic in your process function : %v",r)
+		}
+	}()
 	consumer.Process(consumer.ShardId,consumer.LastFetchLogGroup)
 	consumer.FlushCheck()
 }

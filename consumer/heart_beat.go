@@ -7,8 +7,8 @@ import (
 type ConsumerHeatBeat struct{
 	*ConsumerClient
 	HeartShutDownFlag	bool
-	HeldShard		[]int
-	HeartShard 		[]int
+	HeldShard			[]int
+	HeartShard 			[]int
 }
 
 
@@ -22,8 +22,6 @@ func InitConsumerHeatBeat(consumerClient *ConsumerClient)*ConsumerHeatBeat{
 	}
 	return consumerHeatBeat
 }
-
-
 
 
 func (consumerHeatBeat *ConsumerHeatBeat)GetHeldShards()[]int{
@@ -52,7 +50,6 @@ func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun(){
 	for !consumerHeatBeat.HeartShutDownFlag{
 		last_heatbeat_time := time.Now().Unix()
 		response_shards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
-		Info.Println("consumerHeatBeat.HeartShard:",consumerHeatBeat.HeartShard)
 		Info.Printf("heart beat result: %v,get:%v",consumerHeatBeat.HeartShard,response_shards)
 
 		if !IntSliceReflectEqual(consumerHeatBeat.HeartShard,consumerHeatBeat.HeldShard) {

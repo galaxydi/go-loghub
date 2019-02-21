@@ -8,14 +8,14 @@ import (
 type ShardConsumerWorker struct{
 	*ConsumerClient
 	*ConsumerCheckPointTracker
-	ConsumerShutDownFlag bool
-	LastFetchLogGroup *sls.LogGroupList
-	NextFetchCursor  string
-	LastFetchGroupCount int
-	LastFetchtime   int64
-	ConsumerStatus 	string
-	Process 		func(a int, logGroup *sls.LogGroupList)
-	ShardId			int
+	ConsumerShutDownFlag 	bool
+	LastFetchLogGroup 		*sls.LogGroupList
+	NextFetchCursor  		string
+	LastFetchGroupCount 	int
+	LastFetchtime   		int64
+	ConsumerStatus 			string
+	Process 				func(a int, logGroup *sls.LogGroupList)
+	ShardId					int
 }
 
 
@@ -51,17 +51,16 @@ func (consumer *ShardConsumerWorker)consume(){
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup == nil{
-		Info.Println("给拉日志发信号了")
 		go func(){
 			b <- 2
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup != nil{
-		Info.Println("给消费日志发信号了")
 		go func(){
 			c <- 3
 		}()
 	}
+	// event loop，When the signal is obtained, the corresponding task is put into groutine to execute each time.
 	select{
 	case _,ok:=<-a:
 		if ok{
@@ -70,10 +69,12 @@ func (consumer *ShardConsumerWorker)consume(){
 		}
 	case _,ok:= <-b:
 		if ok{
-			Info.Println("执行过拉的动作")
+
 			var is_generate_fetch_task  = true
+			// throttling control, similar as Java's SDK
 			if consumer.LastFetchGroupCount < 100 {
-				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 500    //转换成500毫秒
+				// The time used here is in milliseconds.
+				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 500
 			}
 			if consumer.LastFetchGroupCount < 500 {
 				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 200
@@ -95,14 +96,11 @@ func (consumer *ShardConsumerWorker)consume(){
 		}
 	case _,ok:=<-c:
 		if ok{
-			Info.Println("执行过消费的动作")
 			consumer.ConsumerProcessTask()
 			consumer.LastFetchLogGroup = nil
-			// consumer.LastFetchGroupCount = 0 // 这应该不用给0
 		}
 	case _,ok:= <-d:
 		if ok{
-			// 强制刷新当前的检查点
 			consumer.MflushCheckPoint()
 			consumer.ConsumerStatus = SHUTDOWN_COMPLETE
 			Info.Printf("shardworker %v are shut down complete",consumer.ShardId)

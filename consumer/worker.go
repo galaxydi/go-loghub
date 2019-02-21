@@ -10,9 +10,9 @@ import (
 type ConsumerWorker struct{
 	*ConsumerHeatBeat
 	*ConsumerClient
-	WorkerShutDownFlag bool
-	ShardConsumer map[int]*ShardConsumerWorker // TODO
-	Do 		func(a int, logGroup *sls.LogGroupList)
+	WorkerShutDownFlag 		bool
+	ShardConsumer 			map[int]*ShardConsumerWorker // TODO
+	Do 						func(a int, logGroup *sls.LogGroupList)
 }
 
 
@@ -31,10 +31,6 @@ func InitConsumerWorker(option LogHubConfig,do func(int,*sls.LogGroupList)) *Con
 	consumerClient.McreateConsumerGroup()
 	return consumerWorker
 }
-
-
-
-
 
 
 func (consumerWorker *ConsumerWorker)Worker(){
@@ -60,10 +56,6 @@ func (consumerWorker *ConsumerWorker)WorkerShutDown(){
 	}
 	Info.Printf("consumer worker %v stopped",consumerWorker.ConsumerName)
 }
-
-
-
-
 
 
 func (consumerWorker *ConsumerWorker) run(){
@@ -95,17 +87,18 @@ func (consumerWorker *ConsumerWorker) run(){
 	consumerWorker.ShutDownAndWait()
 }
 
-
+// TODO 包括后面的消费者为空的函数，我觉得问题也在这里
 func (consumerWorker *ConsumerWorker)getShardConsumer(shardId int) *ShardConsumerWorker {
-	var consumer *ShardConsumerWorker
-	consumer = consumerWorker.ShardConsumer[shardId]
-	if consumer != nil{
+	consumer := consumerWorker.ShardConsumer[shardId]
+	if consumer != nil {
+		Info.Printf("取出来消费者了 %v",shardId)
 		return consumer
 	}
 	// TODO 别忘了放执行函数
-	new_cousumer := InitShardConsumerWorker(shardId,consumerWorker.ConsumerClient,consumerWorker.Do)
-	consumerWorker.ShardConsumer[shardId] = new_cousumer
-	return new_cousumer
+	consumer = InitShardConsumerWorker(shardId,consumerWorker.ConsumerClient,consumerWorker.Do)
+	Info.Printf("分区 %v 注册了客户端",shardId)
+	consumerWorker.ShardConsumer[shardId] = consumer
+	return consumer
 
 }
 
@@ -135,25 +128,3 @@ func (consumerWorker *ConsumerWorker) ShutDownAndWait(){
 	}
 	consumerWorker.ShardConsumer = nil
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
