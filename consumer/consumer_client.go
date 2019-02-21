@@ -41,7 +41,7 @@ func InitConsumerClient(option LogHubConfig) *ConsumerClient {
 	return consumerClient
 }
 
-func (consumer *ConsumerClient) McreateConsumerGroup() {
+func (consumer *ConsumerClient) mCreateConsumerGroup() {
 	err := consumer.CreateConsumerGroup(consumer.Project, consumer.Logstore, consumer.ConsumerGroup)
 	if err != nil {
 		if x, ok := err.(sls.Error); ok {
@@ -54,7 +54,7 @@ func (consumer *ConsumerClient) McreateConsumerGroup() {
 	}
 }
 
-func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
+func (consumer *ConsumerClient) mHeartBeat(heart []int) []int {
 	held_shard, err := consumer.HeartBeat(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, heart)
 	if err != nil {
 		Info.Println(err)
@@ -62,7 +62,7 @@ func (consumer *ConsumerClient) MheartBeat(heart []int) []int {
 	return held_shard
 }
 
-func (consumer *ConsumerClient) MupdateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
+func (consumer *ConsumerClient) mUpdateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
 	err := consumer.UpdateCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, shardId, checkpoint, forceSucess)
 	if err != nil {
 		Info.Println(err)
@@ -70,7 +70,7 @@ func (consumer *ConsumerClient) MupdateCheckPoint(shardId int, checkpoint string
 }
 
 // get a single shard checkpoint, if not，return ""
-func (consumer *ConsumerClient) MgetChcekPoint(shardId int) string {
+func (consumer *ConsumerClient) mGetChcekPoint(shardId int) string {
 	checkPonitList, err := consumer.GetCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName)
 	if err != nil {
 		Info.Println(err)
@@ -83,7 +83,7 @@ func (consumer *ConsumerClient) MgetChcekPoint(shardId int) string {
 	return ""
 }
 
-func (consumer *ConsumerClient) MgetCursor(shardId int) (cursor string) {
+func (consumer *ConsumerClient) mGetCursor(shardId int) (cursor string) {
 	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, consumer.CursorStarttime)
 	if err != nil {
 		Info.Println(err)
@@ -91,7 +91,7 @@ func (consumer *ConsumerClient) MgetCursor(shardId int) (cursor string) {
 	return cursor
 }
 
-func (consumer *ConsumerClient) MgetBeginCursor(shardId int) string {
+func (consumer *ConsumerClient) mGetBeginCursor(shardId int) string {
 	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "begin")
 	if err != nil {
 		Info.Println(err)
@@ -99,7 +99,7 @@ func (consumer *ConsumerClient) MgetBeginCursor(shardId int) string {
 	return cursor
 }
 
-func (consumer *ConsumerClient) MgetEndCursor(shardId int) string {
+func (consumer *ConsumerClient) mGetEndCursor(shardId int) string {
 	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "end")
 	if err != nil {
 		Info.Println(err)
@@ -107,7 +107,7 @@ func (consumer *ConsumerClient) MgetEndCursor(shardId int) string {
 	return cursor
 }
 
-func (consumer *ConsumerClient) MpullLogs(shardId int, cursor string) (*sls.LogGroupList, string) {
+func (consumer *ConsumerClient) mPullLogs(shardId int, cursor string) (*sls.LogGroupList, string) {
 	gl, next_cursor, err := consumer.PullLogs(consumer.Project, consumer.Logstore, shardId, cursor, "", consumer.MaxFetchLogGroupSize)
 	if err != nil {
 		Info.Println(err)

@@ -13,7 +13,7 @@ type ConsumerCheckPointTracker struct {
 	LastCheckTime                  int64
 }
 
-func InitConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient) *ConsumerCheckPointTracker {
+func initConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient) *ConsumerCheckPointTracker {
 	checkpointTracker := &ConsumerCheckPointTracker{
 		DefaultFlushCheckPointInterval: 60,
 		ConsumerClient:                 consumerClient,
@@ -22,29 +22,29 @@ func InitConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient) 
 	return checkpointTracker
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) SetMemoryCheckPoint(cursor string) {
+func (checkPointTracker *ConsumerCheckPointTracker) setMemoryCheckPoint(cursor string) {
 	checkPointTracker.TempCheckPoint = cursor
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) SetPersistentCheckPoint(cursor string) {
+func (checkPointTracker *ConsumerCheckPointTracker) setPersistentCheckPoint(cursor string) {
 	checkPointTracker.LastPersistentCheckPoint = cursor
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) MflushCheckPoint() {
+func (checkPointTracker *ConsumerCheckPointTracker) mFlushCheckPoint() {
 	if checkPointTracker.TempCheckPoint != "" && checkPointTracker.TempCheckPoint != checkPointTracker.LastPersistentCheckPoint {
 		checkPointTracker.MupdateCheckPoint(checkPointTracker.TrackerShardId, checkPointTracker.TempCheckPoint, true)
 		checkPointTracker.LastPersistentCheckPoint = checkPointTracker.TempCheckPoint
 	}
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) FlushCheck() {
+func (checkPointTracker *ConsumerCheckPointTracker) flushCheck() {
 	current_time := time.Now().Unix()
 	if current_time > checkPointTracker.LastCheckTime+checkPointTracker.DefaultFlushCheckPointInterval {
-		checkPointTracker.MflushCheckPoint()
+		checkPointTracker.mFlushCheckPoint()
 		checkPointTracker.LastCheckTime = current_time
 	}
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) GetCheckPoint() string {
+func (checkPointTracker *ConsumerCheckPointTracker) getCheckPoint() string {
 	return checkPointTracker.TempCheckPoint
 }

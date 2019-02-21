@@ -11,7 +11,7 @@ type ConsumerHeatBeat struct {
 	HeartShard        []int
 }
 
-func InitConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
+func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 	consumerHeatBeat := &ConsumerHeatBeat{
 		ConsumerClient:    consumerClient,
 		HeartShutDownFlag: false,
@@ -21,16 +21,16 @@ func InitConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 	return consumerHeatBeat
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) GetHeldShards() []int {
+func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
 	return consumerHeatBeat.HeartShard
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) ShutDownHeart() {
+func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	Info.Println("try to stop heart beat")
 	consumerHeatBeat.HeartShutDownFlag = true
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) RemoveHeartShard(shardId int) {
+func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
 	for i, x := range consumerHeatBeat.HeartShard {
 		if shardId == x {
 			consumerHeatBeat.HeartShard = append(consumerHeatBeat.HeartShard[:i], consumerHeatBeat.HeartShard[i+1:]...)
@@ -43,10 +43,10 @@ func (consumerHeatBeat *ConsumerHeatBeat) RemoveHeartShard(shardId int) {
 	}
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) HeartBeatRun() {
+func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	for !consumerHeatBeat.HeartShutDownFlag {
 		lastHeatbeatTime := time.Now().Unix()
-		responseShards := consumerHeatBeat.MheartBeat(consumerHeatBeat.HeartShard)
+		responseShards := consumerHeatBeat.mHeartBeat(consumerHeatBeat.HeartShard)
 		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.HeartShard, responseShards)
 
 		if !IntSliceReflectEqual(consumerHeatBeat.HeartShard, consumerHeatBeat.HeldShard) {

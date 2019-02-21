@@ -18,7 +18,7 @@ type ConsumerWorker struct {
 func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *ConsumerWorker {
 
 	consumerClient := InitConsumerClient(option)
-	consumerHeatBeat := InitConsumerHeatBeat(consumerClient)
+	consumerHeatBeat := initConsumerHeatBeat(consumerClient)
 	consumerWorker := &ConsumerWorker{
 		consumerHeatBeat,
 		consumerClient,
@@ -26,7 +26,7 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *C
 		make(map[int]*ShardConsumerWorker),
 		do,
 	}
-	consumerClient.McreateConsumerGroup()
+	consumerClient.mCreateConsumerGroup()
 	return consumerWorker
 }
 
@@ -36,14 +36,14 @@ func (consumerWorker *ConsumerWorker) Worker() {
 	go consumerWorker.run()
 	if _, ok := <-ch; ok {
 		Info.Printf("get stop signal, start to stop consumer worker:%v", consumerWorker.ConsumerName)
-		consumerWorker.WorkerShutDown()
+		consumerWorker.workerShutDown()
 	}
 }
 
-func (consumerWorker *ConsumerWorker) WorkerShutDown() {
+func (consumerWorker *ConsumerWorker) workerShutDown() {
 	Info.Println("*** try to exit ***")
 	consumerWorker.WorkerShutDownFlag = true
-	consumerWorker.ShutDownHeart()
+	consumerWorker.shutDownHeart()
 	for {
 		// Used to wait for all shardWorkers to close, otherwise sometimes they will die.
 		time.Sleep(1 * time.Second)
@@ -55,10 +55,10 @@ func (consumerWorker *ConsumerWorker) WorkerShutDown() {
 }
 
 func (consumerWorker *ConsumerWorker) run() {
-	go consumerWorker.HeartBeatRun()
+	go consumerWorker.heartBeatRun()
 
 	for !consumerWorker.WorkerShutDownFlag {
-		heldShards := consumerWorker.GetHeldShards()
+		heldShards := consumerWorker.getHeldShards()
 		lastFetchTime := time.Now().Unix()
 		sh := make(chan bool)
 		go func(sh chan bool) {
@@ -80,10 +80,10 @@ func (consumerWorker *ConsumerWorker) run() {
 		}
 	}
 	Info.Printf("consumer worker %v try to cleanup consumers", consumerWorker.ConsumerName)
-	consumerWorker.ShutDownAndWait()
+	consumerWorker.shutDownAndWait()
 }
 
-func (consumerWorker *ConsumerWorker) ShutDownAndWait() {
+func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 	for _, consumer := range consumerWorker.ShardConsumer {
 		if !consumer.IsShutDown() {
 			consumer.ConsumerShutDown()
@@ -112,7 +112,7 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 		}
 		if consumer.IsShutDown() {
 
-			consumerWorker.RemoveHeartShard(shard)
+			consumerWorker.removeHeartShard(shard)
 			Info.Printf("Remove an unassigned consumer shard: %v", shard)
 			delete(consumerWorker.ShardConsumer, shard)
 		}

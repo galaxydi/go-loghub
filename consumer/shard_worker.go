@@ -31,7 +31,7 @@ func InitShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 	shardConsumeWorker := &ShardConsumerWorker{
 		ConsumerShutDownFlag:      false,
 		Process:                   do,
-		ConsumerCheckPointTracker: InitConsumerCheckpointTracker(shardId, consumerClient),
+		ConsumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient),
 		ConsumerClient:            consumerClient,
 		ConsumerStatus:            INITIALIZ,
 		ShardId:                   shardId,
@@ -96,7 +96,7 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.RollBackCheckPoint = consumer.NextFetchCursor
 
 				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.ConsumerFetchTask()
-				consumer.SetMemoryCheckPoint(consumer.NextFetchCursor)
+				consumer.setMemoryCheckPoint(consumer.NextFetchCursor)
 				consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
 				if consumer.LastFetchGroupCount == 0 {
 					consumer.LastFetchLogGroup = nil
@@ -115,7 +115,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			if consumer.LastFetchLogGroup != nil && consumer.LastFetchGroupCount != 0 {
 				consumer.TempCheckPoint = consumer.RollBackCheckPoint
 			}
-			consumer.MflushCheckPoint()
+			consumer.mFlushCheckPoint()
 			consumer.ConsumerStatus = SHUTDOWN_COMPLETE
 			Info.Printf("shardworker %v are shut down complete", consumer.ShardId)
 		}
