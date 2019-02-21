@@ -5,72 +5,72 @@ import (
 	"time"
 )
 
-type ShardConsumerWorker struct{
+type ShardConsumerWorker struct {
 	*ConsumerClient
 	*ConsumerCheckPointTracker
-	ConsumerShutDownFlag 	bool
-	LastFetchLogGroup 		*sls.LogGroupList
-	NextFetchCursor  		string
-	LastFetchGroupCount 	int
-	LastFetchtime   		int64
-	ConsumerStatus 			string
-	Process 				func(a int, logGroup *sls.LogGroupList)
-	ShardId					int
+	ConsumerShutDownFlag bool
+	LastFetchLogGroup    *sls.LogGroupList
+	NextFetchCursor      string
+	LastFetchGroupCount  int
+	LastFetchtime        int64
+	ConsumerStatus       string
+	Process              func(shard int, logGroup *sls.LogGroupList)
+	ShardId              int
+	RollBackCheckPoint   string
 }
 
-
-func InitShardConsumerWorker(shardId int,consumerClient *ConsumerClient,do func(a int, logGroup *sls.LogGroupList))*ShardConsumerWorker{
+func InitShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList)) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
-		ConsumerShutDownFlag:false,
-		Process:do,
-		ConsumerCheckPointTracker:InitConsumerCheckpointTracker(shardId,consumerClient),
-		ConsumerClient:consumerClient,
-		ConsumerStatus:INITIALIZ,
-		ShardId:shardId,
-		LastFetchtime:0,
+		ConsumerShutDownFlag:      false,
+		Process:                   do,
+		ConsumerCheckPointTracker: InitConsumerCheckpointTracker(shardId, consumerClient),
+		ConsumerClient:            consumerClient,
+		ConsumerStatus:            INITIALIZ,
+		ShardId:                   shardId,
+		LastFetchtime:             0,
 	}
 	return shardConsumeWorker
 }
 
-func (consumer *ShardConsumerWorker)consume(){
+func (consumer *ShardConsumerWorker) consume() {
 	a := make(chan int)
 	b := make(chan int)
 	c := make(chan int)
 	d := make(chan int)
-	if consumer.ConsumerShutDownFlag == true{
+	if consumer.ConsumerShutDownFlag == true {
 		consumer.ConsumerStatus = SHUTTING_DOWN
 	}
-	if consumer.ConsumerStatus == SHUTTING_DOWN  {
-		go func(){
-			d <-4
+	if consumer.ConsumerStatus == SHUTTING_DOWN {
+		go func() {
+			d <- 4
 		}()
 	}
 	if consumer.ConsumerStatus == INITIALIZ {
-		go func(){
+		go func() {
 			a <- 1
 		}()
 	}
-	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup == nil{
-		go func(){
+	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup == nil {
+		go func() {
 			b <- 2
 		}()
 	}
-	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup != nil{
-		go func(){
+	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup != nil {
+		go func() {
 			c <- 3
 		}()
 	}
 	// event loop，When the signal is obtained, the corresponding task is put into groutine to execute each time.
-	select{
-	case _,ok:=<-a:
-		if ok{
+	select {
+	case _, ok := <-a:
+		if ok {
 			consumer.NextFetchCursor = consumer.ConsumerInitializeTask()
 			consumer.ConsumerStatus = PROCESS
 		}
-	case _,ok:= <-b:
-		if ok{
+	case _, ok := <-b:
+		if ok {
 
-			var is_generate_fetch_task  = true
+			var is_generate_fetch_task = true
 			// throttling control, similar as Java's SDK
 			if consumer.LastFetchGroupCount < 100 {
 				// The time used here is in milliseconds.
@@ -83,39 +83,45 @@ func (consumer *ShardConsumerWorker)consume(){
 				is_generate_fetch_task = (time.Now().UnixNano()/1e6 - consumer.LastFetchtime) > 50
 			}
 			if is_generate_fetch_task {
-				consumer.LastFetchtime = time.Now().UnixNano()/1e6
+				consumer.LastFetchtime = time.Now().UnixNano() / 1e6
+				// Set the logback cursor. If the logs are not consumed, save the logback cursor.
+				consumer.RollBackCheckPoint = consumer.NextFetchCursor
+
 				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.ConsumerFetchTask()
 				consumer.SetMemoryCheckPoint(consumer.NextFetchCursor)
 				consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
-				if consumer.LastFetchGroupCount == 0{
+				if consumer.LastFetchGroupCount == 0 {
 					consumer.LastFetchLogGroup = nil
 				}
-				Info.Printf("shard %v get log conut : %v",consumer.ShardId,consumer.LastFetchGroupCount)
 			}
 
 		}
-	case _,ok:=<-c:
-		if ok{
+	case _, ok := <-c:
+		if ok {
 			consumer.ConsumerProcessTask()
 			consumer.LastFetchLogGroup = nil
 		}
-	case _,ok:= <-d:
-		if ok{
+	case _, ok := <-d:
+		if ok {
+			// If the data is not consumed, save the RollBackCheckPoint to the server
+			if consumer.LastFetchLogGroup != nil && consumer.LastFetchGroupCount != 0 {
+				consumer.TempCheckPoint = consumer.RollBackCheckPoint
+			}
 			consumer.MflushCheckPoint()
 			consumer.ConsumerStatus = SHUTDOWN_COMPLETE
-			Info.Printf("shardworker %v are shut down complete",consumer.ShardId)
+			Info.Printf("shardworker %v are shut down complete", consumer.ShardId)
 		}
 	}
 
 }
 
-func (consumer *ShardConsumerWorker)ConsumerShutDown(){
+func (consumer *ShardConsumerWorker) ConsumerShutDown() {
 	consumer.ConsumerShutDownFlag = true
-	if !consumer.IsShutDown(){
+	if !consumer.IsShutDown() {
 		consumer.consume()
 	}
 }
 
-func (consumer *ShardConsumerWorker)IsShutDown()bool{
+func (consumer *ShardConsumerWorker) IsShutDown() bool {
 	return consumer.ConsumerStatus == SHUTDOWN_COMPLETE
 }

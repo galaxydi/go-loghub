@@ -9,10 +9,10 @@ import (
 func Set(slc []int) []int {
 	result := []int{}
 	tempMap := map[int]byte{}
-	for _, e := range slc{
+	for _, e := range slc {
 		l := len(tempMap)
 		tempMap[e] = 0
-		if len(tempMap) != l{
+		if len(tempMap) != l {
 			result = append(result, e)
 		}
 	}
@@ -24,7 +24,7 @@ func Subtract(a []int, b []int) (diffSlice []int) {
 
 	lengthA := len(a)
 
-	if len(a) == 0{
+	if len(a) == 0 {
 		return b
 	}
 
@@ -43,15 +43,15 @@ func Subtract(a []int, b []int) (diffSlice []int) {
 		}
 	}
 
-
 	return diffSlice
 }
+
 // Returns the smallest of two numbers
-func Min(a,b int64)int64{
+func Min(a, b int64) int64 {
 	if a > b {
 		return b
 	}
-	if a <b {
+	if a < b {
 		return a
 	}
 	return 0
@@ -80,12 +80,12 @@ func Contain(obj interface{}, target interface{}) bool {
 
 	return false
 }
+
 // Get the total number of logs
 func GetLogCount(logGroupList *sls.LogGroupList) int {
-	a:=0
-	for _,x:= range logGroupList.LogGroups{
+	a := 0
+	for _, x := range logGroupList.LogGroups {
 		a = a + len(x.Logs)
 	}
 	return a
 }
-
