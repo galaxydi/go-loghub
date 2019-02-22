@@ -19,7 +19,7 @@ func main() {
 		Logstore:           "",
 		MConsumerGroupName: "",
 		ConsumerName:       "",
-		// This options is used for initialization, will be ignored once consumer group is created and each shard has beeen started to be consumed.
+		// This options is used for initialization, will be ignored once consumer group is created and each shard has been started to be consumed.
 		// Could be "begin", "end", "specific time format in ISO", it's log receiving time.
 		CursorPosition: consumerLibrary.BEGIN_CURSOR,
 	}
@@ -41,12 +41,12 @@ func main() {
 	consumer.Worker()
 }
 
-func process(hardId int, logGroupList *sls.LogGroupList) {
+func process(shardId int, logGroupList *sls.LogGroupList) {
 	for _, logGroup := range logGroupList.LogGroups {
 		err2 := client.PutLogs(option.Project, "copy-logstore", logGroup)
 		if err2 != nil {
 			fmt.Println(err2)
 		}
 	}
-	fmt.Println("process work done")
+	fmt.Println("shardId %v processing works sucess",shardId)
 }
