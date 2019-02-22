@@ -12,17 +12,24 @@ type LogHubConfig struct {
 	HeartbeatInterval    int
 	DataFetchInterval    int64
 	MaxFetchLogGroupSize int
-	CursorStarttime      string
+	CursorStartTime      string
 	InOrder              bool
 	SecurityToken        string // TODO need security_token ?
 }
 
 const (
-	BEGIN_CURSOR         = "begin"
-	END_CURSOR           = "end"
+	BEGIN_CURSOR         = "BEGIN_CURSOR"
+	END_CURSOR           = "END_CURSOR"
 	SPECIAL_TIMER_CURSOR = "SPECIAL_TIMER_CURSOR"
 	INITIALIZ            = "INITIALIZ"
 	PROCESS              = "PROCESS"
 	SHUTTING_DOWN        = "SHUTTING_DOWN"
 	SHUTDOWN_COMPLETE    = "SHUTDOWN_COMPLETE"
+)
+
+const (
+	channelA = iota
+	channelB
+	channelC
+	channelD
 )

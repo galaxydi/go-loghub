@@ -32,7 +32,7 @@ func (checkPointTracker *ConsumerCheckPointTracker) setPersistentCheckPoint(curs
 
 func (checkPointTracker *ConsumerCheckPointTracker) mFlushCheckPoint() {
 	if checkPointTracker.TempCheckPoint != "" && checkPointTracker.TempCheckPoint != checkPointTracker.LastPersistentCheckPoint {
-		checkPointTracker.MupdateCheckPoint(checkPointTracker.TrackerShardId, checkPointTracker.TempCheckPoint, true)
+		checkPointTracker.mUpdateCheckPoint(checkPointTracker.TrackerShardId, checkPointTracker.TempCheckPoint, true)
 		checkPointTracker.LastPersistentCheckPoint = checkPointTracker.TempCheckPoint
 	}
 }

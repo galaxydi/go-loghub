@@ -5,14 +5,6 @@ import (
 	"time"
 )
 
-const (
-	i = iota
-	j
-	k
-	l
-)
-
-
 type ShardConsumerWorker struct {
 	*ConsumerClient
 	*ConsumerCheckPointTracker
@@ -50,22 +42,22 @@ func (consumer *ShardConsumerWorker) consume() {
 	}
 	if consumer.ConsumerStatus == SHUTTING_DOWN {
 		go func() {
-			d <- l
+			d <- channelD
 		}()
 	}
 	if consumer.ConsumerStatus == INITIALIZ {
 		go func() {
-			a <- i
+			a <- channelA
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup == nil {
 		go func() {
-			b <- j
+			b <- channelB
 		}()
 	}
 	if consumer.ConsumerStatus == PROCESS && consumer.LastFetchLogGroup != nil {
 		go func() {
-			c <- k
+			c <- channelC
 		}()
 	}
 	// event loop，When the signal is obtained, the corresponding task is put into groutine to execute each time.
@@ -92,12 +84,13 @@ func (consumer *ShardConsumerWorker) consume() {
 			}
 			if isGenerateFetchTask {
 				consumer.LastFetchtime = time.Now().UnixNano() / 1e6
-				// Set the logback cursor. If the logs are not consumed, save the logback cursor.
+				// Set the logback cursor. If the logs are not consumed, save the logback cursor to the server.
 				consumer.RollBackCheckPoint = consumer.NextFetchCursor
 
 				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.ConsumerFetchTask()
 				consumer.setMemoryCheckPoint(consumer.NextFetchCursor)
 				consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
+				Info.Printf("shard %v get log conunt %v", consumer.ShardId, consumer.LastFetchGroupCount)
 				if consumer.LastFetchGroupCount == 0 {
 					consumer.LastFetchLogGroup = nil
 				}

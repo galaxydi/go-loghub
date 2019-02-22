@@ -83,6 +83,9 @@ func Contain(obj interface{}, target interface{}) bool {
 
 // Get the total number of logs
 func GetLogCount(logGroupList *sls.LogGroupList) int {
+	if logGroupList == nil {
+		return 0
+	}
 	a := 0
 	for _, x := range logGroupList.LogGroups {
 		a = a + len(x.Logs)

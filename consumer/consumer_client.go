@@ -2,6 +2,7 @@ package consumerLibrary
 
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"time"
 )
 
 type ConsumerClient struct {
@@ -11,10 +12,11 @@ type ConsumerClient struct {
 }
 
 func InitConsumerClient(option LogHubConfig) *ConsumerClient {
-	if option.HeartbeatInterval == 0{
+	// Setting configuration defaults
+	if option.HeartbeatInterval == 0 {
 		option.HeartbeatInterval = 20
 	}
-	if option.DataFetchInterval == 0{
+	if option.DataFetchInterval == 0 {
 		option.DataFetchInterval = 2
 	}
 	if option.MaxFetchLogGroupSize == 0 {
@@ -48,7 +50,7 @@ func (consumer *ConsumerClient) mCreateConsumerGroup() {
 			if x.Code == "ConsumerGroupAlreadyExist" {
 				Info.Printf("New consumer %v join the consumer group %v ", consumer.ConsumerName, consumer.ConsumerGroupName)
 			} else {
-				Info.Println(err)
+				Warning.Println(err)
 			}
 		}
 	}
@@ -57,7 +59,7 @@ func (consumer *ConsumerClient) mCreateConsumerGroup() {
 func (consumer *ConsumerClient) mHeartBeat(heart []int) []int {
 	held_shard, err := consumer.HeartBeat(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, heart)
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 	return held_shard
 }
@@ -65,7 +67,7 @@ func (consumer *ConsumerClient) mHeartBeat(heart []int) []int {
 func (consumer *ConsumerClient) mUpdateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
 	err := consumer.UpdateCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, shardId, checkpoint, forceSucess)
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 }
 
@@ -73,7 +75,7 @@ func (consumer *ConsumerClient) mUpdateCheckPoint(shardId int, checkpoint string
 func (consumer *ConsumerClient) mGetChcekPoint(shardId int) string {
 	checkPonitList, err := consumer.GetCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName)
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 	for _, x := range checkPonitList {
 		if x.ShardID == shardId {
@@ -84,9 +86,11 @@ func (consumer *ConsumerClient) mGetChcekPoint(shardId int) string {
 }
 
 func (consumer *ConsumerClient) mGetCursor(shardId int) (cursor string) {
-	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, consumer.CursorStarttime)
+	tm, _ := time.Parse("2006-01-02 03:04:05", consumer.CursorStartTime)
+	timeUnix := tm.Unix()
+	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, string(timeUnix))
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 	return cursor
 }
@@ -94,7 +98,7 @@ func (consumer *ConsumerClient) mGetCursor(shardId int) (cursor string) {
 func (consumer *ConsumerClient) mGetBeginCursor(shardId int) string {
 	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "begin")
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 	return cursor
 }
@@ -102,15 +106,26 @@ func (consumer *ConsumerClient) mGetBeginCursor(shardId int) string {
 func (consumer *ConsumerClient) mGetEndCursor(shardId int) string {
 	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "end")
 	if err != nil {
-		Info.Println(err)
+		Warning.Println(err)
 	}
 	return cursor
 }
 
-func (consumer *ConsumerClient) mPullLogs(shardId int, cursor string) (*sls.LogGroupList, string) {
-	gl, next_cursor, err := consumer.PullLogs(consumer.Project, consumer.Logstore, shardId, cursor, "", consumer.MaxFetchLogGroupSize)
-	if err != nil {
-		Info.Println(err)
+// TODO if error code = InvalidCursor , get cursor just like python ?
+func (consumer *ConsumerClient) mPullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string) {
+	for retry := 0; retry < 3; retry++ {
+		gl, nextCursor, err := consumer.PullLogs(consumer.Project, consumer.Logstore, shardId, cursor, "", consumer.MaxFetchLogGroupSize)
+		if err != nil {
+			if a, ok := err.(sls.Error); ok {
+				if a.HTTPCode == 500 {
+					Info.Printf("Server gets 500 errors, starts to try again, try times %v", retry)
+				} else {
+					Error.Println(err)
+				}
+			}
+		} else {
+			return gl, nextCursor
+		}
 	}
-	return gl, next_cursor
+	return
 }

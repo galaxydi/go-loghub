@@ -55,6 +55,7 @@ func (consumerWorker *ConsumerWorker) workerShutDown() {
 }
 
 func (consumerWorker *ConsumerWorker) run() {
+	Info.Printf("consumer worker %v start", consumerWorker.ConsumerName)
 	go consumerWorker.heartBeatRun()
 
 	for !consumerWorker.WorkerShutDownFlag {
