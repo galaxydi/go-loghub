@@ -2,7 +2,7 @@ package consumerLibrary
 
 import "github.com/aliyun/aliyun-log-go-sdk"
 
-func (consumer *ShardConsumerWorker) ConsumerInitializeTask() string {
+func (consumer *ShardConsumerWorker) consumerInitializeTask() string {
 
 	checkpoint := consumer.mGetChcekPoint(consumer.ShardId)
 	if checkpoint != "" {
@@ -25,12 +25,12 @@ func (consumer *ShardConsumerWorker) ConsumerInitializeTask() string {
 	return ""
 }
 
-func (consumer *ShardConsumerWorker) ConsumerFetchTask() (*sls.LogGroupList, string) {
+func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string) {
 	logGroup, next_cursor := consumer.mPullLogs(consumer.ShardId, consumer.NextFetchCursor)
 	return logGroup, next_cursor
 }
 
-func (consumer *ShardConsumerWorker) ConsumerProcessTask() {
+func (consumer *ShardConsumerWorker) consumerProcessTask() {
 	// If the user's consumption function reports a panic error, it will be captured and exited.
 	defer func() {
 		if r := recover(); r != nil {

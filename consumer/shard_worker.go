@@ -64,7 +64,7 @@ func (consumer *ShardConsumerWorker) consume() {
 	select {
 	case _, ok := <-a:
 		if ok {
-			consumer.NextFetchCursor = consumer.ConsumerInitializeTask()
+			consumer.NextFetchCursor = consumer.consumerInitializeTask()
 			consumer.ConsumerStatus = PROCESS
 		}
 	case _, ok := <-b:
@@ -87,7 +87,7 @@ func (consumer *ShardConsumerWorker) consume() {
 				// Set the logback cursor. If the logs are not consumed, save the logback cursor to the server.
 				consumer.RollBackCheckPoint = consumer.NextFetchCursor
 
-				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.ConsumerFetchTask()
+				consumer.LastFetchLogGroup, consumer.NextFetchCursor = consumer.consumerFetchTask()
 				consumer.setMemoryCheckPoint(consumer.NextFetchCursor)
 				consumer.LastFetchGroupCount = GetLogCount(consumer.LastFetchLogGroup)
 				Info.Printf("shard %v get log conunt %v", consumer.ShardId, consumer.LastFetchGroupCount)
@@ -99,7 +99,7 @@ func (consumer *ShardConsumerWorker) consume() {
 		}
 	case _, ok := <-c:
 		if ok {
-			consumer.ConsumerProcessTask()
+			consumer.consumerProcessTask()
 			consumer.LastFetchLogGroup = nil
 		}
 	case _, ok := <-d:
