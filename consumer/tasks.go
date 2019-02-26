@@ -3,30 +3,29 @@ package consumerLibrary
 import "github.com/aliyun/aliyun-log-go-sdk"
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() string {
-
-	checkpoint := consumer.mGetChcekPoint(consumer.ShardId)
+	checkpoint := consumer.client.getChcekPoint(consumer.shardId)
 	if checkpoint != "" {
-		consumer.setPersistentCheckPoint(checkpoint)
+		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)
 		return checkpoint
 	}
 
-	if consumer.CursorPosition == BEGIN_CURSOR {
-		cursor := consumer.mGetBeginCursor(consumer.ShardId)
+	if consumer.client.option.CursorPosition == BEGIN_CURSOR {
+		cursor := consumer.client.getCursor(consumer.shardId, "begin")
 		return cursor
 	}
-	if consumer.CursorPosition == END_CURSOR {
-		cursor := consumer.mGetEndCursor(consumer.ShardId)
+	if consumer.client.option.CursorPosition == END_CURSOR {
+		cursor := consumer.client.getCursor(consumer.shardId, "end")
 		return cursor
 	}
-	if consumer.CursorPosition == SPECIAL_TIMER_CURSOR {
-		cursor := consumer.mGetCursor(consumer.ShardId)
+	if consumer.client.option.CursorPosition == SPECIAL_TIMER_CURSOR {
+		cursor := consumer.client.getCursor(consumer.shardId, string(consumer.client.option.CursorStartTime))
 		return cursor
 	}
 	return ""
 }
 
 func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string) {
-	logGroup, next_cursor := consumer.mPullLogs(consumer.ShardId, consumer.NextFetchCursor)
+	logGroup, next_cursor := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
 	return logGroup, next_cursor
 }
 
@@ -37,6 +36,6 @@ func (consumer *ShardConsumerWorker) consumerProcessTask() {
 			Error.Printf("get panic in your process function : %v", r)
 		}
 	}()
-	consumer.Process(consumer.ShardId, consumer.LastFetchLogGroup)
-	consumer.flushCheck()
+	consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
+	consumer.consumerCheckPointTracker.flushCheck()
 }

@@ -20,7 +20,7 @@ func main() {
 		MConsumerGroupName: "",
 		ConsumerName:       "",
 		// This options is used for initialization, will be ignored once consumer group is created and each shard has been started to be consumed.
-		// Could be "begin", "end", "specific time format in ISO", it's log receiving time.
+		// Could be "begin", "end", "specific time format in time stamp", it's log receiving time.
 		CursorPosition: consumerLibrary.BEGIN_CURSOR,
 	}
 	client = sls.Client{
@@ -38,7 +38,7 @@ func main() {
 		fmt.Println(err)
 	}
 	consumer := consumerLibrary.InitConsumerWorker(option, process)
-	consumer.Worker()
+	consumer.Start()
 }
 
 func process(shardId int, logGroupList *sls.LogGroupList) {
@@ -48,5 +48,5 @@ func process(shardId int, logGroupList *sls.LogGroupList) {
 			fmt.Println(err2)
 		}
 	}
-	fmt.Println("shardId %v processing works sucess",shardId)
+	fmt.Println("shardId %v processing works sucess", shardId)
 }

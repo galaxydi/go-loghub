@@ -51,10 +51,7 @@ func Min(a, b int64) int64 {
 	if a > b {
 		return b
 	}
-	if a < b {
-		return a
-	}
-	return 0
+	return a
 }
 
 // Determine whether two lists are equal

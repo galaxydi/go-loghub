@@ -6,32 +6,32 @@ import (
 )
 
 type ConsumerClient struct {
-	LogHubConfig
-	*sls.Client
-	sls.ConsumerGroup
+	option        LogHubConfig
+	client        *sls.Client
+	consumerGroup sls.ConsumerGroup
 }
 
-func InitConsumerClient(option LogHubConfig) *ConsumerClient {
+func initConsumerClient(option LogHubConfig) *ConsumerClient {
 	// Setting configuration defaults
-	if option.HeartbeatInterval == 0 {
-		option.HeartbeatInterval = 20
+	if option.HeartbeatIntervalInSecond == 0 {
+		option.HeartbeatIntervalInSecond = 20
 	}
 	if option.DataFetchInterval == 0 {
 		option.DataFetchInterval = 2
 	}
-	if option.MaxFetchLogGroupSize == 0 {
-		option.MaxFetchLogGroupSize = 1000
+	if option.MaxFetchLogGroupCount == 0 {
+		option.MaxFetchLogGroupCount = 1000
 	}
 	client := &sls.Client{
 		Endpoint:        option.Endpoint,
 		AccessKeyID:     option.AccessKeyID,
 		AccessKeySecret: option.AccessKeySecret,
-		SecurityToken:   option.SecurityToken,
-		// TODO  UserAgent Whether to add ？
+		// SecurityToken:   option.SecurityToken,
+		UserAgent: option.ConsumerGroupName + "_" + option.ConsumerName,
 	}
 	consumerGroup := sls.ConsumerGroup{
-		option.MConsumerGroupName,
-		option.HeartbeatInterval * 2,
+		option.ConsumerGroupName,
+		option.HeartbeatIntervalInSecond * 2,
 		option.InOrder,
 	}
 	consumerClient := &ConsumerClient{
@@ -43,12 +43,12 @@ func InitConsumerClient(option LogHubConfig) *ConsumerClient {
 	return consumerClient
 }
 
-func (consumer *ConsumerClient) mCreateConsumerGroup() {
-	err := consumer.CreateConsumerGroup(consumer.Project, consumer.Logstore, consumer.ConsumerGroup)
+func (consumer *ConsumerClient) createConsumerGroup() {
+	err := consumer.client.CreateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup)
 	if err != nil {
 		if x, ok := err.(sls.Error); ok {
 			if x.Code == "ConsumerGroupAlreadyExist" {
-				Info.Printf("New consumer %v join the consumer group %v ", consumer.ConsumerName, consumer.ConsumerGroupName)
+				Info.Printf("New consumer %v join the consumer group %v ", consumer.option.ConsumerName, consumer.option.ConsumerGroupName)
 			} else {
 				Warning.Println(err)
 			}
@@ -56,27 +56,24 @@ func (consumer *ConsumerClient) mCreateConsumerGroup() {
 	}
 }
 
-func (consumer *ConsumerClient) mHeartBeat(heart []int) []int {
-	held_shard, err := consumer.HeartBeat(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, heart)
+func (consumer *ConsumerClient) heartBeat(heart []int) []int {
+	heldShard, err := consumer.client.HeartBeat(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, heart)
 	if err != nil {
 		Warning.Println(err)
 	}
-	return held_shard
+	return heldShard
 }
 
-func (consumer *ConsumerClient) mUpdateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
-	err := consumer.UpdateCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName, consumer.ConsumerName, shardId, checkpoint, forceSucess)
+func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
+	err := consumer.client.UpdateCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, shardId, checkpoint, forceSucess)
 	if err != nil {
 		Warning.Println(err)
 	}
 }
 
 // get a single shard checkpoint, if not，return ""
-func (consumer *ConsumerClient) mGetChcekPoint(shardId int) string {
-	checkPonitList, err := consumer.GetCheckpoint(consumer.Project, consumer.Logstore, consumer.ConsumerGroup.ConsumerGroupName)
-	if err != nil {
-		Warning.Println(err)
-	}
+func (consumer *ConsumerClient) getChcekPoint(shardId int) string {
+	checkPonitList := consumer.retryGetCheckPoint(shardId)
 	for _, x := range checkPonitList {
 		if x.ShardID == shardId {
 			return x.CheckPoint
@@ -85,40 +82,41 @@ func (consumer *ConsumerClient) mGetChcekPoint(shardId int) string {
 	return ""
 }
 
-func (consumer *ConsumerClient) mGetCursor(shardId int) (cursor string) {
-	tm, _ := time.Parse("2006-01-02 03:04:05", consumer.CursorStartTime)
-	timeUnix := tm.Unix()
-	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, string(timeUnix))
+// if the server reports 500 errors, the program will be retried until no more than 500 errors are caught.
+func (consumer *ConsumerClient) retryGetCheckPoint(shardId int) (checkPonitList []*sls.ConsumerGroupCheckPoint) {
+	for {
+		checkPonitList, err := consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
+		if err != nil {
+			if a, ok := err.(sls.Error); ok {
+				if a.HTTPCode == 500 {
+					Info.Println("Server gets 500 errors, starts to try again")
+					time.Sleep(1 * time.Second)
+				}
+			} else {
+				Error.Println(err) // TODO If it weren't 500 errors, should I let the program exit directly?
+			}
+		} else {
+			return checkPonitList
+		}
+	}
+}
+
+func (consumer *ConsumerClient) getCursor(shardId int, from string) (cursor string) {
+	cursor, err := consumer.client.GetCursor(consumer.option.Project, consumer.option.Logstore, shardId, from)
 	if err != nil {
 		Warning.Println(err)
 	}
 	return cursor
 }
 
-func (consumer *ConsumerClient) mGetBeginCursor(shardId int) string {
-	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "begin")
-	if err != nil {
-		Warning.Println(err)
-	}
-	return cursor
-}
-
-func (consumer *ConsumerClient) mGetEndCursor(shardId int) string {
-	cursor, err := consumer.GetCursor(consumer.Project, consumer.Logstore, shardId, "end")
-	if err != nil {
-		Warning.Println(err)
-	}
-	return cursor
-}
-
-// TODO if error code = InvalidCursor , get cursor just like python ?
-func (consumer *ConsumerClient) mPullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string) {
+func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string) {
 	for retry := 0; retry < 3; retry++ {
-		gl, nextCursor, err := consumer.PullLogs(consumer.Project, consumer.Logstore, shardId, cursor, "", consumer.MaxFetchLogGroupSize)
+		gl, nextCursor, err := consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
 		if err != nil {
 			if a, ok := err.(sls.Error); ok {
 				if a.HTTPCode == 500 {
 					Info.Printf("Server gets 500 errors, starts to try again, try times %v", retry)
+					time.Sleep(1 * time.Second)
 				} else {
 					Error.Println(err)
 				}
@@ -127,5 +125,7 @@ func (consumer *ConsumerClient) mPullLogs(shardId int, cursor string) (gl *sls.L
 			return gl, nextCursor
 		}
 	}
-	return
+	// If you can't retry the log three times, it will return to empty list and start pulling the log cursor,
+	// so that next time you will come in and pull the function again, which is equivalent to a dead cycle.
+	return gl, cursor
 }

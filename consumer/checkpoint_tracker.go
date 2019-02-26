@@ -5,46 +5,46 @@ import (
 )
 
 type ConsumerCheckPointTracker struct {
-	*ConsumerClient
-	DefaultFlushCheckPointInterval int64
-	TempCheckPoint                 string
-	LastPersistentCheckPoint       string
-	TrackerShardId                 int
-	LastCheckTime                  int64
+	client                         *ConsumerClient
+	defaultFlushCheckPointInterval int64
+	tempCheckPoint                 string
+	lastPersistentCheckPoint       string
+	trackerShardId                 int
+	lastCheckTime                  int64
 }
 
 func initConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient) *ConsumerCheckPointTracker {
 	checkpointTracker := &ConsumerCheckPointTracker{
-		DefaultFlushCheckPointInterval: 60,
-		ConsumerClient:                 consumerClient,
-		TrackerShardId:                 shardId,
+		defaultFlushCheckPointInterval: 60,
+		client:                         consumerClient,
+		trackerShardId:                 shardId,
 	}
 	return checkpointTracker
 }
 
 func (checkPointTracker *ConsumerCheckPointTracker) setMemoryCheckPoint(cursor string) {
-	checkPointTracker.TempCheckPoint = cursor
+	checkPointTracker.tempCheckPoint = cursor
 }
 
 func (checkPointTracker *ConsumerCheckPointTracker) setPersistentCheckPoint(cursor string) {
-	checkPointTracker.LastPersistentCheckPoint = cursor
+	checkPointTracker.lastPersistentCheckPoint = cursor
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) mFlushCheckPoint() {
-	if checkPointTracker.TempCheckPoint != "" && checkPointTracker.TempCheckPoint != checkPointTracker.LastPersistentCheckPoint {
-		checkPointTracker.mUpdateCheckPoint(checkPointTracker.TrackerShardId, checkPointTracker.TempCheckPoint, true)
-		checkPointTracker.LastPersistentCheckPoint = checkPointTracker.TempCheckPoint
+func (checkPointTracker *ConsumerCheckPointTracker) flushCheckPoint() {
+	if checkPointTracker.tempCheckPoint != "" && checkPointTracker.tempCheckPoint != checkPointTracker.lastPersistentCheckPoint {
+		checkPointTracker.client.updateCheckPoint(checkPointTracker.trackerShardId, checkPointTracker.tempCheckPoint, true)
+		checkPointTracker.lastPersistentCheckPoint = checkPointTracker.tempCheckPoint
 	}
 }
 
 func (checkPointTracker *ConsumerCheckPointTracker) flushCheck() {
 	current_time := time.Now().Unix()
-	if current_time > checkPointTracker.LastCheckTime+checkPointTracker.DefaultFlushCheckPointInterval {
-		checkPointTracker.mFlushCheckPoint()
-		checkPointTracker.LastCheckTime = current_time
+	if current_time > checkPointTracker.lastCheckTime+checkPointTracker.defaultFlushCheckPointInterval {
+		checkPointTracker.flushCheckPoint()
+		checkPointTracker.lastCheckTime = current_time
 	}
 }
 
 func (checkPointTracker *ConsumerCheckPointTracker) getCheckPoint() string {
-	return checkPointTracker.TempCheckPoint
+	return checkPointTracker.tempCheckPoint
 }

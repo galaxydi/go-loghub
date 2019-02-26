@@ -1,70 +1,73 @@
 package consumerLibrary
 
 import (
+	"sync"
 	"time"
 )
 
 type ConsumerHeatBeat struct {
-	*ConsumerClient
-	HeartShutDownFlag bool
-	HeldShard         []int
-	HeartShard        []int
+	client       *ConsumerClient
+	shutDownFlag bool
+	heldShards   []int
+	heartShard   []int
 }
 
 func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 	consumerHeatBeat := &ConsumerHeatBeat{
-		ConsumerClient:    consumerClient,
-		HeartShutDownFlag: false,
-		HeldShard:         []int{},
-		HeartShard:        []int{},
+		client:       consumerClient,
+		shutDownFlag: false,
+		heldShards:   []int{},
+		heartShard:   []int{},
 	}
 	return consumerHeatBeat
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
-	return consumerHeatBeat.HeartShard
+	return consumerHeatBeat.heartShard
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	Info.Println("try to stop heart beat")
-	consumerHeatBeat.HeartShutDownFlag = true
+	consumerHeatBeat.shutDownFlag = true
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
-	for i, x := range consumerHeatBeat.HeartShard {
+	for i, x := range consumerHeatBeat.heartShard {
 		if shardId == x {
-			consumerHeatBeat.HeartShard = append(consumerHeatBeat.HeartShard[:i], consumerHeatBeat.HeartShard[i+1:]...)
+			consumerHeatBeat.heartShard = append(consumerHeatBeat.heartShard[:i], consumerHeatBeat.heartShard[i+1:]...)
 		}
 	}
-	for i, x := range consumerHeatBeat.HeldShard {
+	for i, x := range consumerHeatBeat.heldShards {
 		if shardId == x {
-			consumerHeatBeat.HeldShard = append(consumerHeatBeat.HeldShard[:i], consumerHeatBeat.HeldShard[i+1:]...)
+			consumerHeatBeat.heldShards = append(consumerHeatBeat.heldShards[:i], consumerHeatBeat.heldShards[i+1:]...)
 		}
 	}
 }
 
+//heartBeatRun运行的时候，其它线程get会有线程安全问题吗？
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
-	for !consumerHeatBeat.HeartShutDownFlag {
-		lastHeatbeatTime := time.Now().Unix()
-		responseShards := consumerHeatBeat.mHeartBeat(consumerHeatBeat.HeartShard)
-		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.HeartShard, responseShards)
+	var lastHeartBeatTime int64
+	var lock sync.Mutex
+	for !consumerHeatBeat.shutDownFlag {
+		lastHeartBeatTime = time.Now().Unix()
+		responseShards := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShard)
+		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.heartShard, responseShards)
 
-		if !IntSliceReflectEqual(consumerHeatBeat.HeartShard, consumerHeatBeat.HeldShard) {
-			currentSet := Set(consumerHeatBeat.HeartShard)
-			responseSet := Set(consumerHeatBeat.HeldShard)
+		if !IntSliceReflectEqual(consumerHeatBeat.heartShard, consumerHeatBeat.heldShards) {
+			currentSet := Set(consumerHeatBeat.heartShard)
+			responseSet := Set(consumerHeatBeat.heldShards)
 			add := Subtract(currentSet, responseSet)
 			remove := Subtract(responseSet, currentSet)
 			Info.Printf("shard reorganize, adding: %v, removing: %v", add, remove)
 		}
-
-		consumerHeatBeat.HeldShard = responseShards
-
-		consumerHeatBeat.HeartShard = consumerHeatBeat.HeldShard[:]
-
-		timeToSleep := int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - lastHeatbeatTime)
-		for timeToSleep > 0 && !consumerHeatBeat.HeartShutDownFlag {
-			time.Sleep(time.Duration(Min(timeToSleep, 1)) * time.Second)
-			timeToSleep = int64(consumerHeatBeat.HeartbeatInterval) - (time.Now().Unix() - lastHeatbeatTime)
+		lock.Lock() // Adding locks to modify HeldShards to keep threads safe
+		consumerHeatBeat.heldShards = responseShards
+		consumerHeatBeat.heartShard = consumerHeatBeat.heldShards[:]
+		lock.Unlock()
+		timeToSleep := int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond)*1000 - (time.Now().Unix()-lastHeartBeatTime)*1000
+		for timeToSleep > 0 && !consumerHeatBeat.shutDownFlag {
+			time.Sleep(time.Duration(Min(timeToSleep, 1000)) * time.Millisecond)
+			timeToSleep = int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond)*1000 - (time.Now().Unix()-lastHeartBeatTime)*1000
 		}
 	}
 	Info.Println("heart beat exit")
