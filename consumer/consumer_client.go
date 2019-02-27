@@ -93,7 +93,8 @@ func (consumer *ConsumerClient) retryGetCheckPoint(shardId int) (checkPonitList 
 					time.Sleep(1 * time.Second)
 				}
 			} else {
-				Error.Println(err) // TODO If it weren't 500 errors, should I let the program exit directly?
+				// TODO If it weren't 500 errors, should I let the program exit directly?
+				Error.Fatalf("This exception will cause the program to exit directly, with detailed error messages: %v", err)
 			}
 		} else {
 			return checkPonitList
@@ -115,10 +116,11 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 		if err != nil {
 			if a, ok := err.(sls.Error); ok {
 				if a.HTTPCode == 500 {
+					Info.Println(err)
 					Info.Printf("Server gets 500 errors, starts to try again, try times %v", retry)
 					time.Sleep(1 * time.Second)
 				} else {
-					Error.Println(err)
+					Warning.Println(err)
 				}
 			}
 		} else {
