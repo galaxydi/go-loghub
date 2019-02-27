@@ -17,7 +17,7 @@ func main() {
 		AccessKeySecret:    "",
 		Project:            "",
 		Logstore:           "",
-		MConsumerGroupName: "",
+		ConsumerGroupName: "",
 		ConsumerName:       "",
 		// This options is used for initialization, will be ignored once consumer group is created and each shard has been started to be consumed.
 		// Could be "begin", "end", "specific time format in time stamp", it's log receiving time.
