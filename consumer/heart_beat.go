@@ -44,7 +44,6 @@ func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
 	}
 }
 
-//heartBeatRun运行的时候，其它线程get会有线程安全问题吗？
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
 	var lock sync.Mutex
