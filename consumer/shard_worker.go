@@ -26,7 +26,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 		process:                   do,
 		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient),
 		client:                    consumerClient,
-		consumerStatus:            INITIALIZED,
+		consumerStatus:            INITIALIZING,
 		shardId:                   shardId,
 		lastFetchtime:             0,
 		isCurrentDone:             true,
@@ -50,7 +50,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			consumer.consumerCheckPointTracker.flushCheckPoint()
 			ch <- channelC
 		}()
-	} else if consumer.consumerStatus == INITIALIZED {
+	} else if consumer.consumerStatus == INITIALIZING {
 		consumer.isCurrentDone = false
 		go func() {
 			consumer.nextFetchCursor = consumer.consumerInitializeTask()

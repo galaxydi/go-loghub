@@ -9,7 +9,7 @@ type ConsumerHeatBeat struct {
 	client       *ConsumerClient
 	shutDownFlag bool
 	heldShards   []int
-	heartShard   []int
+	heartShards  []int
 }
 
 func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
@@ -17,13 +17,13 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 		client:       consumerClient,
 		shutDownFlag: false,
 		heldShards:   []int{},
-		heartShard:   []int{},
+		heartShards:  []int{},
 	}
 	return consumerHeatBeat
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
-	return consumerHeatBeat.heartShard
+	return consumerHeatBeat.heartShards
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
@@ -32,9 +32,9 @@ func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
-	for i, x := range consumerHeatBeat.heartShard {
+	for i, x := range consumerHeatBeat.heartShards {
 		if shardId == x {
-			consumerHeatBeat.heartShard = append(consumerHeatBeat.heartShard[:i], consumerHeatBeat.heartShard[i+1:]...)
+			consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
 		}
 	}
 	for i, x := range consumerHeatBeat.heldShards {
@@ -49,11 +49,11 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lock sync.Mutex
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
-		responseShards := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShard)
-		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.heartShard, responseShards)
+		responseShards := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
+		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.heartShards, responseShards)
 
-		if !IntSliceReflectEqual(consumerHeatBeat.heartShard, consumerHeatBeat.heldShards) {
-			currentSet := Set(consumerHeatBeat.heartShard)
+		if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
+			currentSet := Set(consumerHeatBeat.heartShards)
 			responseSet := Set(consumerHeatBeat.heldShards)
 			add := Subtract(currentSet, responseSet)
 			remove := Subtract(responseSet, currentSet)
@@ -61,7 +61,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 		}
 		lock.Lock() // Adding locks to modify HeldShards to keep threads safe
 		consumerHeatBeat.heldShards = responseShards
-		consumerHeatBeat.heartShard = consumerHeatBeat.heldShards[:]
+		consumerHeatBeat.heartShards = consumerHeatBeat.heldShards[:]
 		lock.Unlock()
 		timeToSleep := int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond)*1000 - (time.Now().Unix()-lastHeartBeatTime)*1000
 		for timeToSleep > 0 && !consumerHeatBeat.shutDownFlag {
