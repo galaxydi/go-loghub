@@ -3,6 +3,7 @@ package consumerLibrary
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"reflect"
+	"time"
 )
 
 // List removal of duplicate elements
@@ -88,4 +89,12 @@ func GetLogCount(logGroupList *sls.LogGroupList) int {
 		a = a + len(x.Logs)
 	}
 	return a
+}
+
+func TimeToSleep(x, y int64, z bool) {
+	timeToSleep := x*1000 - (time.Now().Unix()-y)*1000
+	for timeToSleep > 0 && !z {
+		time.Sleep(time.Duration(Min(timeToSleep, 1000)) * time.Millisecond)
+		timeToSleep = x*1000 - (time.Now().Unix()-y)*1000
+	}
 }

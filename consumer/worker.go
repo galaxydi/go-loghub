@@ -67,32 +67,41 @@ func (consumerWorker *ConsumerWorker) run() {
 				break
 			}
 			shardConsumer := consumerWorker.getShardConsumer(shard)
-			// If the previous task is not completed, the loop is skipped and groutine is terminated.
 			if shardConsumer.isCurrentDone {
-				go shardConsumer.consume()
+				shardConsumer.consume()
 			} else {
 				continue
 			}
 		}
-
 		consumerWorker.cleanShardConsumer(heldShards)
-		timeToSleep := consumerWorker.client.option.DataFetchInterval*1000 - (time.Now().Unix()-lastFetchTime)*1000
-		for timeToSleep > 0 && !consumerWorker.workerShutDownFlag {
-			time.Sleep(time.Duration(Min(timeToSleep, 1000)) * time.Millisecond)
-			timeToSleep = consumerWorker.client.option.DataFetchInterval*1000 - (time.Now().Unix()-lastFetchTime)*1000
-		}
+		TimeToSleep(consumerWorker.client.option.DataFetchInterval, lastFetchTime, consumerWorker.workerShutDownFlag)
+
 	}
 	Info.Printf("consumer worker %v try to cleanup consumers", consumerWorker.client.option.ConsumerName)
 	consumerWorker.shutDownAndWait()
 }
 
 func (consumerWorker *ConsumerWorker) shutDownAndWait() {
-	for _, consumer := range consumerWorker.shardConsumer {
-		if !consumer.isShutDownComplete() {
-			consumer.consumerShutDown()
+	for {
+		time.Sleep(500 * time.Millisecond)
+		for shard, consumer := range consumerWorker.shardConsumer {
+			if !consumer.isShutDownComplete() {
+				if consumer.isShutDowning {
+					continue
+				} else {
+					consumer.consumerShutDown() // TODO 因为我这没有了原先的截停，所以会很快的结束
+				}
+
+			} else if consumer.isShutDownComplete() {
+				delete(consumerWorker.shardConsumer, shard)
+			}
+		}
+		if len(consumerWorker.shardConsumer) == 0 {
+			consumerWorker.shardConsumer = nil
+			break
 		}
 	}
-	consumerWorker.shardConsumer = nil
+
 }
 
 func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsumerWorker {
@@ -114,7 +123,6 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 			Info.Printf("Complete call shut down for unassigned consumer shard: %v", shard)
 		}
 		if consumer.isShutDownComplete() {
-
 			consumerWorker.consumerHeatBeat.removeHeartShard(shard)
 			Info.Printf("Remove an unassigned consumer shard: %v", shard)
 			delete(consumerWorker.shardConsumer, shard)

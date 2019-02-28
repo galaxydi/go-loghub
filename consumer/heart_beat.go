@@ -1,7 +1,6 @@
 package consumerLibrary
 
 import (
-	"sync"
 	"time"
 )
 
@@ -23,7 +22,15 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
+	m.RLock()
+	defer m.RUnlock()
 	return consumerHeatBeat.heartShards
+}
+
+func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(x []int) {
+	m.Lock()
+	defer m.Unlock()
+	consumerHeatBeat.heldShards = x
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
@@ -46,7 +53,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
 
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
-	var lock sync.Mutex
+
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
 		responseShards := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
@@ -59,15 +66,10 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			remove := Subtract(responseSet, currentSet)
 			Info.Printf("shard reorganize, adding: %v, removing: %v", add, remove)
 		}
-		lock.Lock() // Adding locks to modify HeldShards to keep threads safe
-		consumerHeatBeat.heldShards = responseShards
+
+		consumerHeatBeat.setHeldShards(responseShards)
 		consumerHeatBeat.heartShards = consumerHeatBeat.heldShards[:]
-		lock.Unlock()
-		timeToSleep := int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond)*1000 - (time.Now().Unix()-lastHeartBeatTime)*1000
-		for timeToSleep > 0 && !consumerHeatBeat.shutDownFlag {
-			time.Sleep(time.Duration(Min(timeToSleep, 1000)) * time.Millisecond)
-			timeToSleep = int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond)*1000 - (time.Now().Unix()-lastHeartBeatTime)*1000
-		}
+		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}
 	Info.Println("heart beat exit")
 }

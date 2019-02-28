@@ -1,5 +1,7 @@
 package consumerLibrary
 
+import "sync"
+
 type LogHubConfig struct {
 	//:param endpoint:
 	//:param access_key_id:
@@ -34,17 +36,17 @@ type LogHubConfig struct {
 }
 
 const (
-	BEGIN_CURSOR         = "BEGIN_CURSOR"
-	END_CURSOR           = "END_CURSOR"
-	SPECIAL_TIMER_CURSOR = "SPECIAL_TIMER_CURSOR"
-	INITIALIZING         = "INITIALIZING"
-	PROCESSING           = "PROCESSING"
-	SHUTTING_DOWN        = "SHUTTING_DOWN"
-	SHUTDOWN_COMPLETE    = "SHUTDOWN_COMPLETE"
+	BEGIN_CURSOR            = "BEGIN_CURSOR"
+	END_CURSOR              = "END_CURSOR"
+	SPECIAL_TIMER_CURSOR    = "SPECIAL_TIMER_CURSOR"
+	INITIALIZING            = "INITIALIZING"
+	INITIALIZING_DONE       = "INITIALIZING_DONE"
+	PULL_PROCESSING         = "PULL_PROCESSING"
+	PULL_PROCESSING_DONE    = "PULL_PROCESSING_DONE"
+	CONSUME_PROCESSING      = "CONSUME_PROCESSING"
+	CONSUME_PROCESSING_DONE = "CONSUME_PROCESSING_DONE"
+
+	SHUTDOWN_COMPLETE = "SHUTDOWN_COMPLETE"
 )
 
-const (
-	channelA = iota
-	channelB
-	channelC
-)
+var m sync.RWMutex
