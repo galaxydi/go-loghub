@@ -47,17 +47,17 @@ func (s *ProjectTestSuite) TestParseEndpoint() {
 	prj, err := NewLogProject(projectName, "127.0.0.1", "id", "key")
 	assert.Nil(err)
 	assert.NotNil(prj)
-	assert.Equal("http://127.0.0.1/my-project", prj.baseURL)
+	assert.Equal("http://my-project.127.0.0.1", prj.baseURL)
 
 	prj, err = NewLogProject(projectName, "http://127.0.0.1", "id", "key")
 	assert.Nil(err)
 	assert.NotNil(prj)
-	assert.Equal("http://127.0.0.1/my-project", prj.baseURL)
+	assert.Equal("http://my-project.127.0.0.1", prj.baseURL)
 
 	prj, err = NewLogProject(projectName, "http://127.0.0.1:8080", "id", "key")
 	assert.Nil(err)
 	assert.NotNil(prj)
-	assert.Equal("http://127.0.0.1:8080/my-project", prj.baseURL)
+	assert.Equal("http://my-project.127.0.0.1:8080", prj.baseURL)
 
 	prj, err = NewLogProject(projectName, "log.aliyun.com", "id", "key")
 	assert.Nil(err)

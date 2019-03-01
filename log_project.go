@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -68,8 +69,12 @@ func (p *LogProject) WithToken(token string) (*LogProject, error) {
 
 // WithRequestTimeout with custom timeout for a request
 func (p *LogProject) WithRequestTimeout(timeout time.Duration) *LogProject {
-	p.httpClient = &http.Client{
-		Timeout: timeout,
+	if p.httpClient == defaultHttpClient {
+		p.httpClient = &http.Client{
+			Timeout: timeout,
+		}
+	} else {
+		p.httpClient.Timeout = timeout
 	}
 	return p
 }
@@ -972,18 +977,19 @@ func (p *LogProject) parseEndpoint() {
 		scheme = httpScheme
 	}
 	if ipRegex.MatchString(host) { // ip format
-		if len(p.Name) == 0 {
-			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
-		} else {
-			p.baseURL = fmt.Sprintf("%s%s/%s", scheme, host, p.Name)
+		// use direct ip proxy
+		url, _ := url.Parse(fmt.Sprintf("%s%s", scheme, host))
+		p.httpClient = &http.Client{
+			Transport: &http.Transport{
+				Proxy: http.ProxyURL(url),
+			},
+			Timeout: defaultRequestTimeout,
 		}
 
+	}
+	if len(p.Name) == 0 {
+		p.baseURL = fmt.Sprintf("%s%s", scheme, host)
 	} else {
-		if len(p.Name) == 0 {
-			p.baseURL = fmt.Sprintf("%s%s", scheme, host)
-		} else {
-			p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
-		}
-
+		p.baseURL = fmt.Sprintf("%s%s.%s", scheme, p.Name, host)
 	}
 }
