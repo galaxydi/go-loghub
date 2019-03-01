@@ -89,7 +89,7 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 				if consumer.isShutDowning {
 					continue
 				} else {
-					consumer.consumerShutDown() // TODO 因为我这没有了原先的截停，所以会很快的结束
+					consumer.consumerShutDown()
 				}
 
 			} else if consumer.isShutDownComplete() {

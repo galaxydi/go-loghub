@@ -99,13 +99,12 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.lastFetchLogGroupList, consumer.nextFetchCursor = consumer.consumerFetchTask()
 				consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
 				consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
-				Info.Printf("shard %v get log conunt %v", consumer.shardId, consumer.lastFetchGroupCount)
 				if consumer.lastFetchGroupCount == 0 {
 					consumer.lastFetchLogGroupList = nil
 				}
 			}
-			consumer.isCurrentDone = true
 			consumer.setConsumerStatus(PULL_PROCESSING_DONE)
+			consumer.isCurrentDone = true
 		}()
 	} else if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
 		consumer.isCurrentDone = false
@@ -113,8 +112,8 @@ func (consumer *ShardConsumerWorker) consume() {
 		go func() {
 			consumer.consumerProcessTask()
 			consumer.lastFetchLogGroupList = nil
-			consumer.isCurrentDone = true
 			consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
+			consumer.isCurrentDone = true
 		}()
 	}
 

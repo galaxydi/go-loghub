@@ -36,6 +36,8 @@ func (consumer *ShardConsumerWorker) consumerProcessTask() {
 			Error.Printf("get panic in your process function : %v", r)
 		}
 	}()
-	consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
-	consumer.consumerCheckPointTracker.flushCheck()
+	if consumer.lastFetchLogGroupList != nil {
+		consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
+		consumer.consumerCheckPointTracker.flushCheck()
+	}
 }

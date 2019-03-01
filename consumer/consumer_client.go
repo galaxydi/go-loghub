@@ -82,19 +82,14 @@ func (consumer *ConsumerClient) getChcekPoint(shardId int) string {
 	return ""
 }
 
-// if the server reports 500 errors, the program will be retried until no more than 500 errors are caught.
+// If a checkpoint error is reported, the shard will remain asynchronous and will not affect the consumption of other shards.
 func (consumer *ConsumerClient) retryGetCheckPoint(shardId int) (checkPonitList []*sls.ConsumerGroupCheckPoint) {
 	for {
 		checkPonitList, err := consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
 		if err != nil {
 			if a, ok := err.(sls.Error); ok {
-				if a.HTTPCode == 500 {
-					Info.Println("Server gets 500 errors, starts to try again")
-					time.Sleep(1 * time.Second)
-				}
-			} else {
-				// TODO If it weren't 500 errors, should I let the program exit directly?
-				Error.Fatalf("This exception will cause the program to exit directly, with detailed error messages: %v", err)
+				Info.Printf("shard %v Get checkpoint gets %v errors, starts to try again", shardId, a.HTTPCode)
+				time.Sleep(1 * time.Second)
 			}
 		} else {
 			return checkPonitList
