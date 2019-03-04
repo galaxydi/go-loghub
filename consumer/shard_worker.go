@@ -99,7 +99,6 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.lastFetchLogGroupList, consumer.nextFetchCursor = consumer.consumerFetchTask()
 				consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
 				consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
-				Info.Println("分区 %v ,拉到了日志数量%v", consumer.shardId, consumer.lastFetchGroupCount)
 				if consumer.lastFetchGroupCount == 0 {
 					consumer.lastFetchLogGroupList = nil
 				}
