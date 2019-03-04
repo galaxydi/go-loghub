@@ -12,7 +12,7 @@ type LogHubConfig struct {
 	//:param consumer_name:
 	//:param cursor_position: This options is used for initialization, will be ignored once consumer group is created and each shard has beeen started to be consumed.
 	//:param heartbeat_interval: default 20, once a client doesn't report to server * heartbeat_interval * 2 interval, server will consider it's offline and re-assign its task to another consumer. thus  don't set the heatbeat interval too small when the network badwidth or performance of consumtion is not so good.
-	//:param data_fetch_interval: default 2, don't configure it too small (<1s)
+	//:param data_fetch_interval: default 2(seconds), don't configure it too small (<1s)
 	//:param in_order: default False, during consuption, when shard is splitted, if need to consume the newly splitted shard after its parent shard (read-only) is finished consumption or not. suggest keep it as False (don't care) until you have good reasion for it.
 	//:param cursor_start_time: Will be used when cursor_position when could be "begin", "end", "specific time format in time stamp", it's log receiving time.
 	//:param security_token:
@@ -45,8 +45,7 @@ const (
 	PULL_PROCESSING_DONE    = "PULL_PROCESSING_DONE"
 	CONSUME_PROCESSING      = "CONSUME_PROCESSING"
 	CONSUME_PROCESSING_DONE = "CONSUME_PROCESSING_DONE"
-
-	SHUTDOWN_COMPLETE = "SHUTDOWN_COMPLETE"
+	SHUTDOWN_COMPLETE       = "SHUTDOWN_COMPLETE"
 )
 
 var m sync.RWMutex

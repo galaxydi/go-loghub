@@ -46,8 +46,8 @@ func initConsumerClient(option LogHubConfig) *ConsumerClient {
 func (consumer *ConsumerClient) createConsumerGroup() {
 	err := consumer.client.CreateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup)
 	if err != nil {
-		if x, ok := err.(sls.Error); ok {
-			if x.Code == "ConsumerGroupAlreadyExist" {
+		if slsError, ok := err.(sls.Error); ok {
+			if slsError.Code == "ConsumerGroupAlreadyExist" {
 				Info.Printf("New consumer %v join the consumer group %v ", consumer.option.ConsumerName, consumer.option.ConsumerGroupName)
 			} else {
 				Warning.Println(err)
@@ -56,12 +56,9 @@ func (consumer *ConsumerClient) createConsumerGroup() {
 	}
 }
 
-func (consumer *ConsumerClient) heartBeat(heart []int) []int {
+func (consumer *ConsumerClient) heartBeat(heart []int) ([]int, error) {
 	heldShard, err := consumer.client.HeartBeat(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, heart)
-	if err != nil {
-		Warning.Println(err)
-	}
-	return heldShard
+	return heldShard, err
 }
 
 func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
@@ -74,12 +71,12 @@ func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string,
 // get a single shard checkpoint, if not，return ""
 func (consumer *ConsumerClient) getChcekPoint(shardId int) string {
 	checkPonitList := consumer.retryGetCheckPoint(shardId)
-	for _, x := range checkPonitList {
-		if x.ShardID == shardId {
-			return x.CheckPoint
+	for _, checkPonit := range checkPonitList {
+		if checkPonit.ShardID == shardId {
+			return checkPonit.CheckPoint
 		}
 	}
-	return ""
+	return "NotGetCheckPoint"
 }
 
 // If a checkpoint error is reported, the shard will remain asynchronous and will not affect the consumption of other shards.
@@ -87,35 +84,30 @@ func (consumer *ConsumerClient) retryGetCheckPoint(shardId int) (checkPonitList 
 	for {
 		checkPonitList, err := consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
 		if err != nil {
-			if a, ok := err.(sls.Error); ok {
-				Info.Printf("shard %v Get checkpoint gets %v errors, starts to try again", shardId, a.HTTPCode)
-				time.Sleep(1 * time.Second)
-			}
+			Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, err)
+			time.Sleep(1 * time.Second)
 		} else {
 			return checkPonitList
 		}
 	}
 }
 
-func (consumer *ConsumerClient) getCursor(shardId int, from string) (cursor string) {
+func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, error) {
 	cursor, err := consumer.client.GetCursor(consumer.option.Project, consumer.option.Logstore, shardId, from)
-	if err != nil {
-		Warning.Println(err)
-	}
-	return cursor
+	return cursor, err
 }
 
 func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string) {
 	for retry := 0; retry < 3; retry++ {
 		gl, nextCursor, err := consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
 		if err != nil {
-			if a, ok := err.(sls.Error); ok {
-				if a.HTTPCode == 500 {
-					Info.Println(err)
-					Info.Printf("Server gets 500 errors, starts to try again, try times %v", retry)
-					time.Sleep(1 * time.Second)
+			if slsError, ok := err.(sls.Error); ok {
+				if slsError.HTTPCode == 403 {
+					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
+					time.Sleep(5 * time.Second)
 				} else {
-					Warning.Println(err)
+					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
+					time.Sleep(200 * time.Millisecond)
 				}
 			}
 		} else {
@@ -124,5 +116,5 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 	}
 	// If you can't retry the log three times, it will return to empty list and start pulling the log cursor,
 	// so that next time you will come in and pull the function again, which is equivalent to a dead cycle.
-	return gl, cursor
+	return gl, "PullLogFailed"
 }

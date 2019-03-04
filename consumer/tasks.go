@@ -2,26 +2,34 @@ package consumerLibrary
 
 import "github.com/aliyun/aliyun-log-go-sdk"
 
-func (consumer *ShardConsumerWorker) consumerInitializeTask() string {
+func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 	checkpoint := consumer.client.getChcekPoint(consumer.shardId)
-	if checkpoint != "" {
+	if checkpoint != "NotGetCheckPoint" {
 		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)
-		return checkpoint
+		return checkpoint, nil
 	}
 
 	if consumer.client.option.CursorPosition == BEGIN_CURSOR {
-		cursor := consumer.client.getCursor(consumer.shardId, "begin")
-		return cursor
+		cursor, err := consumer.client.getCursor(consumer.shardId, "begin")
+
+		return cursor, err
 	}
 	if consumer.client.option.CursorPosition == END_CURSOR {
-		cursor := consumer.client.getCursor(consumer.shardId, "end")
-		return cursor
+		cursor, err := consumer.client.getCursor(consumer.shardId, "end")
+		if err != nil {
+			Warning.Println(err)
+		}
+		return cursor, err
 	}
 	if consumer.client.option.CursorPosition == SPECIAL_TIMER_CURSOR {
-		cursor := consumer.client.getCursor(consumer.shardId, string(consumer.client.option.CursorStartTime))
-		return cursor
+		cursor, err := consumer.client.getCursor(consumer.shardId, string(consumer.client.option.CursorStartTime))
+		if err != nil {
+			Warning.Println(err)
+		}
+		return cursor, err
 	}
-	return ""
+	Info.Println("CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
+	return "CursorPositionError", nil
 }
 
 func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string) {

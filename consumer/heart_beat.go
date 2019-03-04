@@ -56,19 +56,23 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
-		responseShards := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
-		Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.heartShards, responseShards)
+		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
+		if err != nil {
+			Warning.Println(err)
+		} else {
+			Info.Printf("heart beat result: %v,get:%v", consumerHeatBeat.heartShards, responseShards)
 
-		if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
-			currentSet := Set(consumerHeatBeat.heartShards)
-			responseSet := Set(consumerHeatBeat.heldShards)
-			add := Subtract(currentSet, responseSet)
-			remove := Subtract(responseSet, currentSet)
-			Info.Printf("shard reorganize, adding: %v, removing: %v", add, remove)
+			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
+				currentSet := Set(consumerHeatBeat.heartShards)
+				responseSet := Set(consumerHeatBeat.heldShards)
+				add := Subtract(currentSet, responseSet)
+				remove := Subtract(responseSet, currentSet)
+				Info.Printf("shard reorganize, adding: %v, removing: %v", add, remove)
+			}
+
+			consumerHeatBeat.setHeldShards(responseShards)
+			consumerHeatBeat.heartShards = consumerHeatBeat.heldShards[:]
 		}
-
-		consumerHeatBeat.setHeldShards(responseShards)
-		consumerHeatBeat.heartShards = consumerHeatBeat.heldShards[:]
 		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}
 	Info.Println("heart beat exit")

@@ -73,8 +73,13 @@ func (consumer *ShardConsumerWorker) consume() {
 	} else if consumer.getConsumerStatus() == INITIALIZING {
 		consumer.isCurrentDone = false
 		go func() {
-			consumer.nextFetchCursor = consumer.consumerInitializeTask()
-			consumer.setConsumerStatus(INITIALIZING_DONE)
+			cursor, err := consumer.consumerInitializeTask()
+			if err != nil || cursor == "CursorPositionError" {
+				consumer.setConsumerStatus(INITIALIZING)
+			} else {
+				consumer.nextFetchCursor = cursor
+				consumer.setConsumerStatus(INITIALIZING_DONE)
+			}
 			consumer.isCurrentDone = true
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING_DONE || consumer.getConsumerStatus() == CONSUME_PROCESSING_DONE {
@@ -96,14 +101,20 @@ func (consumer *ShardConsumerWorker) consume() {
 				// Set the logback cursor. If the logs are not consumed, save the logback cursor to the server.
 				consumer.rollBackCheckPoint = consumer.nextFetchCursor
 
-				consumer.lastFetchLogGroupList, consumer.nextFetchCursor = consumer.consumerFetchTask()
-				consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
-				consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
-				if consumer.lastFetchGroupCount == 0 {
-					consumer.lastFetchLogGroupList = nil
+				logGroupList, nextCursor := consumer.consumerFetchTask()
+				if nextCursor == "PullLogFailed" {
+					consumer.setConsumerStatus(INITIALIZING_DONE)
+				} else {
+					consumer.lastFetchLogGroupList = logGroupList
+					consumer.nextFetchCursor = nextCursor
+					consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
+					consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
+					if consumer.lastFetchGroupCount == 0 {
+						consumer.lastFetchLogGroupList = nil
+					}
+					consumer.setConsumerStatus(PULL_PROCESSING_DONE)
 				}
 			}
-			consumer.setConsumerStatus(PULL_PROCESSING_DONE)
 			consumer.isCurrentDone = true
 		}()
 	} else if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
