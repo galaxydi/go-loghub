@@ -77,7 +77,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			consumer.setConsumerStatus(INITIALIZING_DONE)
 			consumer.isCurrentDone = true
 		}()
-	} else if consumer.getConsumerStatus() == INITIALIZING_DONE {
+	} else if consumer.getConsumerStatus() == INITIALIZING_DONE || consumer.getConsumerStatus() == CONSUME_PROCESSING_DONE {
 		consumer.isCurrentDone = false
 		consumer.setConsumerStatus(PULL_PROCESSING)
 		go func() {
@@ -99,6 +99,7 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.lastFetchLogGroupList, consumer.nextFetchCursor = consumer.consumerFetchTask()
 				consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
 				consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
+				Info.Println("分区 %v ,拉到了日志数量%v", consumer.shardId, consumer.lastFetchGroupCount)
 				if consumer.lastFetchGroupCount == 0 {
 					consumer.lastFetchLogGroupList = nil
 				}
