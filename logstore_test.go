@@ -455,7 +455,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 	s.Logstore.DeleteShipper(ossShipperName)
 
 	ossShipperConfig := &OSSShipperConfig{
-		OssBucket:      "testBucket",
+		OssBucket:      "test_bucket",
 		OssPrefix:      "testPrefix",
 		RoleArn:        s.logShipperRole,
 		BufferInterval: 300,
