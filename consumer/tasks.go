@@ -6,7 +6,7 @@ import (
 )
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
-	checkpoint := consumer.client.getChcekPoint(consumer.shardId)
+	checkpoint := consumer.client.getCheckPoint(consumer.shardId)
 
 	if checkpoint != "" {
 		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)

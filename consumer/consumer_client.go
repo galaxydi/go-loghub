@@ -70,7 +70,7 @@ func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string,
 }
 
 // get a single shard checkpoint, if not，return ""
-func (consumer *ConsumerClient) getChcekPoint(shardId int) string {
+func (consumer *ConsumerClient) getCheckPoint(shardId int) string {
 	checkPonitList := consumer.retryGetCheckPoint(shardId)
 	for _, checkPoint := range checkPonitList {
 		if checkPoint.ShardID == shardId {
