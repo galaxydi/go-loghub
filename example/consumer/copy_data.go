@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"github.com/go-kit/kit/log/level"
 	"os"
 	"os/signal"
 )
@@ -49,7 +50,7 @@ func main() {
 	signal.Notify(ch)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
-		consumerLibrary.Info.Printf("get stop signal, start to stop consumer worker:%v", option.ConsumerName)
+		level.Info(consumerWorker.Logger).Log("msg", "get stop signal, start to stop consumer worker", "consumer worker name", option.ConsumerName)
 		consumerWorker.StopAndWait()
 	}
 }
@@ -63,4 +64,3 @@ func process(shardId int, logGroupList *sls.LogGroupList) {
 	}
 	fmt.Println("shardId %v processing works sucess", shardId)
 }
-

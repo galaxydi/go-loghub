@@ -2,6 +2,8 @@ package consumerLibrary
 
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"time"
 )
 
@@ -19,6 +21,7 @@ type ShardConsumerWorker struct {
 	rollBackCheckPoint        string
 	isCurrentDone             bool
 	isShutDowning             bool
+	logger                    log.Logger
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -33,7 +36,7 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 	return consumer.consumerStatus
 }
 
-func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList)) *ShardConsumerWorker {
+func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList), logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
 		consumerShutDownFlag:      false,
 		process:                   do,
@@ -44,6 +47,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 		lastFetchtime:             0,
 		isCurrentDone:             true,
 		isShutDowning:             false,
+		logger:                    logger,
 	}
 	return shardConsumeWorker
 }
@@ -76,7 +80,7 @@ func (consumer *ShardConsumerWorker) consume() {
 				}
 			}
 			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
-			Info.Printf("shardworker %v are shut down complete", consumer.shardId)
+			level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING {
 		consumer.isCurrentDone = false

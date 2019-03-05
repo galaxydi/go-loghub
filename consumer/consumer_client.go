@@ -2,6 +2,8 @@ package consumerLibrary
 
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"time"
 )
 
@@ -9,9 +11,10 @@ type ConsumerClient struct {
 	option        LogHubConfig
 	client        *sls.Client
 	consumerGroup sls.ConsumerGroup
+	logger        log.Logger
 }
 
-func initConsumerClient(option LogHubConfig) *ConsumerClient {
+func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient {
 	// Setting configuration defaults
 	if option.HeartbeatIntervalInSecond == 0 {
 		option.HeartbeatIntervalInSecond = 20
@@ -38,6 +41,7 @@ func initConsumerClient(option LogHubConfig) *ConsumerClient {
 		option,
 		client,
 		consumerGroup,
+		logger,
 	}
 
 	return consumerClient
@@ -48,9 +52,10 @@ func (consumer *ConsumerClient) createConsumerGroup() {
 	if err != nil {
 		if slsError, ok := err.(sls.Error); ok {
 			if slsError.Code == "ConsumerGroupAlreadyExist" {
-				Info.Printf("New consumer %v join the consumer group %v ", consumer.option.ConsumerName, consumer.option.ConsumerGroupName)
+				level.Info(consumer.logger).Log("msg", "New consumer join the consumer group", "consumer name", consumer.option.ConsumerName, "group name", consumer.option.ConsumerGroupName)
 			} else {
-				Warning.Println(err)
+				level.Warn(consumer.logger).Log("msg", "create consumer group error", "error", err)
+
 			}
 		}
 	}
@@ -71,7 +76,7 @@ func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string,
 
 // get a single shard checkpoint, if not，return ""
 func (consumer *ConsumerClient) getCheckPoint(shardId int) string {
-	checkPonitList := consumer.retryGetCheckPoint(shardId)
+	checkPonitList := consumer.forceGetCheckPoint(shardId)
 	for _, checkPoint := range checkPonitList {
 		if checkPoint.ShardID == shardId {
 			return checkPoint.CheckPoint
@@ -81,11 +86,11 @@ func (consumer *ConsumerClient) getCheckPoint(shardId int) string {
 }
 
 // If a checkpoint error is reported, the shard will remain asynchronous and will not affect the consumption of other shards.
-func (consumer *ConsumerClient) retryGetCheckPoint(shardId int) (checkPonitList []*sls.ConsumerGroupCheckPoint) {
+func (consumer *ConsumerClient) forceGetCheckPoint(shardId int) (checkPonitList []*sls.ConsumerGroupCheckPoint) {
 	for {
 		checkPonitList, err := consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
 		if err != nil {
-			Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, err)
+			level.Info(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", err)
 			time.Sleep(1 * time.Second)
 		} else {
 			return checkPonitList
@@ -105,14 +110,14 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 			slsError, ok := err.(sls.Error)
 			if ok {
 				if slsError.HTTPCode == 403 {
-					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
+					level.Info(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
 					time.Sleep(5 * time.Second)
 				} else {
-					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
+					level.Info(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
 					time.Sleep(200 * time.Millisecond)
 				}
 			} else {
-				Info.Println("xxx.logger ...") //TODO log
+				level.Info(consumer.logger).Log("msg", "unknown error when pull log", "shardId", shardId, "cursor", cursor, "error", err)
 			}
 		} else {
 			return gl, nextCursor

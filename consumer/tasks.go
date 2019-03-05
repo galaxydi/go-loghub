@@ -3,6 +3,7 @@ package consumerLibrary
 import (
 	"errors"
 	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log/level"
 )
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
@@ -15,24 +16,27 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 
 	if consumer.client.option.CursorPosition == BEGIN_CURSOR {
 		cursor, err := consumer.client.getCursor(consumer.shardId, "begin")
-
+		if err != nil {
+			level.Warn(consumer.logger).Log("msg", "get beginCursor error", "shard", consumer.shardId, "error", err)
+		}
 		return cursor, err
 	}
 	if consumer.client.option.CursorPosition == END_CURSOR {
 		cursor, err := consumer.client.getCursor(consumer.shardId, "end")
 		if err != nil {
-			Warning.Println(err)
+			level.Warn(consumer.logger).Log("msg", "get endCursor error", "shard", consumer.shardId, "error", err)
 		}
 		return cursor, err
 	}
 	if consumer.client.option.CursorPosition == SPECIAL_TIMER_CURSOR {
 		cursor, err := consumer.client.getCursor(consumer.shardId, string(consumer.client.option.CursorStartTime))
 		if err != nil {
-			Warning.Println(err)
+			level.Warn(consumer.logger).Log("msg", "get specialCursor error", "shard", consumer.shardId, "error", err)
+
 		}
 		return cursor, err
 	}
-	Info.Println("CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
+	level.Info(consumer.logger).Log("msg", "CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
 	return "", errors.New("CursorPositionError")
 }
 
@@ -45,7 +49,7 @@ func (consumer *ShardConsumerWorker) consumerProcessTask() {
 	// If the user's consumption function reports a panic error, it will be captured and exited.
 	defer func() {
 		if r := recover(); r != nil {
-			Error.Printf("get panic in your process function : %v", r)
+			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r)
 		}
 	}()
 	if consumer.lastFetchLogGroupList != nil {
