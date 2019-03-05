@@ -2,8 +2,7 @@ package consumerLibrary
 
 import (
 	"github.com/aliyun/aliyun-log-go-sdk"
-	"os"
-	"os/signal"
+	"sync"
 	"time"
 )
 
@@ -13,6 +12,7 @@ type ConsumerWorker struct {
 	workerShutDownFlag bool
 	shardConsumer      map[int]*ShardConsumerWorker
 	do                 func(shard int, logGroup *sls.LogGroupList)
+	waitGroup          sync.WaitGroup
 }
 
 func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *ConsumerWorker {
@@ -20,42 +20,32 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *C
 	consumerClient := initConsumerClient(option)
 	consumerHeatBeat := initConsumerHeatBeat(consumerClient)
 	consumerWorker := &ConsumerWorker{
-		consumerHeatBeat,
-		consumerClient,
-		false,
-		make(map[int]*ShardConsumerWorker),
-		do,
+		consumerHeatBeat:consumerHeatBeat,
+		client:consumerClient,
+		workerShutDownFlag:false,
+		shardConsumer:make(map[int]*ShardConsumerWorker),
+		do:do,
 	}
 	consumerClient.createConsumerGroup()
 	return consumerWorker
 }
 
 func (consumerWorker *ConsumerWorker) Start() {
-	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	consumerWorker.waitGroup.Add(1)
 	go consumerWorker.run()
-	if _, ok := <-ch; ok {
-		Info.Printf("get stop signal, start to stop consumer worker:%v", consumerWorker.client.option.ConsumerName)
-		consumerWorker.workerShutDown()
-	}
 }
 
-func (consumerWorker *ConsumerWorker) workerShutDown() {
+func (consumerWorker *ConsumerWorker) StopAndWait() {
 	Info.Println("*** try to exit ***")
 	consumerWorker.workerShutDownFlag = true
 	consumerWorker.consumerHeatBeat.shutDownHeart()
-	for {
-		// Used to wait for all shardWorkers to close, otherwise sometimes they will die.
-		time.Sleep(1 * time.Second)
-		if consumerWorker.shardConsumer == nil {
-			break
-		}
-	}
+	consumerWorker.waitGroup.Wait()
 	Info.Printf("consumer worker %v stopped", consumerWorker.client.option.ConsumerName)
 }
 
 func (consumerWorker *ConsumerWorker) run() {
 	Info.Printf("consumer worker %v start", consumerWorker.client.option.ConsumerName)
+	defer consumerWorker.waitGroup.Done()
 	go consumerWorker.consumerHeatBeat.heartBeatRun()
 
 	for !consumerWorker.workerShutDownFlag {
@@ -97,7 +87,6 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 			}
 		}
 		if len(consumerWorker.shardConsumer) == 0 {
-			consumerWorker.shardConsumer = nil
 			break
 		}
 	}
@@ -123,9 +112,13 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 			Info.Printf("Complete call shut down for unassigned consumer shard: %v", shard)
 		}
 		if consumer.isShutDownComplete() {
-			consumerWorker.consumerHeatBeat.removeHeartShard(shard)
-			Info.Printf("Remove an unassigned consumer shard: %v", shard)
-			delete(consumerWorker.shardConsumer, shard)
+			isDeleteShardSucess := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
+			if isDeleteShardSucess {
+				Info.Printf("Remove an unassigned consumer shard: %v", shard)
+				delete(consumerWorker.shardConsumer, shard)
+			}else {
+				Info.Printf("Remove an unassigned consumer shard failed: %v", shard)
+			}
 		}
 	}
 

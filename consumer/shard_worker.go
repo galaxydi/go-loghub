@@ -50,7 +50,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 
 func (consumer *ShardConsumerWorker) consume() {
 
-	if consumer.consumerShutDownFlag == true {
+	if consumer.consumerShutDownFlag {
 		consumer.isShutDowning = true
 		go func() {
 			// If the data is not consumed, save the RollBackCheckPoint to the server
@@ -66,7 +66,15 @@ func (consumer *ShardConsumerWorker) consume() {
 					}
 				}
 			}
-			consumer.consumerCheckPointTracker.flushCheckPoint()
+
+			for {
+				err := consumer.consumerCheckPointTracker.flushCheckPoint()
+				if err != nil{
+					time.Sleep(time.Second)
+				}else{
+					break
+				}
+			}
 			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
 			Info.Printf("shardworker %v are shut down complete", consumer.shardId)
 		}()
@@ -74,7 +82,7 @@ func (consumer *ShardConsumerWorker) consume() {
 		consumer.isCurrentDone = false
 		go func() {
 			cursor, err := consumer.consumerInitializeTask()
-			if err != nil || cursor == "CursorPositionError" {
+			if err != nil {
 				consumer.setConsumerStatus(INITIALIZING)
 			} else {
 				consumer.nextFetchCursor = cursor

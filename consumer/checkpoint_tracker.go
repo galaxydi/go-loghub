@@ -30,18 +30,22 @@ func (checkPointTracker *ConsumerCheckPointTracker) setPersistentCheckPoint(curs
 	checkPointTracker.lastPersistentCheckPoint = cursor
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) flushCheckPoint() {
+func (checkPointTracker *ConsumerCheckPointTracker) flushCheckPoint() error {
 	if checkPointTracker.tempCheckPoint != "" && checkPointTracker.tempCheckPoint != checkPointTracker.lastPersistentCheckPoint {
-		checkPointTracker.client.updateCheckPoint(checkPointTracker.trackerShardId, checkPointTracker.tempCheckPoint, true)
+		if err := checkPointTracker.client.updateCheckPoint(checkPointTracker.trackerShardId, checkPointTracker.tempCheckPoint, true);err != nil{
+			return err
+		}
 		checkPointTracker.lastPersistentCheckPoint = checkPointTracker.tempCheckPoint
 	}
+	return nil
 }
 
 func (checkPointTracker *ConsumerCheckPointTracker) flushCheck() {
-	current_time := time.Now().Unix()
-	if current_time > checkPointTracker.lastCheckTime+checkPointTracker.defaultFlushCheckPointIntervalSec {
-		checkPointTracker.flushCheckPoint()
-		checkPointTracker.lastCheckTime = current_time
+	currentTime := time.Now().Unix()
+	if currentTime > checkPointTracker.lastCheckTime+checkPointTracker.defaultFlushCheckPointIntervalSec {
+		if err := checkPointTracker.flushCheckPoint();err != nil {
+			checkPointTracker.lastCheckTime = currentTime
+		}
 	}
 }
 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"os"
+	"os/signal"
 )
 
 // README :
@@ -42,16 +44,23 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	consumer := consumerLibrary.InitConsumerWorker(option, process)
-	consumer.Start()
+	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
+	ch := make(chan os.Signal)
+	signal.Notify(ch)
+	consumerWorker.Start()
+	if _, ok := <-ch; ok {
+		consumerLibrary.Info.Printf("get stop signal, start to stop consumer worker:%v", option.ConsumerName)
+		consumerWorker.StopAndWait()
+	}
 }
 
 func process(shardId int, logGroupList *sls.LogGroupList) {
 	for _, logGroup := range logGroupList.LogGroups {
-		err2 := client.PutLogs(option.Project, "copy-logstore", logGroup)
-		if err2 != nil {
-			fmt.Println(err2)
+		err := client.PutLogs(option.Project, "copy-logstore", logGroup)
+		if err != nil {
+			fmt.Println(err)
 		}
 	}
 	fmt.Println("shardId %v processing works sucess", shardId)
 }
+

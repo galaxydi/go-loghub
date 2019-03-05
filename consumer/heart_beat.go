@@ -24,31 +24,38 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient) *ConsumerHeatBeat {
 func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
 	m.RLock()
 	defer m.RUnlock()
-	return consumerHeatBeat.heartShards
+	return consumerHeatBeat.heldShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(x []int) {
+func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(heldShards []int) {
 	m.Lock()
 	defer m.Unlock()
-	consumerHeatBeat.heldShards = x
+	consumerHeatBeat.heldShards = heldShards
 }
+
+func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int){
+	m.Lock()
+	defer m.Unlock()
+	consumerHeatBeat.heartShards = heartShards
+}
+
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	Info.Println("try to stop heart beat")
 	consumerHeatBeat.shutDownFlag = true
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) {
-	for i, x := range consumerHeatBeat.heartShards {
-		if shardId == x {
-			consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
+func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
+	var isDeleteShard bool
+	for i, heartShard := range consumerHeatBeat.heartShards {
+		if shardId == heartShard {
+			heartShards := append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
+			consumerHeatBeat.setHeartShards(heartShards)
+			isDeleteShard = true
+			break
 		}
 	}
-	for i, x := range consumerHeatBeat.heldShards {
-		if shardId == x {
-			consumerHeatBeat.heldShards = append(consumerHeatBeat.heldShards[:i], consumerHeatBeat.heldShards[i+1:]...)
-		}
-	}
+	return isDeleteShard
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
@@ -71,7 +78,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			}
 
 			consumerHeatBeat.setHeldShards(responseShards)
-			consumerHeatBeat.heartShards = consumerHeatBeat.heldShards[:]
+			consumerHeatBeat.setHeartShards(consumerHeatBeat.getHeldShards()[:])
 		}
 		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}

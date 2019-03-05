@@ -1,10 +1,14 @@
 package consumerLibrary
 
-import "github.com/aliyun/aliyun-log-go-sdk"
+import (
+	"errors"
+	"github.com/aliyun/aliyun-log-go-sdk"
+)
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 	checkpoint := consumer.client.getChcekPoint(consumer.shardId)
-	if checkpoint != "NotGetCheckPoint" {
+
+	if checkpoint != "" {
 		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)
 		return checkpoint, nil
 	}
@@ -29,7 +33,7 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 		return cursor, err
 	}
 	Info.Println("CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
-	return "CursorPositionError", nil
+	return "", errors.New("CursorPositionError")
 }
 
 func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string) {

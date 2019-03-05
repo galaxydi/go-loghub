@@ -61,22 +61,23 @@ func (consumer *ConsumerClient) heartBeat(heart []int) ([]int, error) {
 	return heldShard, err
 }
 
-func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string, forceSucess bool) {
+func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string, forceSucess bool) error {
 	err := consumer.client.UpdateCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, shardId, checkpoint, forceSucess)
 	if err != nil {
-		Warning.Println(err)
+		return err
 	}
+	return nil
 }
 
 // get a single shard checkpoint, if not，return ""
 func (consumer *ConsumerClient) getChcekPoint(shardId int) string {
 	checkPonitList := consumer.retryGetCheckPoint(shardId)
-	for _, checkPonit := range checkPonitList {
-		if checkPonit.ShardID == shardId {
-			return checkPonit.CheckPoint
+	for _, checkPoint := range checkPonitList {
+		if checkPoint.ShardID == shardId {
+			return checkPoint.CheckPoint
 		}
 	}
-	return "NotGetCheckPoint"
+	return ""
 }
 
 // If a checkpoint error is reported, the shard will remain asynchronous and will not affect the consumption of other shards.
@@ -101,7 +102,8 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 	for retry := 0; retry < 3; retry++ {
 		gl, nextCursor, err := consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
 		if err != nil {
-			if slsError, ok := err.(sls.Error); ok {
+			slsError, ok := err.(sls.Error)
+			if ok {
 				if slsError.HTTPCode == 403 {
 					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
 					time.Sleep(5 * time.Second)
@@ -109,6 +111,8 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
 					time.Sleep(200 * time.Millisecond)
 				}
+			}else{
+				Info.Println("xxx.logger ...") //TODO log
 			}
 		} else {
 			return gl, nextCursor

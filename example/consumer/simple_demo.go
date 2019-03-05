@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"os"
+	"os/signal"
 )
 
 // README :
@@ -23,8 +25,14 @@ func main() {
 		CursorPosition: consumerLibrary.BEGIN_CURSOR,
 	}
 
-	consumer := consumerLibrary.InitConsumerWorker(option, process)
-	consumer.Start()
+	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
+	ch := make(chan os.Signal)
+	signal.Notify(ch)
+	consumerWorker.Start()
+	if _, ok := <-ch; ok {
+		consumerLibrary.Info.Printf("get stop signal, start to stop consumer worker:%v", option.ConsumerName)
+		consumerWorker.StopAndWait()
+	}
 }
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,

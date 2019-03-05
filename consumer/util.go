@@ -57,6 +57,12 @@ func Min(a, b int64) int64 {
 
 // Determine whether two lists are equal
 func IntSliceReflectEqual(a, b []int) bool {
+	if a == nil {
+		a = []int{}
+	}
+	if b == nil {
+		b = []int{}
+	}
 	return reflect.DeepEqual(a, b)
 }
 
@@ -84,11 +90,11 @@ func GetLogCount(logGroupList *sls.LogGroupList) int {
 	if logGroupList == nil {
 		return 0
 	}
-	a := 0
-	for _, x := range logGroupList.LogGroups {
-		a = a + len(x.Logs)
+	count := 0
+	for _, logGroup:= range logGroupList.LogGroups {
+		count = count + len(logGroup.Logs)
 	}
-	return a
+	return count
 }
 
 func TimeToSleep(intervalTime, lastCheckTime int64, condition bool) {
