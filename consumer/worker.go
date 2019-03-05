@@ -20,11 +20,11 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *C
 	consumerClient := initConsumerClient(option)
 	consumerHeatBeat := initConsumerHeatBeat(consumerClient)
 	consumerWorker := &ConsumerWorker{
-		consumerHeatBeat:consumerHeatBeat,
-		client:consumerClient,
-		workerShutDownFlag:false,
-		shardConsumer:make(map[int]*ShardConsumerWorker),
-		do:do,
+		consumerHeatBeat:   consumerHeatBeat,
+		client:             consumerClient,
+		workerShutDownFlag: false,
+		shardConsumer:      make(map[int]*ShardConsumerWorker),
+		do:                 do,
 	}
 	consumerClient.createConsumerGroup()
 	return consumerWorker
@@ -116,7 +116,7 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 			if isDeleteShardSucess {
 				Info.Printf("Remove an unassigned consumer shard: %v", shard)
 				delete(consumerWorker.shardConsumer, shard)
-			}else {
+			} else {
 				Info.Printf("Remove an unassigned consumer shard failed: %v", shard)
 			}
 		}

@@ -33,12 +33,11 @@ func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(heldShards []int) {
 	consumerHeatBeat.heldShards = heldShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int){
+func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int) {
 	m.Lock()
 	defer m.Unlock()
 	consumerHeatBeat.heartShards = heartShards
 }
-
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	Info.Println("try to stop heart beat")

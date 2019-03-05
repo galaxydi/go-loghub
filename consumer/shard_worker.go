@@ -69,9 +69,9 @@ func (consumer *ShardConsumerWorker) consume() {
 
 			for {
 				err := consumer.consumerCheckPointTracker.flushCheckPoint()
-				if err != nil{
+				if err != nil {
 					time.Sleep(time.Second)
-				}else{
+				} else {
 					break
 				}
 			}

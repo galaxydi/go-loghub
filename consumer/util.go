@@ -91,7 +91,7 @@ func GetLogCount(logGroupList *sls.LogGroupList) int {
 		return 0
 	}
 	count := 0
-	for _, logGroup:= range logGroupList.LogGroups {
+	for _, logGroup := range logGroupList.LogGroups {
 		count = count + len(logGroup.Logs)
 	}
 	return count

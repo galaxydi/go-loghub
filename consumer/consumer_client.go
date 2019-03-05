@@ -111,7 +111,7 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 					Info.Printf("shard %v Get checkpoint gets errors, starts to try again, error : %v", shardId, slsError)
 					time.Sleep(200 * time.Millisecond)
 				}
-			}else{
+			} else {
 				Info.Println("xxx.logger ...") //TODO log
 			}
 		} else {
