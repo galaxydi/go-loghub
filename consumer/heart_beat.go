@@ -1,6 +1,7 @@
 package consumerLibrary
 
 import (
+	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"time"
@@ -70,15 +71,14 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
-			// TODO When stdout is not in JSON format, slice cannot be printed
-			level.Info(consumerHeatBeat.logger).Log("heart beat result", consumerHeatBeat.heartShards, "get", responseShards)
+			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
 
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
 				currentSet := Set(consumerHeatBeat.heartShards)
 				responseSet := Set(consumerHeatBeat.heldShards)
 				add := Subtract(currentSet, responseSet)
 				remove := Subtract(responseSet, currentSet)
-				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", add, "removing:", remove)
+				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
 			}
 
 			consumerHeatBeat.setHeldShards(responseShards)
