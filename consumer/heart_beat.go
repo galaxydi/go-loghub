@@ -49,19 +49,6 @@ func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	consumerHeatBeat.shutDownFlag = true
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
-	var isDeleteShard bool
-	for i, heartShard := range consumerHeatBeat.heartShards {
-		if shardId == heartShard {
-			heartShards := append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
-			consumerHeatBeat.setHeartShards(heartShards)
-			isDeleteShard = true
-			break
-		}
-	}
-	return isDeleteShard
-}
-
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
 
@@ -72,7 +59,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
 			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
-
+			consumerHeatBeat.setHeldShards(responseShards)
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
 				currentSet := Set(consumerHeatBeat.heartShards)
 				responseSet := Set(consumerHeatBeat.heldShards)
@@ -81,7 +68,6 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
 			}
 
-			consumerHeatBeat.setHeldShards(responseShards)
 			consumerHeatBeat.setHeartShards(consumerHeatBeat.getHeldShards()[:])
 		}
 		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)

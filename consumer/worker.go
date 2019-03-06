@@ -112,22 +112,18 @@ func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsum
 
 func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 	for shard, consumer := range consumerWorker.shardConsumer {
+
 		if !Contain(shard, owned_shards) {
 			level.Info(consumerWorker.Logger).Log("msg", "try to call shut down for unassigned consumer shard", "shardId", shard)
 			consumer.consumerShutDown()
-			level.Info(consumerWorker.Logger).Log("msg", "Complete call shut down for unassigned consumer shard", "shargId", shard)
+			level.Info(consumerWorker.Logger).Log("msg", "Complete call shut down for unassigned consumer shard", "shardId", shard)
 		}
+
 		if consumer.isShutDownComplete() {
-			isDeleteShardSucess := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
-			if isDeleteShardSucess {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard", "shardId", shard)
-				delete(consumerWorker.shardConsumer, shard)
-			} else {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard failed", "shardId", shard)
-			}
+			level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard", "shardId", shard)
+			delete(consumerWorker.shardConsumer, shard)
 		}
 	}
-
 }
 
 // This function is used to initialize the global log configuration

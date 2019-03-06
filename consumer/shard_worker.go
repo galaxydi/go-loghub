@@ -144,6 +144,10 @@ func (consumer *ShardConsumerWorker) consume() {
 
 func (consumer *ShardConsumerWorker) consumerShutDown() {
 	consumer.consumerShutDownFlag = true
+	// If the shutdown task is executing, return directly without calling the shutdown function
+	if consumer.isShutDowning == true {
+		return
+	}
 	if !consumer.isShutDownComplete() {
 		consumer.consume()
 	}
