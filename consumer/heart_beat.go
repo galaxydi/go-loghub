@@ -70,6 +70,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
+			// TODO When stdout is not in JSON format, slice cannot be printed
 			level.Info(consumerHeatBeat.logger).Log("heart beat result", consumerHeatBeat.heartShards, "get", responseShards)
 
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
