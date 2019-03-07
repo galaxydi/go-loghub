@@ -87,7 +87,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
-	var isDeleteShard bool
+	isDeleteShard := false
 	heartShards := consumerHeatBeat.getHeartShards()
 	for i, heartShard := range heartShards {
 		if shardId == heartShard {

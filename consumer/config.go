@@ -11,6 +11,7 @@ type LogHubConfig struct {
 	//:param ConsumerGroupName:
 	//:param ConsumerName:
 	//:param CursorPosition: This options is used for initialization, will be ignored once consumer group is created and each shard has beeen started to be consumed.
+	//  Provide three options ：BEGIN_CURSOR,END_CURSOR,SPECIAL_TIMER_CURSOR,when you choose SPECIAL_TIMER_CURSOR, you have to set CursorStartTime parameter.
 	//:param HeartbeatIntervalInSecond:
 	// default 20, once a client doesn't report to server * heartbeat_interval * 3 interval,
 	// server will consider it's offline and re-assign its task to another consumer.
