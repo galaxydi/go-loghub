@@ -40,7 +40,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 	shardConsumeWorker := &ShardConsumerWorker{
 		consumerShutDownFlag:      false,
 		process:                   do,
-		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient),
+		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient, logger),
 		client:                    consumerClient,
 		consumerStatus:            INITIALIZING,
 		shardId:                   shardId,
