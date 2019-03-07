@@ -34,7 +34,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	}
 	consumerGroup := sls.ConsumerGroup{
 		option.ConsumerGroupName,
-		option.HeartbeatIntervalInSecond * 2,
+		option.HeartbeatIntervalInSecond * 3,
 		option.InOrder,
 	}
 	consumerClient := &ConsumerClient{
@@ -67,11 +67,7 @@ func (consumer *ConsumerClient) heartBeat(heart []int) ([]int, error) {
 }
 
 func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string, forceSucess bool) error {
-	err := consumer.client.UpdateCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, shardId, checkpoint, forceSucess)
-	if err != nil {
-		return err
-	}
-	return nil
+	return consumer.client.UpdateCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.option.ConsumerGroupName, consumer.option.ConsumerName, shardId, checkpoint, forceSucess)
 }
 
 // get a single shard checkpoint, if not，return ""

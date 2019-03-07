@@ -106,6 +106,7 @@ func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsum
 	}
 	consumer = initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.do, consumerWorker.Logger)
 	consumerWorker.shardConsumer[shardId] = consumer
+	consumerWorker.consumerHeatBeat.appendHeartShards(shardId)
 	return consumer
 
 }
@@ -120,8 +121,13 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 		}
 
 		if consumer.isShutDownComplete() {
-			level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard", "shardId", shard)
-			delete(consumerWorker.shardConsumer, shard)
+			isDeleteShardSucess := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
+			if isDeleteShardSucess {
+				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard", "shardId", shard)
+				delete(consumerWorker.shardConsumer, shard)
+			} else {
+				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard failed", "shardId", shard)
+			}
 		}
 	}
 }
@@ -169,7 +175,6 @@ func initLogFlusher(option LogHubConfig) *lumberjack.Logger {
 	return &lumberjack.Logger{
 		Filename:   option.LogFileName,
 		MaxSize:    option.LogMaxSize,
-		MaxAge:     option.LogMaxBackups,
 		MaxBackups: option.LogMaxBackups,
 		Compress:   option.LogCompass,
 	}

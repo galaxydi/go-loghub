@@ -44,6 +44,18 @@ func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int) {
 	consumerHeatBeat.heartShards = heartShards
 }
 
+func (consumerHeatBeat *ConsumerHeatBeat) appendHeartShards(heartShard int) {
+	m.Lock()
+	defer m.Unlock()
+	consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards, heartShard)
+}
+
+func (consumerHeatBeat *ConsumerHeatBeat) getHeartShards() []int {
+	m.RLock()
+	defer m.RUnlock()
+	return consumerHeatBeat.heartShards
+}
+
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	level.Info(consumerHeatBeat.logger).Log("msg", "try to stop heart beat")
 	consumerHeatBeat.shutDownFlag = true
@@ -54,7 +66,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
-		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
+		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.getHeartShards())
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
@@ -68,9 +80,22 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
 			}
 
-			consumerHeatBeat.setHeartShards(consumerHeatBeat.getHeldShards()[:])
 		}
 		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}
 	level.Info(consumerHeatBeat.logger).Log("msg", "heart beat exit")
+}
+
+func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
+	var isDeleteShard bool
+	heartShards := consumerHeatBeat.getHeartShards()
+	for i, heartShard := range heartShards {
+		if shardId == heartShard {
+			heartShards := append(heartShards[:i], heartShards[i+1:]...)
+			consumerHeatBeat.setHeartShards(heartShards)
+			isDeleteShard = true
+			break
+		}
+	}
+	return isDeleteShard
 }

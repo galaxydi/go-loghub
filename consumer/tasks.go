@@ -2,6 +2,7 @@ package consumerLibrary
 
 import (
 	"errors"
+	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log/level"
 )
@@ -29,7 +30,7 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 		return cursor, err
 	}
 	if consumer.client.option.CursorPosition == SPECIAL_TIMER_CURSOR {
-		cursor, err := consumer.client.getCursor(consumer.shardId, string(consumer.client.option.CursorStartTime))
+		cursor, err := consumer.client.getCursor(consumer.shardId, fmt.Sprintf("%v", consumer.client.option.CursorStartTime))
 		if err != nil {
 			level.Warn(consumer.logger).Log("msg", "get specialCursor error", "shard", consumer.shardId, "error", err)
 
