@@ -121,12 +121,12 @@ func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
 		}
 
 		if consumer.isShutDownComplete() {
-			isDeleteShardSucess := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
-			if isDeleteShardSucess {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard", "shardId", shard)
+			isDeleteShard := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
+			if isDeleteShard {
+				level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard", "shardId", shard)
 				delete(consumerWorker.shardConsumer, shard)
 			} else {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an unassigned consumer shard failed", "shardId", shard)
+				level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard failed", "shardId", shard)
 			}
 		}
 	}

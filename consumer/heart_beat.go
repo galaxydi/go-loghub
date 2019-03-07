@@ -66,7 +66,8 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
-		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.getHeartShards())
+		uploadShards := append(consumerHeatBeat.heartShards,consumerHeatBeat.heldShards...)
+		responseShards, err := consumerHeatBeat.client.heartBeat(Set(uploadShards))
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
