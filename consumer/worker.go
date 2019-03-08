@@ -4,7 +4,7 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	lumberjack "github.com/natefinch/lumberjack.v2"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"sync"
 	"time"

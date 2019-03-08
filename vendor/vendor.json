@@ -112,12 +112,6 @@
 			"revisionTime": "2017-09-20T22:06:47Z"
 		},
 		{
-			"checksumSHA1": "izaUqVCU0NomkJTU+fvIUF7zOXU=",
-			"path": "github.com/natefinch/lumberjack.v2",
-			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
-			"revisionTime": "2017-05-31T16:03:50Z"
-		},
-		{
 			"checksumSHA1": "WDgX011m3uQMKWf8cHb5Ndyzmj8=",
 			"path": "github.com/pierrec/lz4",
 			"revision": "6b9367c9ff401dbc54fabce3fb8d972e799b702d",
@@ -165,6 +159,12 @@
 			"path": "golang.org/x/net/context",
 			"revision": "6250b412798208e6c90b03b7c4f226de5aa299e2",
 			"revisionTime": "2016-08-24T22:20:41Z"
+		},
+		{
+			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
+			"path": "gopkg.in/natefinch/lumberjack.v2",
+			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
+			"revisionTime": "2017-05-31T16:03:50Z"
 		}
 	],
 	"rootPath": "github.com/aliyun/aliyun-log-go-sdk"
