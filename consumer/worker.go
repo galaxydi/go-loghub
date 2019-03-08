@@ -4,7 +4,7 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/natefinch/lumberjack.v2"
+	lumberjack "github.com/natefinch/lumberjack.v2"
 	"os"
 	"sync"
 	"time"
@@ -106,7 +106,6 @@ func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsum
 	}
 	consumer = initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.do, consumerWorker.Logger)
 	consumerWorker.shardConsumer[shardId] = consumer
-	consumerWorker.consumerHeatBeat.appendHeartShards(shardId)
 	return consumer
 
 }

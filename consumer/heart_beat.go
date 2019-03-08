@@ -44,12 +44,6 @@ func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int) {
 	consumerHeatBeat.heartShards = heartShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) appendHeartShards(heartShard int) {
-	m.Lock()
-	defer m.Unlock()
-	consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards, heartShard)
-}
-
 func (consumerHeatBeat *ConsumerHeatBeat) getHeartShards() []int {
 	m.RLock()
 	defer m.RUnlock()
@@ -66,16 +60,17 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 
 	for !consumerHeatBeat.shutDownFlag {
 		lastHeartBeatTime = time.Now().Unix()
-		uploadShards := append(consumerHeatBeat.heartShards,consumerHeatBeat.heldShards...)
-		responseShards, err := consumerHeatBeat.client.heartBeat(Set(uploadShards))
+		uploadShards := append(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards...)
+		consumerHeatBeat.heartShards = Set(uploadShards)
+		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
 		} else {
 			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
 			consumerHeatBeat.setHeldShards(responseShards)
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
-				currentSet := Set(consumerHeatBeat.heartShards)
-				responseSet := Set(consumerHeatBeat.heldShards)
+				currentSet := Set(consumerHeatBeat.getHeartShards())
+				responseSet := Set(consumerHeatBeat.getHeldShards())
 				add := Subtract(currentSet, responseSet)
 				remove := Subtract(responseSet, currentSet)
 				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
