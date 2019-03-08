@@ -64,6 +64,24 @@
 			"revisionTime": "2017-08-14T20:04:35Z"
 		},
 		{
+			"checksumSHA1": "bp1ClkjUs5pY6vpPF3ktUEFvII0=",
+			"path": "github.com/go-kit/kit/log",
+			"revision": "a8cc1630e08ad79caf184b550589ded1a16b203d",
+			"revisionTime": "2019-02-25T01:16:59Z"
+		},
+		{
+			"checksumSHA1": "dyVQWAYHLspsCzhDwwfQjvkOtMk=",
+			"path": "github.com/go-kit/kit/log/level",
+			"revision": "a8cc1630e08ad79caf184b550589ded1a16b203d",
+			"revisionTime": "2019-02-25T01:16:59Z"
+		},
+		{
+			"checksumSHA1": "g8yM1TRZyIjXtopiqbslzgLqtM0=",
+			"path": "github.com/go-logfmt/logfmt",
+			"revision": "07c9b44f60d7ffdfb7d8efe1ad539965737836dc",
+			"revisionTime": "2018-11-22T01:56:15Z"
+		},
+		{
 			"checksumSHA1": "FhLvgtYfuKY0ow9wtLJRoeg7d6w=",
 			"path": "github.com/gogo/protobuf/gogoproto",
 			"revision": "35b81a066e522fb86ece043a8ef1dbfa10b4fed1",
@@ -141,6 +159,12 @@
 			"path": "golang.org/x/net/context",
 			"revision": "6250b412798208e6c90b03b7c4f226de5aa299e2",
 			"revisionTime": "2016-08-24T22:20:41Z"
+		},
+		{
+			"checksumSHA1": "TM3Neoy1xRAKyZYMGzKc41sDFW4=",
+			"path": "gopkg.in/natefinch/lumberjack.v2",
+			"revision": "a96e63847dc3c67d17befa69c303767e2f84e54f",
+			"revisionTime": "2017-05-31T16:03:50Z"
 		}
 	],
 	"rootPath": "github.com/aliyun/aliyun-log-go-sdk"

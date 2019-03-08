@@ -176,7 +176,7 @@ func (c *Client) UpdateCheckpoint(project, logstore string, cgName string, consu
 	} else {
 		urlVal.Add("forceSuccess", "false")
 	}
-	fmt.Println(urlVal.Encode())
+	// fmt.Println(urlVal.Encode())
 	uri := fmt.Sprintf("/logstores/%v/consumergroups/%v?%v", logstore, cgName, urlVal.Encode())
 	_, err = c.request(project, "POST", uri, h, body)
 	if err != nil {
