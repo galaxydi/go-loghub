@@ -55,7 +55,7 @@ func main() {
 	}
 }
 
-func process(shardId int, logGroupList *sls.LogGroupList) {
+func process(shardId int, logGroupList *sls.LogGroupList) string {
 	for _, logGroup := range logGroupList.LogGroups {
 		err := client.PutLogs(option.Project, "copy-logstore", logGroup)
 		if err != nil {
@@ -63,4 +63,5 @@ func process(shardId int, logGroupList *sls.LogGroupList) {
 		}
 	}
 	fmt.Println("shardId %v processing works sucess", shardId)
+	return ""
 }

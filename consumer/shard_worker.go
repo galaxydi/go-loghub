@@ -16,7 +16,7 @@ type ShardConsumerWorker struct {
 	lastFetchGroupCount       int
 	lastFetchtime             int64
 	consumerStatus            string
-	process                   func(shard int, logGroup *sls.LogGroupList)
+	process                   func(shard int, logGroup *sls.LogGroupList) string
 	shardId                   int
 	rollBackCheckPoint        string
 	isCurrentDone             bool
@@ -36,7 +36,7 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 	return consumer.consumerStatus
 }
 
-func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList), logger log.Logger) *ShardConsumerWorker {
+func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList) string, logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
 		consumerShutDownFlag:      false,
 		process:                   do,
