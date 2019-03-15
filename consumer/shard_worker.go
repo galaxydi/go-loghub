@@ -18,7 +18,7 @@ type ShardConsumerWorker struct {
 	consumerStatus            string
 	process                   func(shard int, logGroup *sls.LogGroupList) string
 	shardId                   int
-	tempCheckPoint        	  string
+	tempCheckPoint            string
 	isCurrentDone             bool
 	isShutDowning             bool
 	logger                    log.Logger
@@ -133,9 +133,9 @@ func (consumer *ShardConsumerWorker) consume() {
 		consumer.setConsumerStatus(CONSUME_PROCESSING)
 		go func() {
 			rollBackChickpoint := consumer.consumerProcessTask()
-			if rollBackChickpoint != ""{
+			if rollBackChickpoint != "" {
 				consumer.nextFetchCursor = rollBackChickpoint
-				level.Info(consumer.logger).Log("msg","Checkpoints set for users have been reset", "shardWorkerId", consumer.shardId)
+				level.Info(consumer.logger).Log("msg", "Checkpoints set for users have been reset", "shardWorkerId", consumer.shardId)
 			}
 			consumer.lastFetchLogGroupList = nil
 			consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
