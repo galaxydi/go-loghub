@@ -41,9 +41,9 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 	return "", errors.New("CursorPositionError")
 }
 
-func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string) {
-	logGroup, next_cursor := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
-	return logGroup, next_cursor
+func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string, error) {
+	logGroup, next_cursor, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
+	return logGroup, next_cursor, err
 }
 
 func (consumer *ShardConsumerWorker) consumerProcessTask() string {

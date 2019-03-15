@@ -112,8 +112,8 @@ func (consumer *ShardConsumerWorker) consume() {
 				// Set the logback cursor. If the logs are not consumed, save the logback cursor to the server.
 				consumer.tempCheckPoint = consumer.nextFetchCursor
 
-				logGroupList, nextCursor := consumer.consumerFetchTask()
-				if nextCursor == "PullLogFailed" {
+				logGroupList, nextCursor, err := consumer.consumerFetchTask()
+				if err != nil {
 					consumer.setConsumerStatus(INITIALIZING_DONE)
 				} else {
 					consumer.lastFetchLogGroupList = logGroupList
