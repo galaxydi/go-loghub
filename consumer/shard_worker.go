@@ -18,7 +18,7 @@ type ShardConsumerWorker struct {
 	consumerStatus            string
 	process                   func(shard int, logGroup *sls.LogGroupList) string
 	shardId                   int
-	rollBackCheckPoint        string
+	tempCheckPoint        	  string
 	isCurrentDone             bool
 	isShutDowning             bool
 	logger                    log.Logger
@@ -53,13 +53,12 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 }
 
 func (consumer *ShardConsumerWorker) consume() {
-
 	if consumer.consumerShutDownFlag {
 		consumer.isShutDowning = true
 		go func() {
-			// If the data is not consumed, save the RollBackCheckPoint to the server
+			// If the data is not consumed, save the tempCheckPoint to the server
 			if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
-				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.rollBackCheckPoint
+				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.tempCheckPoint
 			}
 			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
 				for {
@@ -111,7 +110,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			if isGenerateFetchTask {
 				consumer.lastFetchtime = time.Now().UnixNano() / 1e6
 				// Set the logback cursor. If the logs are not consumed, save the logback cursor to the server.
-				consumer.rollBackCheckPoint = consumer.nextFetchCursor
+				consumer.tempCheckPoint = consumer.nextFetchCursor
 
 				logGroupList, nextCursor := consumer.consumerFetchTask()
 				if nextCursor == "PullLogFailed" {
@@ -133,7 +132,11 @@ func (consumer *ShardConsumerWorker) consume() {
 		consumer.isCurrentDone = false
 		consumer.setConsumerStatus(CONSUME_PROCESSING)
 		go func() {
-			consumer.consumerProcessTask()
+			rollBackChickpoint := consumer.consumerProcessTask()
+			if rollBackChickpoint != ""{
+				consumer.nextFetchCursor = rollBackChickpoint
+				level.Info(consumer.logger).Log("msg","Checkpoints set for users have been reset", "shardWorkerId", consumer.shardId)
+			}
 			consumer.lastFetchLogGroupList = nil
 			consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
 			consumer.isCurrentDone = true
