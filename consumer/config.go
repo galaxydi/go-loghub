@@ -18,7 +18,7 @@ type LogHubConfig struct {
 	// don't set the heatbeat interval too small when the network badwidth or performance of consumtion is not so good.
 	//:param DataFetchInterval: default 2(seconds), don't configure it too small (<1s)
 	//:param MaxFetchLogGroupCount: default 1000, fetch size in each request, normally use default. maximum is 1000, could be lower. the lower the size the memory efficiency might be better.
-	//:param CursorStartTime: Will be used when cursor_position when could be "begin", "end", "specific time format in time stamp", it's log receiving time.
+	//:param CursorStartTime: Will be used when cursor_position when could be "begin", "end", "specific time format in time stamp", it's log receiving time. The unit of parameter is seconds.
 	//:param InOrder:
 	// 	default False, during consuption, when shard is splitted,
 	// 	if need to consume the newly splitted shard after its parent shard (read-only) is finished consumption or not.
@@ -44,7 +44,7 @@ type LogHubConfig struct {
 	HeartbeatIntervalInSecond int
 	DataFetchInterval         int64
 	MaxFetchLogGroupCount     int
-	CursorStartTime           int64 // Unix time stamp
+	CursorStartTime           int64 // Unix time stamp; Units are seconds.
 	InOrder                   bool
 	AllowLogLevel             string
 	LogFileName               string
