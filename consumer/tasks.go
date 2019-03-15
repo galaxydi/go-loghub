@@ -48,15 +48,15 @@ func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, str
 
 func (consumer *ShardConsumerWorker) consumerProcessTask() string {
 	// If the user's consumption function reports a panic error, it will be captured and exited.
-	rollBackChickpoint := ""
+	rollBackCheckpoint := ""
 	defer func() {
 		if r := recover(); r != nil {
 			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r)
 		}
 	}()
 	if consumer.lastFetchLogGroupList != nil {
-		rollBackChickpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
+		rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
 		consumer.consumerCheckPointTracker.flushCheck()
 	}
-	return rollBackChickpoint
+	return rollBackCheckpoint
 }

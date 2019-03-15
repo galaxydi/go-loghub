@@ -132,10 +132,10 @@ func (consumer *ShardConsumerWorker) consume() {
 		consumer.isCurrentDone = false
 		consumer.setConsumerStatus(CONSUME_PROCESSING)
 		go func() {
-			rollBackChickpoint := consumer.consumerProcessTask()
-			if rollBackChickpoint != "" {
-				consumer.nextFetchCursor = rollBackChickpoint
-				level.Info(consumer.logger).Log("msg", "Checkpoints set for users have been reset", "shardWorkerId", consumer.shardId)
+			rollBackCheckpoint := consumer.consumerProcessTask()
+			if rollBackCheckpoint != "" {
+				consumer.nextFetchCursor = rollBackCheckpoint
+				level.Info(consumer.logger).Log("msg", "Checkpoints set for users have been reset", "shardWorkerId", consumer.shardId, "rollBackCheckpoint", rollBackCheckpoint)
 			}
 			consumer.lastFetchLogGroupList = nil
 			consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
