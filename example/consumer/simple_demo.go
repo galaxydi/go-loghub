@@ -38,6 +38,7 @@ func main() {
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,
 // otherwise you will report errors.
-func process(shardId int, logGroupList *sls.LogGroupList) {
+func process(shardId int, logGroupList *sls.LogGroupList) string {
 	fmt.Println(shardId, logGroupList)
+	return ""
 }

@@ -99,9 +99,9 @@ func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, err
 	return cursor, err
 }
 
-func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string) {
+func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, err error) {
 	for retry := 0; retry < 3; retry++ {
-		gl, nextCursor, err := consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
+		gl, nextCursor, err = consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
 		if err != nil {
 			slsError, ok := err.(sls.Error)
 			if ok {
@@ -116,10 +116,10 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 				level.Info(consumer.logger).Log("msg", "unknown error when pull log", "shardId", shardId, "cursor", cursor, "error", err)
 			}
 		} else {
-			return gl, nextCursor
+			return gl, nextCursor, nil
 		}
 	}
 	// If you can't retry the log three times, it will return to empty list and start pulling the log cursor,
 	// so that next time you will come in and pull the function again, which is equivalent to a dead cycle.
-	return gl, "PullLogFailed"
+	return gl, nextCursor, err
 }

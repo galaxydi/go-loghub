@@ -15,12 +15,12 @@ type ConsumerWorker struct {
 	client             *ConsumerClient
 	workerShutDownFlag bool
 	shardConsumer      map[int]*ShardConsumerWorker
-	do                 func(shard int, logGroup *sls.LogGroupList)
+	do                 func(shard int, logGroup *sls.LogGroupList) string
 	waitGroup          sync.WaitGroup
 	Logger             log.Logger
 }
 
-func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList)) *ConsumerWorker {
+func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) string) *ConsumerWorker {
 	logger := logConfig(option)
 	consumerClient := initConsumerClient(option, logger)
 	consumerHeatBeat := initConsumerHeatBeat(consumerClient, logger)
