@@ -52,7 +52,7 @@ func (consumerWorker *ConsumerWorker) StopAndWait() {
 func (consumerWorker *ConsumerWorker) run() {
 	level.Info(consumerWorker.Logger).Log("msg", "consumer worker start", "worker name", consumerWorker.client.option.ConsumerName)
 	defer consumerWorker.waitGroup.Done()
-	go consumerWorker.consumerHeatBeat.heartBeatRun(consumerWorker.client.consumerGroup.Timeout)
+	go consumerWorker.consumerHeatBeat.heartBeatRun()
 
 	for !consumerWorker.workerShutDownFlag {
 		heldShards := consumerWorker.consumerHeatBeat.getHeldShards()

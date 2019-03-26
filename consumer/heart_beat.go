@@ -8,21 +8,22 @@ import (
 )
 
 type ConsumerHeatBeat struct {
-	client               *ConsumerClient
-	shutDownFlag         bool
-	heldShards           []int
-	heartShards          []int
-	logger               log.Logger
-	lastHeartBeatSuccess int64
+	client                   *ConsumerClient
+	shutDownFlag             bool
+	heldShards               []int
+	heartShards              []int
+	logger                   log.Logger
+	lastHeartBeatSuccessTime int64
 }
 
 func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *ConsumerHeatBeat {
 	consumerHeatBeat := &ConsumerHeatBeat{
-		client:       consumerClient,
-		shutDownFlag: false,
-		heldShards:   []int{},
-		heartShards:  []int{},
-		logger:       logger,
+		client:                   consumerClient,
+		shutDownFlag:             false,
+		heldShards:               []int{},
+		heartShards:              []int{},
+		logger:                   logger,
+		lastHeartBeatSuccessTime: 0,
 	}
 	return consumerHeatBeat
 }
@@ -56,7 +57,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	consumerHeatBeat.shutDownFlag = true
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun(consumerGroupTimeOut int) {
+func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
 
 	for !consumerHeatBeat.shutDownFlag {
@@ -66,12 +67,12 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun(consumerGroupTimeOut int)
 		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
-			if time.Now().Unix()-consumerHeatBeat.lastHeartBeatSuccess > int64(consumerGroupTimeOut) {
+			if time.Now().Unix()-consumerHeatBeat.lastHeartBeatSuccessTime > int64(consumerHeatBeat.client.consumerGroup.Timeout+consumerHeatBeat.client.option.HeartbeatIntervalInSecond) {
 				consumerHeatBeat.setHeldShards([]int{})
 				level.Info(consumerHeatBeat.logger).Log("msg", "Heart beat timeout, automatic reset consumer held shards")
 			}
 		} else {
-			consumerHeatBeat.lastHeartBeatSuccess = time.Now().Unix()
+			consumerHeatBeat.lastHeartBeatSuccessTime = time.Now().Unix()
 			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
 			consumerHeatBeat.setHeldShards(responseShards)
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
