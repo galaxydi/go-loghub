@@ -22,6 +22,9 @@ type ShardConsumerWorker struct {
 	isCurrentDone             bool
 	isShutDowning             bool
 	logger                    log.Logger
+	lastSuccessFetchCountTime int64
+	saveLastCheckpoint        bool
+	startShutDownTime         int64
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -48,6 +51,9 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 		isCurrentDone:             true,
 		isShutDowning:             false,
 		logger:                    logger,
+		lastSuccessFetchCountTime: 0,
+		saveLastCheckpoint:        false,
+		startShutDownTime:         0,
 	}
 	return shardConsumeWorker
 }
@@ -79,6 +85,7 @@ func (consumer *ShardConsumerWorker) consume() {
 				}
 			}
 			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
+			consumer.isShutDowning = false
 			level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING {
@@ -122,6 +129,16 @@ func (consumer *ShardConsumerWorker) consume() {
 					consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
 					if consumer.lastFetchGroupCount == 0 {
 						consumer.lastFetchLogGroupList = nil
+					} else {
+						consumer.lastSuccessFetchCountTime = time.Now().Unix()
+						consumer.saveLastCheckpoint = false
+					}
+					if consumer.lastSuccessFetchCountTime != 0 && time.Now().Unix()-consumer.lastSuccessFetchCountTime > 30 && consumer.saveLastCheckpoint == false {
+						err := consumer.consumerCheckPointTracker.flushCheckPoint()
+						if err != nil {
+							level.Warn(consumer.logger).Log("msg", "Failed to save the final checkpoint", "error:", err)
+						}
+						consumer.saveLastCheckpoint = true
 					}
 					consumer.setConsumerStatus(PULL_PROCESSING_DONE)
 				}
@@ -149,9 +166,14 @@ func (consumer *ShardConsumerWorker) consumerShutDown() {
 	consumer.consumerShutDownFlag = true
 	// If the shutdown task is executing, return directly without calling the shutdown function
 	if consumer.isShutDowning == true {
+		if consumer.startShutDownTime != 0 && time.Now().Unix()-consumer.startShutDownTime >= 10 {
+			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
+			level.Warn(consumer.logger).Log("msg", "shards close timeout, forced shutdown")
+		}
 		return
 	}
 	if !consumer.isShutDownComplete() {
+		consumer.startShutDownTime = time.Now().Unix()
 		consumer.consume()
 	}
 }

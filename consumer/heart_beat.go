@@ -8,11 +8,12 @@ import (
 )
 
 type ConsumerHeatBeat struct {
-	client       *ConsumerClient
-	shutDownFlag bool
-	heldShards   []int
-	heartShards  []int
-	logger       log.Logger
+	client               *ConsumerClient
+	shutDownFlag         bool
+	heldShards           []int
+	heartShards          []int
+	logger               log.Logger
+	lastHeartBeatSuccess int64
 }
 
 func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *ConsumerHeatBeat {
@@ -55,7 +56,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	consumerHeatBeat.shutDownFlag = true
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
+func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun(consumerGroupTimeOut int) {
 	var lastHeartBeatTime int64
 
 	for !consumerHeatBeat.shutDownFlag {
@@ -65,7 +66,12 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.heartShards)
 		if err != nil {
 			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
+			if time.Now().Unix()-consumerHeatBeat.lastHeartBeatSuccess > int64(consumerGroupTimeOut) {
+				consumerHeatBeat.setHeldShards([]int{})
+				level.Info(consumerHeatBeat.logger).Log("msg", "Heart beat timeout, automatic reset consumer held shards")
+			}
 		} else {
+			consumerHeatBeat.lastHeartBeatSuccess = time.Now().Unix()
 			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
 			consumerHeatBeat.setHeldShards(responseShards)
 			if !IntSliceReflectEqual(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards) {
