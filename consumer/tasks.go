@@ -8,9 +8,11 @@ import (
 )
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
-	checkpoint := consumer.client.getCheckPoint(consumer.shardId)
-
-	if checkpoint != "" {
+	checkpoint, err := consumer.client.getCheckPoint(consumer.shardId)
+	if err != nil {
+		return checkpoint, err
+	}
+	if checkpoint != "" && err == nil {
 		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)
 		return checkpoint, nil
 	}

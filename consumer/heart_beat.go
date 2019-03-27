@@ -23,7 +23,7 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *Co
 		heldShards:               []int{},
 		heartShards:              []int{},
 		logger:                   logger,
-		lastHeartBeatSuccessTime: 0,
+		lastHeartBeatSuccessTime: time.Now().Unix(),
 	}
 	return consumerHeatBeat
 }

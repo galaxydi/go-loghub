@@ -82,12 +82,7 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 		time.Sleep(500 * time.Millisecond)
 		for shard, consumer := range consumerWorker.shardConsumer {
 			if !consumer.isShutDownComplete() {
-				if consumer.isShutDowning {
-					continue
-				} else {
-					consumer.consumerShutDown()
-				}
-
+				consumer.consumerShutDown()
 			} else if consumer.isShutDownComplete() {
 				delete(consumerWorker.shardConsumer, shard)
 			}

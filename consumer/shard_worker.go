@@ -8,23 +8,20 @@ import (
 )
 
 type ShardConsumerWorker struct {
-	client                    *ConsumerClient
-	consumerCheckPointTracker *ConsumerCheckPointTracker
-	consumerShutDownFlag      bool
-	lastFetchLogGroupList     *sls.LogGroupList
-	nextFetchCursor           string
-	lastFetchGroupCount       int
-	lastFetchtime             int64
-	consumerStatus            string
-	process                   func(shard int, logGroup *sls.LogGroupList) string
-	shardId                   int
-	tempCheckPoint            string
-	isCurrentDone             bool
-	isShutDowning             bool
-	logger                    log.Logger
+	client                        *ConsumerClient
+	consumerCheckPointTracker     *ConsumerCheckPointTracker
+	consumerShutDownFlag          bool
+	lastFetchLogGroupList         *sls.LogGroupList
+	nextFetchCursor               string
+	lastFetchGroupCount           int
+	lastFetchtime                 int64
+	consumerStatus                string
+	process                       func(shard int, logGroup *sls.LogGroupList) string
+	shardId                       int
+	tempCheckPoint                string
+	isCurrentDone                 bool
+	logger                        log.Logger
 	lastFetchTimeForForceFlushCpt int64
-
-	startShutDownTime         int64
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -41,51 +38,39 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 
 func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do func(shard int, logGroup *sls.LogGroupList) string, logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
-		consumerShutDownFlag:      false,
-		process:                   do,
-		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient, logger),
-		client:                    consumerClient,
-		consumerStatus:            INITIALIZING,
-		shardId:                   shardId,
-		lastFetchtime:             0,
-		isCurrentDone:             true,
-		isShutDowning:             false,
-		logger:                    logger,
+		consumerShutDownFlag:          false,
+		process:                       do,
+		consumerCheckPointTracker:     initConsumerCheckpointTracker(shardId, consumerClient, logger),
+		client:                        consumerClient,
+		consumerStatus:                INITIALIZING,
+		shardId:                       shardId,
+		lastFetchtime:                 0,
+		isCurrentDone:                 true,
+		logger:                        logger,
 		lastFetchTimeForForceFlushCpt: 0,
-		startShutDownTime:         0,
 	}
 	return shardConsumeWorker
 }
 
 func (consumer *ShardConsumerWorker) consume() {
 	if consumer.consumerShutDownFlag {
-		consumer.isShutDowning = true
 		go func() {
 			// If the data is not consumed, save the tempCheckPoint to the server
 			if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
 				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.tempCheckPoint
 			}
 			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
-				for {
-					if consumer.getConsumerStatus() == CONSUME_PROCESSING_DONE {
-						break
-					} else {
-						time.Sleep(500 * time.Millisecond)
-					}
-				}
+				level.Info(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
+				return
+			}
+			err := consumer.consumerCheckPointTracker.flushCheckPoint()
+			if err != nil {
+				level.Warn(consumer.logger).Log("msg", "Flush checkpoint error，prepare for retry", "error message:", err)
+			} else {
+				consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
+				level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 			}
 
-			for {
-				err := consumer.consumerCheckPointTracker.flushCheckPoint()
-				if err != nil {
-					time.Sleep(time.Second)
-				} else {
-					break
-				}
-			}
-			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
-			consumer.isShutDowning = false
-			level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING {
 		consumer.isCurrentDone = false
@@ -135,7 +120,7 @@ func (consumer *ShardConsumerWorker) consume() {
 						err := consumer.consumerCheckPointTracker.flushCheckPoint()
 						if err != nil {
 							level.Warn(consumer.logger).Log("msg", "Failed to save the final checkpoint", "error:", err)
-						}else{
+						} else {
 							consumer.lastFetchTimeForForceFlushCpt = 0
 						}
 
@@ -164,16 +149,7 @@ func (consumer *ShardConsumerWorker) consume() {
 
 func (consumer *ShardConsumerWorker) consumerShutDown() {
 	consumer.consumerShutDownFlag = true
-	// If the shutdown task is executing, return directly without calling the shutdown function
-	if consumer.isShutDowning == true {
-		if consumer.startShutDownTime != 0 && time.Now().Unix()-consumer.startShutDownTime >= 30 {
-			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
-			level.Warn(consumer.logger).Log("msg", "shards close timeout, forced shutdown")
-		}
-		return
-	}
 	if !consumer.isShutDownComplete() {
-		consumer.startShutDownTime = time.Now().Unix()
 		consumer.consume()
 	}
 }
