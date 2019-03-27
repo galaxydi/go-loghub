@@ -56,21 +56,21 @@ func (consumerWorker *ConsumerWorker) run() {
 
 	for !consumerWorker.workerShutDownFlag {
 		heldShards := consumerWorker.consumerHeatBeat.getHeldShards()
-		lastFetchTime := time.Now().Unix()
+		lastFetchTime := time.Now().UnixNano() / 1000 / 1000
 
 		for _, shard := range heldShards {
 			if consumerWorker.workerShutDownFlag {
 				break
 			}
 			shardConsumer := consumerWorker.getShardConsumer(shard)
-			if shardConsumer.isCurrentDone {
+			if shardConsumer.getConsumerIsCurrentDoneStatus() == true {
 				shardConsumer.consume()
 			} else {
 				continue
 			}
 		}
 		consumerWorker.cleanShardConsumer(heldShards)
-		TimeToSleep(consumerWorker.client.option.DataFetchInterval, lastFetchTime, consumerWorker.workerShutDownFlag)
+		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag)
 
 	}
 	level.Info(consumerWorker.Logger).Log("msg", "consumer worker try to cleanup consumers", "worker name", consumerWorker.client.option.ConsumerName)
@@ -82,12 +82,7 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 		time.Sleep(500 * time.Millisecond)
 		for shard, consumer := range consumerWorker.shardConsumer {
 			if !consumer.isShutDownComplete() {
-				if consumer.isShutDowning {
-					continue
-				} else {
-					consumer.consumerShutDown()
-				}
-
+				consumer.consumerShutDown()
 			} else if consumer.isShutDownComplete() {
 				delete(consumerWorker.shardConsumer, shard)
 			}

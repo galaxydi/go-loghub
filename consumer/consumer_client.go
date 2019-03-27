@@ -19,8 +19,8 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.HeartbeatIntervalInSecond == 0 {
 		option.HeartbeatIntervalInSecond = 20
 	}
-	if option.DataFetchInterval == 0 {
-		option.DataFetchInterval = 2
+	if option.DataFetchIntervalInMs == 0 {
+		option.DataFetchIntervalInMs = 200
 	}
 	if option.MaxFetchLogGroupCount == 0 {
 		option.MaxFetchLogGroupCount = 1000
@@ -71,27 +71,26 @@ func (consumer *ConsumerClient) updateCheckPoint(shardId int, checkpoint string,
 }
 
 // get a single shard checkpoint, if not，return ""
-func (consumer *ConsumerClient) getCheckPoint(shardId int) string {
-	checkPonitList := consumer.forceGetCheckPoint(shardId)
-	for _, checkPoint := range checkPonitList {
-		if checkPoint.ShardID == shardId {
-			return checkPoint.CheckPoint
-		}
-	}
-	return ""
-}
-
-// If a checkpoint error is reported, the shard will remain asynchronous and will not affect the consumption of other shards.
-func (consumer *ConsumerClient) forceGetCheckPoint(shardId int) (checkPonitList []*sls.ConsumerGroupCheckPoint) {
-	for {
-		checkPonitList, err := consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
+func (consumer *ConsumerClient) getCheckPoint(shardId int) (checkpoint string, err error) {
+	checkPonitList := []*sls.ConsumerGroupCheckPoint{}
+	for retry := 0; retry < 3; retry++ {
+		checkPonitList, err = consumer.client.GetCheckpoint(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup.ConsumerGroupName)
 		if err != nil {
 			level.Info(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", err)
 			time.Sleep(1 * time.Second)
 		} else {
-			return checkPonitList
+			break
 		}
 	}
+	if err != nil {
+		return "", err
+	}
+	for _, checkPoint := range checkPonitList {
+		if checkPoint.ShardID == shardId {
+			return checkPoint.CheckPoint, nil
+		}
+	}
+	return "", err
 }
 
 func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, error) {
