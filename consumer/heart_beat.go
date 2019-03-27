@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"sync"
 	"time"
 )
+var shardLock sync.RWMutex
 
 type ConsumerHeatBeat struct {
 	client                   *ConsumerClient

@@ -4,8 +4,13 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"sync"
 	"time"
 )
+
+var shutDownLock sync.RWMutex
+var consumeStatusLock sync.RWMutex
+var consumerTaskLock sync.RWMutex
 
 type ShardConsumerWorker struct {
 	client                        *ConsumerClient
@@ -56,7 +61,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 
 func (consumer *ShardConsumerWorker) consume() {
 	if consumer.consumerShutDownFlag {
-		consumer.isFlushCheckpointDone = false
+		consumer.setIsFlushCheckpointDoneToFalse()
 		go func() {
 			// If the data is not consumed, save the tempCheckPoint to the server
 			if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
@@ -73,10 +78,10 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
 				level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 			}
-			consumer.isFlushCheckpointDone = true
+			consumer.setIsFlushCheckpointDoneToTrue()
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING {
-		consumer.setConsumerIsCurrentDoneIsFalse()
+		consumer.setConsumerIsCurrentDoneToFalse()
 		go func() {
 			cursor, err := consumer.consumerInitializeTask()
 			if err != nil {
@@ -85,10 +90,10 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.nextFetchCursor = cursor
 				consumer.setConsumerStatus(INITIALIZING_DONE)
 			}
-			consumer.setConsumerIsCurrentDoneIsTrue()
+			consumer.setConsumerIsCurrentDoneToTrue()
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING_DONE || consumer.getConsumerStatus() == CONSUME_PROCESSING_DONE {
-		consumer.setConsumerIsCurrentDoneIsFalse()
+		consumer.setConsumerIsCurrentDoneToFalse()
 		consumer.setConsumerStatus(PULL_PROCESSING)
 		go func() {
 			var isGenerateFetchTask = true
@@ -131,10 +136,10 @@ func (consumer *ShardConsumerWorker) consume() {
 					consumer.setConsumerStatus(PULL_PROCESSING_DONE)
 				}
 			}
-			consumer.setConsumerIsCurrentDoneIsTrue()
+			consumer.setConsumerIsCurrentDoneToTrue()
 		}()
 	} else if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
-		consumer.setConsumerIsCurrentDoneIsFalse()
+		consumer.setConsumerIsCurrentDoneToFalse()
 		consumer.setConsumerStatus(CONSUME_PROCESSING)
 		go func() {
 			rollBackCheckpoint := consumer.consumerProcessTask()
@@ -144,7 +149,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			}
 			consumer.lastFetchLogGroupList = nil
 			consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
-			consumer.setConsumerIsCurrentDoneIsTrue()
+			consumer.setConsumerIsCurrentDoneToTrue()
 		}()
 	}
 
@@ -165,14 +170,14 @@ func (consumer *ShardConsumerWorker) isShutDownComplete() bool {
 	return consumer.getConsumerStatus() == SHUTDOWN_COMPLETE
 }
 
-func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneIsFalse() {
+func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneToFalse() {
 	consumerTaskLock.Lock()
 	defer consumerTaskLock.Unlock()
 	consumer.isCurrentDone = false
 
 }
 
-func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneIsTrue() {
+func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneToTrue() {
 	consumerTaskLock.Lock()
 	defer consumerTaskLock.Unlock()
 	consumer.isCurrentDone = true
@@ -184,13 +189,13 @@ func (consumer *ShardConsumerWorker) getConsumerIsCurrentDoneStatus() bool {
 	return consumer.isCurrentDone
 }
 
-func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneIsFalse() {
+func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneToFalse() {
 	shutDownLock.Lock()
 	defer shutDownLock.Unlock()
 	consumer.isFlushCheckpointDone = false
 }
 
-func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneIsTrue() {
+func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneToTrue() {
 	shutDownLock.Lock()
 	defer shutDownLock.Unlock()
 	consumer.isFlushCheckpointDone = true

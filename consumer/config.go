@@ -1,7 +1,5 @@
 package consumerLibrary
 
-import "sync"
-
 type LogHubConfig struct {
 	//:param Endpoint:
 	//:param AccessKeyID:
@@ -68,7 +66,3 @@ const (
 	SHUTDOWN_COMPLETE       = "SHUTDOWN_COMPLETE"
 )
 
-var shardLock sync.RWMutex
-var shutDownLock sync.RWMutex
-var consumeStatusLock sync.RWMutex
-var consumerTaskLock sync.RWMutex
