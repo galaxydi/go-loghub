@@ -70,7 +70,7 @@ func (consumerWorker *ConsumerWorker) run() {
 			}
 		}
 		consumerWorker.cleanShardConsumer(heldShards)
-		TimeToSleep(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag)
+		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag)
 
 	}
 	level.Info(consumerWorker.Logger).Log("msg", "consumer worker try to cleanup consumers", "worker name", consumerWorker.client.option.ConsumerName)

@@ -26,14 +26,14 @@ type ShardConsumerWorker struct {
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
-	m.Lock()
-	defer m.Unlock()
+	consumeStatusLock.Lock()
+	defer consumeStatusLock.Unlock()
 	consumer.consumerStatus = status
 }
 
 func (consumer *ShardConsumerWorker) getConsumerStatus() string {
-	m.RLock()
-	defer m.RUnlock()
+	consumeStatusLock.RLock()
+	defer consumeStatusLock.RUnlock()
 	return consumer.consumerStatus
 }
 
@@ -166,38 +166,38 @@ func (consumer *ShardConsumerWorker) isShutDownComplete() bool {
 }
 
 func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneIsFalse() {
-	m.Lock()
-	defer m.Unlock()
+	consumerTaskLock.Lock()
+	defer consumerTaskLock.Unlock()
 	consumer.isCurrentDone = false
 
 }
 
 func (consumer *ShardConsumerWorker) setConsumerIsCurrentDoneIsTrue() {
-	m.Lock()
-	defer m.Unlock()
+	consumerTaskLock.Lock()
+	defer consumerTaskLock.Unlock()
 	consumer.isCurrentDone = true
 }
 
 func (consumer *ShardConsumerWorker) getConsumerIsCurrentDoneStatus() bool {
-	m.RLock()
-	defer m.RUnlock()
+	consumerTaskLock.RLock()
+	defer consumerTaskLock.RUnlock()
 	return consumer.isCurrentDone
 }
 
 func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneIsFalse() {
-	m.Lock()
-	defer m.Unlock()
+	shutDownLock.Lock()
+	defer shutDownLock.Unlock()
 	consumer.isFlushCheckpointDone = false
 }
 
 func (consumer *ShardConsumerWorker) setIsFlushCheckpointDoneIsTrue() {
-	m.Lock()
-	defer m.Unlock()
+	shutDownLock.Lock()
+	defer shutDownLock.Unlock()
 	consumer.isFlushCheckpointDone = true
 }
 
 func (consumer *ShardConsumerWorker) getIsFlushCheckpointDoneStatus() bool {
-	m.RLock()
-	defer m.RUnlock()
+	shutDownLock.RLock()
+	defer shutDownLock.RUnlock()
 	return consumer.isFlushCheckpointDone
 }

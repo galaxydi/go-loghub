@@ -29,26 +29,26 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *Co
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
-	m.RLock()
-	defer m.RUnlock()
+	shardLock.RLock()
+	defer shardLock.RUnlock()
 	return consumerHeatBeat.heldShards
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(heldShards []int) {
-	m.Lock()
-	defer m.Unlock()
+	shardLock.Lock()
+	defer shardLock.Unlock()
 	consumerHeatBeat.heldShards = heldShards
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int) {
-	m.Lock()
-	defer m.Unlock()
+	shardLock.Lock()
+	defer shardLock.Unlock()
 	consumerHeatBeat.heartShards = heartShards
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) getHeartShards() []int {
-	m.RLock()
-	defer m.RUnlock()
+	shardLock.RLock()
+	defer shardLock.RUnlock()
 	return consumerHeatBeat.heartShards
 }
 
@@ -84,7 +84,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			}
 
 		}
-		TimeToSleepHeartBeat(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
+		TimeToSleepInSecond(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}
 	level.Info(consumerHeatBeat.logger).Log("msg", "heart beat exit")
 }

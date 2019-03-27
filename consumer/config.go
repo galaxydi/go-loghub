@@ -68,4 +68,7 @@ const (
 	SHUTDOWN_COMPLETE       = "SHUTDOWN_COMPLETE"
 )
 
-var m sync.RWMutex
+var shardLock sync.RWMutex
+var shutDownLock sync.RWMutex
+var consumeStatusLock sync.RWMutex
+var consumerTaskLock sync.RWMutex
