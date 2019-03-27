@@ -22,6 +22,7 @@ type ShardConsumerWorker struct {
 	isCurrentDone                 bool
 	logger                        log.Logger
 	lastFetchTimeForForceFlushCpt int64
+	isFlushCheckpointDone         bool
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -46,6 +47,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 		shardId:                       shardId,
 		lastFetchtime:                 0,
 		isCurrentDone:                 true,
+		isFlushCheckpointDone:         true,
 		logger:                        logger,
 		lastFetchTimeForForceFlushCpt: 0,
 	}
@@ -60,10 +62,12 @@ func (consumer *ShardConsumerWorker) consume() {
 				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.tempCheckPoint
 			}
 			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
-				level.Info(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
+				level.Debug(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
 				return
 			}
+			consumer.isFlushCheckpointDone = false
 			err := consumer.consumerCheckPointTracker.flushCheckPoint()
+			consumer.isFlushCheckpointDone = true
 			if err != nil {
 				level.Warn(consumer.logger).Log("msg", "Flush checkpoint error，prepare for retry", "error message:", err)
 			} else {
@@ -150,7 +154,11 @@ func (consumer *ShardConsumerWorker) consume() {
 func (consumer *ShardConsumerWorker) consumerShutDown() {
 	consumer.consumerShutDownFlag = true
 	if !consumer.isShutDownComplete() {
-		consumer.consume()
+		if consumer.isFlushCheckpointDone {
+			consumer.consume()
+		} else {
+			return
+		}
 	}
 }
 
