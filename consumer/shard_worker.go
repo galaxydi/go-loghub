@@ -57,6 +57,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 func (consumer *ShardConsumerWorker) consume() {
 	if consumer.consumerShutDownFlag {
 		go func() {
+			consumer.isFlushCheckpointDone = false
 			// If the data is not consumed, save the tempCheckPoint to the server
 			if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
 				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.tempCheckPoint
@@ -65,15 +66,14 @@ func (consumer *ShardConsumerWorker) consume() {
 				level.Debug(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
 				return
 			}
-			consumer.isFlushCheckpointDone = false
 			err := consumer.consumerCheckPointTracker.flushCheckPoint()
-			consumer.isFlushCheckpointDone = true
 			if err != nil {
 				level.Warn(consumer.logger).Log("msg", "Flush checkpoint error，prepare for retry", "error message:", err)
 			} else {
 				consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
 				level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
 			}
+			consumer.isFlushCheckpointDone = true
 
 		}()
 	} else if consumer.getConsumerStatus() == INITIALIZING {
