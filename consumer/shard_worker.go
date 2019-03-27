@@ -69,6 +69,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			}
 			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
 				level.Debug(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
+				consumer.setIsFlushCheckpointDoneToTrue()
 				return
 			}
 			err := consumer.consumerCheckPointTracker.flushCheckPoint()
