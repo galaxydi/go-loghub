@@ -16,7 +16,7 @@ type LogHubConfig struct {
 	// default 20, once a client doesn't report to server * heartbeat_interval * 3 interval,
 	// server will consider it's offline and re-assign its task to another consumer.
 	// don't set the heatbeat interval too small when the network badwidth or performance of consumtion is not so good.
-	//:param DataFetchInterval: default 2(seconds), don't configure it too small (<1s)
+	//:param DataFetchIntervalInMs: default 200(Millisecond), don't configure it too small (<100Millisecond)
 	//:param MaxFetchLogGroupCount: default 1000, fetch size in each request, normally use default. maximum is 1000, could be lower. the lower the size the memory efficiency might be better.
 	//:param CursorStartTime: Will be used when cursor_position when could be "begin", "end", "specific time format in time stamp", it's log receiving time. The unit of parameter is seconds.
 	//:param InOrder:
@@ -42,7 +42,7 @@ type LogHubConfig struct {
 	ConsumerName              string
 	CursorPosition            string
 	HeartbeatIntervalInSecond int
-	DataFetchInterval         int64
+	DataFetchIntervalInMs     int64
 	MaxFetchLogGroupCount     int
 	CursorStartTime           int64 // Unix time stamp; Units are seconds.
 	InOrder                   bool

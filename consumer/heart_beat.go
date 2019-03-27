@@ -84,7 +84,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			}
 
 		}
-		TimeToSleep(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
+		TimeToSleepHeartBeat(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
 	}
 	level.Info(consumerHeatBeat.logger).Log("msg", "heart beat exit")
 }

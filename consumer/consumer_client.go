@@ -19,8 +19,8 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.HeartbeatIntervalInSecond == 0 {
 		option.HeartbeatIntervalInSecond = 20
 	}
-	if option.DataFetchInterval == 0 {
-		option.DataFetchInterval = 2
+	if option.DataFetchIntervalInMs == 0 {
+		option.DataFetchIntervalInMs = 200
 	}
 	if option.MaxFetchLogGroupCount == 0 {
 		option.MaxFetchLogGroupCount = 1000
