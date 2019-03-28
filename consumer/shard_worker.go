@@ -66,8 +66,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			// If the data is not consumed, save the tempCheckPoint to the server
 			if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
 				consumer.consumerCheckPointTracker.tempCheckPoint = consumer.tempCheckPoint
-			}
-			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
+			} else if consumer.getConsumerStatus() == CONSUME_PROCESSING {
 				level.Debug(consumer.logger).Log("msg", "Consumption is in progress, waiting for consumption to be completed")
 				consumer.setIsFlushCheckpointDoneToTrue()
 				return
@@ -119,7 +118,8 @@ func (consumer *ShardConsumerWorker) consume() {
 					consumer.lastFetchLogGroupList = logGroupList
 					consumer.nextFetchCursor = nextCursor
 					consumer.consumerCheckPointTracker.setMemoryCheckPoint(consumer.nextFetchCursor)
-					consumer.lastFetchGroupCount = GetLogCount(consumer.lastFetchLogGroupList)
+					consumer.lastFetchGroupCount = GetLogGroupCount(consumer.lastFetchLogGroupList)
+					level.Debug(consumer.logger).Log("shardId", consumer.shardId, "fetch log count", GetLogCount(consumer.lastFetchLogGroupList))
 					if consumer.lastFetchGroupCount == 0 {
 						consumer.lastFetchLogGroupList = nil
 					} else {
@@ -136,6 +136,9 @@ func (consumer *ShardConsumerWorker) consume() {
 					}
 					consumer.setConsumerStatus(PULL_PROCESSING_DONE)
 				}
+			} else {
+				level.Debug(consumer.logger).Log("msg", "Pull Log Current Limitation and Re-Pull Log")
+				consumer.setConsumerStatus(INITIALIZING_DONE)
 			}
 			consumer.setConsumerIsCurrentDoneToTrue()
 		}()
