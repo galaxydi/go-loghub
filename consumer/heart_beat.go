@@ -93,12 +93,12 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
+	shardLock.Lock()
+	defer shardLock.Unlock()
 	isDeleteShard := false
-	tempHeartShards := consumerHeatBeat.getHeartShards()
-	for i, heartShard := range tempHeartShards {
+	for i, heartShard := range consumerHeatBeat.heartShards {
 		if shardId == heartShard {
-			tempHeartShards := append(tempHeartShards[:i], tempHeartShards[i+1:]...)
-			consumerHeatBeat.setHeartShards(tempHeartShards)
+			consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
 			isDeleteShard = true
 			break
 		}
