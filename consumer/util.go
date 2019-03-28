@@ -97,11 +97,15 @@ func GetLogCount(logGroupList *sls.LogGroupList) int {
 	return count
 }
 
+func GetLogGroupCount(logGroupList *sls.LogGroupList) int {
+	return len(logGroupList.LogGroups)
+}
+
 func TimeToSleepInMillsecond(intervalTime, lastCheckTime int64, condition bool) {
 	timeToSleep := intervalTime - (time.Now().UnixNano()/1000/1000 - lastCheckTime)
 	for timeToSleep > 0 && !condition {
 		time.Sleep(time.Duration(Min(timeToSleep, 100)) * time.Millisecond)
-		timeToSleep = intervalTime - (time.Now().UnixNano()/1000/1000-lastCheckTime)*1000
+		timeToSleep = intervalTime - (time.Now().UnixNano()/1000/1000 - lastCheckTime)
 	}
 }
 
