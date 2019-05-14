@@ -117,9 +117,7 @@ func(callback *Callback)Fail(result *producer.Result){
 | ------------------- | ------ | ------------------------------------------------------------ |
 | TotalSizeLnBytes    | Int64  | 单个 producer 实例能缓存的日志大小上限，默认为 100MB。       |
 | MaxIoWorkerCount    | Int64  | 单个producer能并发的最多groutine的数量，默认为50，该参数用户可以根据自己实际服务器的性能去配置。 |
-| MaxBlockSec         | Int    | 如果 producer 可用空间不足，调用者在 send 方法上的最大阻塞时间，默认为 60 秒。<br/>如果超过这个时间后所需空间仍无法得到满足，send 方法会抛出TimeoutException。
-如果将该值设为0，当所需空间无法得到满足时，send 方法会立即抛出 TimeoutException。
-如果您希望 send 方法一直阻塞直到所需空间得到满足，可将该值设为负数。 |
+| MaxBlockSec         | Int    | 如果 producer 可用空间不足，调用者在 send 方法上的最大阻塞时间，默认为 60 秒。<br/>如果超过这个时间后所需空间仍无法得到满足，send 方法会抛出TimeoutException。如果将该值设为0，当所需空间无法得到满足时，send 方法会立即抛出 TimeoutException。如果您希望 send 方法一直阻塞直到所需空间得到满足，可将该值设为负数。 |
 | MaxBatchSize        | Int64  | 当一个 ProducerBatch 中缓存的日志大小大于等于 batchSizeThresholdInBytes 时，该 batch 将被发送，默认为 512 KB，最大可设置成 5MB。 |
 | MaxBatchCount       | Int    | 当一个 ProducerBatch 中缓存的日志条数大于等于 batchCountThreshold 时，该 batch 将被发送，默认为 4096，最大可设置成 40960。 |
 | LingerMs            | Int64  | 一个 ProducerBatch 从创建到可发送的逗留时间，默认为 2 秒，最小可设置成 100 毫秒。 |
@@ -128,8 +126,7 @@ func(callback *Callback)Fail(result *producer.Result){
 | BaseRetryBackofMs   | Int64  | 首次重试的退避时间，默认为 100 毫秒。 Producer 采样指数退避算法，第 N 次重试的计划等待时间为 baseRetryBackoffMs * 2^(N-1)。 |
 | MaxRetryBackofMs    | Int64  | 重试的最大退避时间，默认为 50 秒。                           |
 | AdjustShargHash     | Bool   | 如果调用 send 方法时指定了 shardHash，该参数用于控制是否需要对其进行调整，默认为 true。 |
-| Buckets             | Int    | 当且仅当 adjustShardHash 为 true 时，该参数才生效。此时，producer 会自动将 shardHash 重新分组，分组数量为 buckets。<br/>如果两条数据的 shardHash 不同，它们是无法合并到一起发送的，会降低 producer 吞吐量。将 shardHash 重新分组后，能让数据有更多地机会被批量发送。 
-该参数的取值范围是 [1, 256]，且必须是 2 的整数次幂，默认为 64。 |
+| Buckets             | Int    | 当且仅当 adjustShardHash 为 true 时，该参数才生效。此时，producer 会自动将 shardHash 重新分组，分组数量为 buckets。<br/>如果两条数据的 shardHash 不同，它们是无法合并到一起发送的，会降低 producer 吞吐量。将 shardHash 重新分组后，能让数据有更多地机会被批量发送。该参数的取值范围是 [1, 256]，且必须是 2 的整数次幂，默认为 64。 |
 | AllowLogLevel       | String | 设置日志输出级别，默认值是Info,consumer中一共有4种日志输出级别，分别为debug,info,warn和error。 |
 | LogFileName         | String | 日志文件输出路径，不设置的话默认输出到stdout。               |
 | IsJsonType          | Bool   | 是否格式化文件输出格式，默认为false。                        |
@@ -142,7 +139,7 @@ func(callback *Callback)Fail(result *producer.Result){
 
 ## 关于性能
 
-- [性能测试报告](https://github.com/aliyun/aliyun-log-go-sdk/producer/PERFORMANCE_TEST.md)
+- [性能测试报告](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/producer/PERFORMANCE_TEST.md)
 
 
 
