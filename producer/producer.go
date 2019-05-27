@@ -40,7 +40,14 @@ func InitProducer(producerConfig *ProducerConfig) *Producer {
 	}
 	finalProducerConfig := validateProducerConfig(producerConfig)
 	retryQueue := initRetryQueue()
-	ioWorker := initIoWorker(client, retryQueue, logger, finalProducerConfig.MaxIoWorkerCount)
+	errorStatusMap := func() map[int]*string {
+		errorCodeMap := map[int]*string{}
+		for _, v := range producerConfig.NoRetryStatusCodeList {
+			errorCodeMap[int(v)] = nil
+		}
+		return errorCodeMap
+	}()
+	ioWorker := initIoWorker(client, retryQueue, logger, finalProducerConfig.MaxIoWorkerCount, errorStatusMap)
 	threadPool := initIoThreadPool(ioWorker, logger)
 	logAccumulator := initLogAccumulator(finalProducerConfig, ioWorker, logger, threadPool)
 	mover := initMover(logAccumulator, retryQueue, ioWorker, logger, threadPool)

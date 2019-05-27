@@ -123,8 +123,8 @@ func(callback *Callback)Fail(result *producer.Result){
 | LingerMs            | Int64  | 一个 ProducerBatch 从创建到可发送的逗留时间，默认为 2 秒，最小可设置成 100 毫秒。 |
 | Retries             | Int    | 如果某个 ProducerBatch 首次发送失败，能够对其重试的次数，默认为 10 次。<br/>如果 retries 小于等于 0，该 ProducerBatch 首次发送失败后将直接进入失败队列。 |
 | MaxReservedAttempts | Int    | 每个 ProducerBatch 每次被尝试发送都对应着一个 Attemp，此参数用来控制返回给用户的 attempt 个数，默认只保留最近的 11 次 attempt 信息。<br/>该参数越大能让您追溯更多的信息，但同时也会消耗更多的内存。 |
-| BaseRetryBackofMs   | Int64  | 首次重试的退避时间，默认为 100 毫秒。 Producer 采样指数退避算法，第 N 次重试的计划等待时间为 baseRetryBackoffMs * 2^(N-1)。 |
-| MaxRetryBackofMs    | Int64  | 重试的最大退避时间，默认为 50 秒。                           |
+| BaseRetryBackoffMs  | Int64  | 首次重试的退避时间，默认为 100 毫秒。 Producer 采样指数退避算法，第 N 次重试的计划等待时间为 baseRetryBackoffMs * 2^(N-1)。 |
+| MaxRetryBackoffMs   | Int64  | 重试的最大退避时间，默认为 50 秒。                           |
 | AdjustShargHash     | Bool   | 如果调用 send 方法时指定了 shardHash，该参数用于控制是否需要对其进行调整，默认为 true。 |
 | Buckets             | Int    | 当且仅当 adjustShardHash 为 true 时，该参数才生效。此时，producer 会自动将 shardHash 重新分组，分组数量为 buckets。<br/>如果两条数据的 shardHash 不同，它们是无法合并到一起发送的，会降低 producer 吞吐量。将 shardHash 重新分组后，能让数据有更多地机会被批量发送。该参数的取值范围是 [1, 256]，且必须是 2 的整数次幂，默认为 64。 |
 | AllowLogLevel       | String | 设置日志输出级别，默认值是Info,consumer中一共有4种日志输出级别，分别为debug,info,warn和error。 |
@@ -136,6 +136,7 @@ func(callback *Callback)Fail(result *producer.Result){
 | Endpoint            | String | 服务入口，关于如何确定project对应的服务入口可参考文章[服务入口](https://help.aliyun.com/document_detail/29008.html?spm=a2c4e.11153940.blogcont682761.14.446e7720gs96LB)。 |
 | AccessKeyID         | String | 账户的AK id。                                                |
 | AccessKeySecret     | String | 账户的AK 密钥。                                              |
+| NoRetryStatusCodeList  | []int  | 用户配置的不需要重试的错误码列表，当发送日志失败时返回的错误码在列表中，则不会重试。默认包含400，404两个值。                 |
 
 ## 关于性能
 

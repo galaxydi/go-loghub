@@ -22,9 +22,10 @@ type IoWorker struct {
 	retryQueueShutDownFlag bool
 	logger                 log.Logger
 	maxIoWorker            chan int64
+	noRetryStatusCodeMap   map[int]*string
 }
 
-func initIoWorker(client *sls.Client, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64) *IoWorker {
+func initIoWorker(client *sls.Client, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64, errorStatusMap map[int]*string) *IoWorker {
 	return &IoWorker{
 		client:                 client,
 		retryQueue:             retryQueue,
@@ -32,6 +33,7 @@ func initIoWorker(client *sls.Client, retryQueue *RetryQueue, logger log.Logger,
 		retryQueueShutDownFlag: false,
 		logger:                 logger,
 		maxIoWorker:            make(chan int64, maxIoWorkerCount),
+		noRetryStatusCodeMap:   errorStatusMap,
 	}
 }
 
@@ -68,7 +70,13 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 			}
 			return
 		}
-		if producerBatch.attemptCount <= producerBatch.maxRetryTimes {
+		if slsError, ok := err.(*sls.Error); ok {
+			if _, ok := ioWorker.noRetryStatusCodeMap[int(slsError.HTTPCode)]; ok {
+				ioWorker.excuteFailedCallback(producerBatch)
+				return
+			}
+		}
+		if producerBatch.attemptCount < producerBatch.maxRetryTimes {
 			if producerBatch.attemptCount < producerBatch.maxReservedAttempts {
 				slsError := err.(*sls.Error)
 				level.Info(ioWorker.logger).Log("msg", "sendToServer failed,start retrying", "retry times", producerBatch.attemptCount, "requestId", slsError.RequestID, "error code", slsError.Code, "error message", slsError.Message)
@@ -86,12 +94,7 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 			level.Debug(ioWorker.logger).Log("msg", "Submit to the retry queue after meeting the retry criteria。")
 			ioWorker.retryQueue.sendToRetryQueue(producerBatch, ioWorker.logger)
 		} else {
-			level.Info(ioWorker.logger).Log("msg", "sendToServer failed,Execute failed callback function")
-			if len(producerBatch.callBackList) > 0 {
-				for _, callBack := range producerBatch.callBackList {
-					callBack.Fail(producerBatch.result)
-				}
-			}
+			ioWorker.excuteFailedCallback(producerBatch)
 		}
 	}
 }
@@ -100,4 +103,13 @@ func (ioWorker *IoWorker) closeSendTask(ioWorkerWaitGroup *sync.WaitGroup) {
 	ioWorkerWaitGroup.Done()
 	atomic.AddInt64(&ioWorker.taskCount, -1)
 	<-ioWorker.maxIoWorker
+}
+
+func (ioWorker *IoWorker) excuteFailedCallback(producerBatch *ProducerBatch) {
+	level.Info(ioWorker.logger).Log("msg", "sendToServer failed,Execute failed callback function")
+	if len(producerBatch.callBackList) > 0 {
+		for _, callBack := range producerBatch.callBackList {
+			callBack.Fail(producerBatch.result)
+		}
+	}
 }
