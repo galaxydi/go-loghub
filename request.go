@@ -55,11 +55,11 @@ func retryWriteErrorCheck(ctx context.Context, err error) (bool, error) {
 
 	switch e := err.(type) {
 	case *Error:
-		if e.HTTPCode == 502 || e.HTTPCode == 503 {
+		if e.HTTPCode == 500 || e.HTTPCode == 502 || e.HTTPCode == 503 {
 			return true, e
 		}
 	case *BadResponseError:
-		if e.HTTPCode == 502 || e.HTTPCode == 503 {
+		if e.HTTPCode == 500 || e.HTTPCode == 502 || e.HTTPCode == 503 {
 			return true, e
 		}
 	default:
