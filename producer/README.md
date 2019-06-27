@@ -36,18 +36,15 @@ go get github.com/gogo/protobuf/proto
 **1.配置ProducerConfig**
 
 ProducerConfig 是提供给用户的配置类，用于配制发送策略，您可以根据不同的需求设置不同的值，具体的参数含义如文章尾producer配置详解所示。
+producer同时提供了简单的使用代码simple:([producer_simple_demo](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/producer/producer_simple_demo.go))
 
 **2.启动producer进程**
 
 ```go langgo l
-producerConfig := producer.ProducerConfig{
-   MaxBatchSize:5*1024*1024,
-   LingerMs:2,
-   Endpoint:os.Getenv("Endpoint"),
-   AccessKeyID:os.Getenv("AccessKeyID"),
-   AccessKeySecret:os.Getenv("AccessKeySecret"),
-
-}
+producerConfig := producer.GetDefaultProducerConfig()
+producerConfig.Endpoint = os.Getenv("Endpoint")
+producerConfig.AccessKeyID = os.Getenv("AccessKeyID")
+producerConfig.AccessKeySecret = os.Getenv("AccessKeySecret")
 producerInstance:=producer.InitProducer(producerConfig)
 ch := make(chan os.Signal)
 signal.Notify(ch)
