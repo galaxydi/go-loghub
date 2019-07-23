@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log/level"
+	"time"
 )
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
@@ -49,16 +50,35 @@ func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, str
 }
 
 func (consumer *ShardConsumerWorker) consumerProcessTask() string {
-	// If the user's consumption function reports a panic error, it will be captured and exited.
-	rollBackCheckpoint := ""
+	// If the user's consumption function reports a panic error, it will be captured and retry until sucessed.
+	defer func() {
+		if r := recover(); r != nil {
+			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r)
+			for {
+				if consumer.consumerRetryProcessTask() == true {
+					break
+				} else {
+					time.Sleep(time.Second * 2)
+				}
+			}
+		}
+	}()
+	if consumer.lastFetchLogGroupList != nil {
+		consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
+		consumer.consumerCheckPointTracker.flushCheck()
+	}
+	return consumer.rollBackCheckpoint
+}
+
+func (consumer *ShardConsumerWorker) consumerRetryProcessTask() bool {
+	level.Info(consumer.logger).Log("msg", "Start retrying the process function")
 	defer func() {
 		if r := recover(); r != nil {
 			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r)
 		}
 	}()
-	if consumer.lastFetchLogGroupList != nil {
-		rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
-		consumer.consumerCheckPointTracker.flushCheck()
-	}
-	return rollBackCheckpoint
+	consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
+	consumer.consumerCheckPointTracker.flushCheck()
+	return true
+
 }

@@ -28,6 +28,7 @@ type ShardConsumerWorker struct {
 	logger                        log.Logger
 	lastFetchTimeForForceFlushCpt int64
 	isFlushCheckpointDone         bool
+	rollBackCheckpoint            string
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -55,6 +56,7 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, do fun
 		isFlushCheckpointDone:         true,
 		logger:                        logger,
 		lastFetchTimeForForceFlushCpt: 0,
+		rollBackCheckpoint:            "",
 	}
 	return shardConsumeWorker
 }
