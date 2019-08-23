@@ -62,7 +62,7 @@ func (mover *Mover) run(moverWaitGroup *sync.WaitGroup, config *ProducerConfig) 
 			return true
 		})
 		if mapCount == 0 {
-			level.Info(mover.logger).Log("msg", "No data time in map waiting for user configured RemainMs parameter values")
+			level.Debug(mover.logger).Log("msg", "No data time in map waiting for user configured RemainMs parameter values")
 			sleepMs = config.LingerMs
 		}
 
