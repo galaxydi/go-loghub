@@ -3,14 +3,15 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
-	"github.com/pierrec/lz4"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"strconv"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/glog"
+	"github.com/pierrec/lz4"
 )
 
 // this file is deprecated and no maintenance
@@ -553,12 +554,17 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	if err != nil {
 		return nil, err
 	}
-
+	var contents string
+	if _, ok := r.Header[GetLogsQueryInfo]; ok {
+		if len(r.Header[GetLogsQueryInfo]) > 0 {
+			contents = r.Header[GetLogsQueryInfo][0]
+		}
+	}
 	getLogsResponse := GetLogsResponse{
 		Progress: r.Header[ProgressHeader][0],
 		Count:    count,
 		Logs:     logs,
-		Contents: r.Header[GetLogsQueryInfo][0],
+		Contents: contents,
 	}
 
 	return &getLogsResponse, nil
