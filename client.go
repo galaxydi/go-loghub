@@ -14,6 +14,8 @@ import (
 
 // GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
 var GlobalForceUsingHTTP = false
+// RetryOnServerErrorEnabled if RetryOnServerErrorEnabled is false, then all error requests will not be retried
+var RetryOnServerErrorEnabled = true
 
 // compress type
 const (
