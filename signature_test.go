@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 )
 
 var project = &LogProject{
@@ -17,7 +16,6 @@ var project = &LogProject{
 }
 
 func TestSignatureGet(t *testing.T) {
-	defer glog.Flush()
 	h := map[string]string{
 		"x-log-apiversion":      "0.6.0",
 		"x-log-signaturemethod": "hmac-sha1",
@@ -35,7 +33,6 @@ func TestSignatureGet(t *testing.T) {
 }
 
 func TestSignaturePost(t *testing.T) {
-	defer glog.Flush()
 
 	/*
 	   topic=""

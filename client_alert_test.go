@@ -2,7 +2,6 @@ package sls
 
 import (
 	"fmt"
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 	"os"
 	"testing"
@@ -11,7 +10,6 @@ import (
 
 func TestAlert(t *testing.T) {
 	suite.Run(t, new(AlertTestSuite))
-	glog.Flush()
 }
 
 type AlertTestSuite struct {

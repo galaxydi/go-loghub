@@ -4,13 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestProject(t *testing.T) {
 	suite.Run(t, new(ProjectTestSuite))
-	glog.Flush()
 }
 
 type ProjectTestSuite struct {

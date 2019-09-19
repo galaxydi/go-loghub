@@ -3,6 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -10,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 const (
@@ -540,9 +541,8 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 	c = &LogConfig{}
 	json.Unmarshal(buf, c)
 
-	if glog.V(4) {
-		glog.Info("Get logtail config, result", *c)
-	}
+	level.Info(Logger).Log("msg", "Get logtail config, result", *c)
+
 
 	return c, nil
 }
@@ -615,9 +615,7 @@ func (p *LogProject) GetConfigString(name string) (c string, err error) {
 		json.Unmarshal(buf, err)
 		return "", err
 	}
-	if glog.V(4) {
-		glog.Info("Get logtail config, result", c)
-	}
+	level.Info(Logger).Log("msg", "Get logtail config, result", c)
 	return string(buf), err
 }
 

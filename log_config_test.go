@@ -6,13 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestConfig(t *testing.T) {
 	suite.Run(t, new(ConfigTestSuite))
-	glog.Flush()
 }
 
 type ConfigTestSuite struct {

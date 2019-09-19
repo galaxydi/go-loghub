@@ -2,10 +2,10 @@ package sls
 
 import (
 	"errors"
+	"github.com/go-kit/kit/log/level"
 	"sync"
 	"time"
 
-	"github.com/golang/glog"
 )
 
 type TokenAutoUpdateClient struct {
@@ -43,18 +43,18 @@ func (c *TokenAutoUpdateClient) flushSTSToken() {
 			sleepTime = sleepTime / 10 * 5
 		}
 		c.lock.Unlock()
-		glog.V(1).Info("next fetch sleep interval : ", sleepTime.String())
+		level.Info(Logger).Log("msg", "next fetch sleep interval : ", sleepTime.String())
 		trigger := time.After(sleepTime)
 		select {
 		case <-trigger:
 			err := c.fetchSTSToken()
-			glog.V(1).Info("fetch sts token done, error : ", err)
+			level.Info(Logger).Log("msg", "fetch sts token done, error : ", err)
 		case <-c.shutdown:
-			glog.V(1).Info("receive shutdown signal, exit flushSTSToken")
+			level.Info(Logger).Log("msg", "receive shutdown signal, exit flushSTSToken")
 			return
 		}
 		if c.closeFlag {
-			glog.V(1).Info("close flag is true, exit flushSTSToken")
+			level.Info(Logger).Log("msg", "close flag is true, exit flushSTSToken")
 			return
 		}
 	}
@@ -99,13 +99,13 @@ func (c *TokenAutoUpdateClient) fetchSTSToken() error {
 		c.nextExpire = expireTime
 		c.lock.Unlock()
 		c.logClient.ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken)
-		glog.V(1).Info("fetch sts token success id : ", accessKeyID)
+		level.Info(Logger).Log("msg", "fetch sts token success id : ", accessKeyID)
 
 	} else {
 		c.lock.Lock()
 		c.lastRetryFailCount++
 		c.lock.Unlock()
-		glog.Warning("fetch sts token error : ", err.Error())
+		level.Warn(Logger).Log("msg", "fetch sts token error : ", err.Error())
 	}
 	return err
 }
@@ -116,7 +116,7 @@ func (c *TokenAutoUpdateClient) processError(err error) (retry bool) {
 	}
 	if IsTokenError(err) {
 		if fetchErr := c.fetchSTSToken(); fetchErr != nil {
-			glog.Warning("operation error : ", err.Error(), "fetch sts token error : ", fetchErr.Error())
+			level.Warn(Logger).Log("msg", "operation error : ", err.Error(), "fetch sts token error : ", fetchErr.Error())
 			// if fetch error, return false
 			return false
 		}

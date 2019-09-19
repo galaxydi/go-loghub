@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"github.com/go-kit/kit/log/level"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -12,7 +13,6 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	"github.com/golang/glog"
 	"golang.org/x/net/context"
 )
 
@@ -198,13 +198,11 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		req.Header.Add(k, v)
 	}
 
-	if glog.V(5) {
-		dump, e := httputil.DumpRequest(req, true)
-		if e != nil {
-			glog.Info(e)
-		}
-		glog.Infof("HTTP Request:\n%v", string(dump))
+	dump, e := httputil.DumpRequest(req, true)
+	if e != nil {
+		level.Info(Logger).Log("msg", e)
 	}
+	level.Info(Logger).Log("msg", "HTTP Request:\n%v", string(dump))
 
 	// Get ready to do request
 	resp, err := project.httpClient.Do(req)
@@ -228,12 +226,10 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		return nil, err
 	}
 
-	if glog.V(5) {
-		dump, e := httputil.DumpResponse(resp, true)
-		if e != nil {
-			glog.Info(e)
-		}
-		glog.Infof("HTTP Response:\n%v", string(dump))
+	dump, e = httputil.DumpResponse(resp, true)
+	if e != nil {
+		level.Info(Logger).Log("msg", e)
 	}
+	level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
 	return resp, nil
 }

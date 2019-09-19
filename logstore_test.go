@@ -9,15 +9,13 @@ import (
 	"testing"
 	"time"
 
-	lz4 "github.com/cloudflare/golz4"
+	"github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestLogStore(t *testing.T) {
 	suite.Run(t, new(LogstoreTestSuite))
-	glog.Flush()
 }
 
 type LogstoreTestSuite struct {
