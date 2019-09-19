@@ -14,6 +14,7 @@ import (
 
 // GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
 var GlobalForceUsingHTTP = false
+
 // RetryOnServerErrorEnabled if RetryOnServerErrorEnabled is false, then all error requests will not be retried
 var RetryOnServerErrorEnabled = true
 
@@ -80,7 +81,7 @@ type Client struct {
 	SecurityToken   string
 	UserAgent       string // default defaultLogUserAgent
 	RequestTimeOut  time.Duration
-	RetryTimeOut 	time.Duration
+	RetryTimeOut    time.Duration
 
 	accessKeyLock sync.RWMutex
 }
@@ -92,7 +93,7 @@ func convert(c *Client, projName string) *LogProject {
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
 	if c.RequestTimeOut != time.Duration(0) {
-		p.WithRetryTimeout(c.RequestTimeOut)
+		p.WithRequestTimeout(c.RequestTimeOut)
 	}
 	if c.RetryTimeOut != time.Duration(0) {
 		p.WithRetryTimeout(c.RetryTimeOut)
