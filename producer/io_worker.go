@@ -1,13 +1,14 @@
 package producer
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"math"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 type CallBack interface {
@@ -70,6 +71,7 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 			}
 			return
 		}
+		level.Info(ioWorker.logger).Log("msg", "sendToServer failed", "error", err)
 		if slsError, ok := err.(*sls.Error); ok {
 			if _, ok := ioWorker.noRetryStatusCodeMap[int(slsError.HTTPCode)]; ok {
 				ioWorker.excuteFailedCallback(producerBatch)
