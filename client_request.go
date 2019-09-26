@@ -97,12 +97,13 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	for k, v := range headers {
 		req.Header.Add(k, v)
 	}
-
-	dump, e := httputil.DumpRequest(req, true)
-	if e != nil {
-		level.Info(Logger).Log("msg", e)
+	if IsDebugLevelMatched(5) {
+		dump, e := httputil.DumpRequest(req, true)
+		if e != nil {
+			level.Info(Logger).Log("msg", e)
+		}
+		level.Info(Logger).Log("msg", "HTTP Request:\n%v", string(dump))
 	}
-	level.Info(Logger).Log("msg", "HTTP Request:\n%v", string(dump))
 
 	// Get ready to do request
 	resp, err := defaultHttpClient.Do(req)
@@ -120,13 +121,13 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		err.RequestID = resp.Header.Get("x-log-requestid")
 		return nil, err
 	}
-
-	dump, e = httputil.DumpResponse(resp, true)
-	if e != nil {
-		level.Info(Logger).Log("msg", e)
+	if IsDebugLevelMatched(5) {
+		dump, e := httputil.DumpResponse(resp, true)
+		if e != nil {
+			level.Info(Logger).Log("msg", e)
+		}
+		level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
 	}
-	level.Info(Logger).Log("msg", "HTTP Response:\n%v", string(dump))
-
 
 	return resp, nil
 }

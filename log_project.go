@@ -540,9 +540,9 @@ func (p *LogProject) GetConfig(name string) (c *LogConfig, err error) {
 
 	c = &LogConfig{}
 	json.Unmarshal(buf, c)
-
-	level.Info(Logger).Log("msg", "Get logtail config, result", *c)
-
+	if IsDebugLevelMatched(4) {
+		level.Info(Logger).Log("msg", "Get logtail config, result", *c)
+	}
 
 	return c, nil
 }
@@ -615,7 +615,9 @@ func (p *LogProject) GetConfigString(name string) (c string, err error) {
 		json.Unmarshal(buf, err)
 		return "", err
 	}
-	level.Info(Logger).Log("msg", "Get logtail config, result", c)
+	if IsDebugLevelMatched(4) {
+		level.Info(Logger).Log("msg", "Get logtail config, result", c)
+	}
 	return string(buf), err
 }
 

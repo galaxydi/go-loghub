@@ -88,9 +88,10 @@ func (c *Client) ListMachines(project, machineGroupName string) (ms []*Machine, 
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to remove config from machine group")
-
-			dump, _ := httputil.DumpResponse(r, true)
-			level.Error(Logger).Log("msg", string(dump))
+			if IsDebugLevelMatched(1) {
+				dump, _ := httputil.DumpResponse(r, true)
+				level.Error(Logger).Log("msg", string(dump))
+			}
 			return
 		}
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)

@@ -2,10 +2,10 @@ package sls
 
 import (
 	"errors"
-	"github.com/go-kit/kit/log/level"
 	"sync"
 	"time"
 
+	"github.com/go-kit/kit/log/level"
 )
 
 type TokenAutoUpdateClient struct {
@@ -43,18 +43,26 @@ func (c *TokenAutoUpdateClient) flushSTSToken() {
 			sleepTime = sleepTime / 10 * 5
 		}
 		c.lock.Unlock()
-		level.Info(Logger).Log("msg", "next fetch sleep interval : ", sleepTime.String())
+		if IsDebugLevelMatched(1) {
+			level.Info(Logger).Log("msg", "next fetch sleep interval : ", sleepTime.String())
+		}
 		trigger := time.After(sleepTime)
 		select {
 		case <-trigger:
 			err := c.fetchSTSToken()
-			level.Info(Logger).Log("msg", "fetch sts token done, error : ", err)
+			if IsDebugLevelMatched(1) {
+				level.Info(Logger).Log("msg", "fetch sts token done, error : ", err)
+			}
 		case <-c.shutdown:
-			level.Info(Logger).Log("msg", "receive shutdown signal, exit flushSTSToken")
+			if IsDebugLevelMatched(1) {
+				level.Info(Logger).Log("msg", "receive shutdown signal, exit flushSTSToken")
+			}
 			return
 		}
 		if c.closeFlag {
-			level.Info(Logger).Log("msg", "close flag is true, exit flushSTSToken")
+			if IsDebugLevelMatched(1) {
+				level.Info(Logger).Log("msg", "close flag is true, exit flushSTSToken")
+			}
 			return
 		}
 	}
@@ -99,7 +107,9 @@ func (c *TokenAutoUpdateClient) fetchSTSToken() error {
 		c.nextExpire = expireTime
 		c.lock.Unlock()
 		c.logClient.ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken)
-		level.Info(Logger).Log("msg", "fetch sts token success id : ", accessKeyID)
+		if IsDebugLevelMatched(1) {
+			level.Info(Logger).Log("msg", "fetch sts token success id : ", accessKeyID)
+		}
 
 	} else {
 		c.lock.Lock()

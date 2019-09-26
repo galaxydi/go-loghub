@@ -332,7 +332,9 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			level.Error(Logger).Log("msg", string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
+			}
 			return
 		}
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
@@ -388,7 +390,9 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			level.Error(Logger).Log("msg", string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
+			}
 			return
 		}
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)

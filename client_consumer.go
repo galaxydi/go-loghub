@@ -95,8 +95,10 @@ func (c *Client) ListConsumerGroup(project, logstore string) (cgList []*Consumer
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to split shards")
-			dump, _ := httputil.DumpResponse(r, true)
-			level.Error(Logger).Log("msg", string(dump))
+			if IsDebugLevelMatched(5) {
+				dump, _ := httputil.DumpResponse(r, true)
+				level.Error(Logger).Log("msg", string(dump))
+			}
 			return nil, NewClientError(err)
 		}
 		return nil, errMsg
