@@ -1,37 +1,40 @@
 ## User Guide （中文）
 
-[README  in English]()
+[README  in English](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/README_EN.md)
 
 ### 基本介绍
 
-这是Log Service SDK for Golang的开源版本。Log Service SDK for Golang是阿里云日志服务 （Log Service）API的Golong编程接口，提供了对于Log Service Rest API所有接口的封装 和支持，帮助Golang开发人员更快编程使用阿里云Log Service服务。
+本项目是阿里云日志服务 （Log Service，简称SLS）API的Golang编程接口，提供了对于Log Service Rest API的封装和实现，帮助Golang开发人员更快编程使用阿里云日志服务。
 
-### 注意
+本项目主要由3个部分组成：
 
-1. 为了提高您系统的 IO 效率，请尽量不要直接使用 SDK 往日志服务中写数据，写数据标准做法参考文章 [**Aliyun LOG Golang Producer 快速入门**](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/producer)。
-2. 要消费日志服务中的数据，请尽量不要直接使用SDK的拉数据接口，我们提供了一个高级消费库 [**Consumer Library**](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/consumer)，该库屏蔽了日志服务的实现细节，并且提供了负载均衡、按序消费等高级功能。
+1. 日志服务基础API封装和实现。
+2. Golang Producer Library，用于向日志服务批量发送数据，详情参考[**Aliyun LOG Golang Producer 快速入门**](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/producer)。
+3. Golang Consumer Library，用于消费日志服务中的数据，详情参考[**Consumer Library**](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/consumer)。
+
+详细API接口以及含义请参考：https://help.aliyun.com/document_detail/29007.html
 
 ### 安装
 
 ```
-go get github.com/aliyun/aliyun-log-go-sdk
+go get -u github.com/aliyun/aliyun-log-go-sdk
 ```
 
 
 
 ### 快速入门
 
-**前言:**   所有的使用样例都放在了[example](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/example)目录下，使用该目录下的所有样例前，请先在该目录下的[config.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/util/config.go)文件中的**init函数**中配置您的 project, logstore等所需要的配置参数，example目录下的所有样例都会使用config.go文件中配置的参数。
+**前言:**   所有的使用样例都位于[example](https://github.com/aliyun/aliyun-log-go-sdk/tree/master/example)目录下，使用该目录下的所有样例前，请先在该目录下的[config.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/util/config.go)文件中的**init函数**中配置您的 project, logstore等所需要的配置参数，example目录下的所有样例都会使用config.go文件中配置的参数。
 
 1. **创建Client**
 
    参考 [config.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/util/config.go) 文件
 
    ```go
-   Client = new(sls.Client)
-   Client.Endpoint = Endpoint
-   Client.AccessKeyID = AccessKeyID
-   Client.AccessKeySecret = AccessKeySecret
+   AccessKeyID = "your ak id"
+   AccessKeySecret = "your ak secret"
+   Endpoint = "your endpoint" // just like cn-hangzhou.log.aliyuncs.com
+   Client = sls.CreateNormalInterface(Endpoint,AccessKeyID,AccessKeySecret,"")
    ```
 
 2. **创建project**
@@ -187,7 +190,7 @@ totalLogCount := 0
 
 7. **创建机器组**
 
-  参考 [machine_group_sample.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/machine_group/machine_group_sample.go) 
+   参考 [machine_group_sample.go](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/machine_group/machine_group_sample.go) 
 
 ```go
 attribute := sls.MachinGroupAttribute{
@@ -209,7 +212,7 @@ if err != nil {
 
 8. **创建logtail 采集配置**
 
-   logtail 采集配置，目前通过sdk 支持创建下列几种模式的采集配置，分别为 [完整正则](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_common_regex.go)，[分隔符模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_delimiter.go)，[json模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_json.go) ，[插件模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/config/log_config_plugin.go)，这里展示的完整正则模式的创建。
+   logtail 采集配置，目前通过sdk 支持创建下列几种模式的采集配置，分别为 [完整正则](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_common_regex.go)，[分隔符模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_delimiter.go)，[json模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_json.go) ，[插件模式](https://github.com/aliyun/aliyun-log-go-sdk/blob/master/example/logtail_config/log_config_plugin.go)，这里展示的完整正则模式的创建。
 
    ```go
    regexConfig := new(sls.RegexConfigInputDetail)
