@@ -49,6 +49,18 @@ func (resp *GetLogsResponse) GetKeys() (error, []string) {
 	return nil, result
 }
 
+type GetContextLogsResponse struct {
+	Progress     string              `json:"progress"`
+	TotalLines   int64               `json:"total_lines"`
+	BackLines    int64               `json:"back_lines"`
+	ForwardLines int64               `json:"forward_lines"`
+	Logs         []map[string]string `json:"logs"`
+}
+
+func (resp *GetContextLogsResponse) IsComplete() bool {
+	return strings.ToLower(resp.Progress) == "complete"
+}
+
 // IndexKey ...
 type IndexKey struct {
 	Token         []string `json:"token"` // tokens that split the log line.
