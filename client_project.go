@@ -3,11 +3,12 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 
-	"github.com/golang/glog"
+	"github.com/go-kit/kit/log/level"
 )
 
 // ListLogStore returns all logstore names of project p.
@@ -87,9 +88,9 @@ func (c *Client) ListMachines(project, machineGroupName string) (ms []*Machine, 
 		err = json.Unmarshal(buf, errMsg)
 		if err != nil {
 			err = fmt.Errorf("failed to remove config from machine group")
-			if glog.V(1) {
+			if IsDebugLevelMatched(1) {
 				dump, _ := httputil.DumpResponse(r, true)
-				glog.Error(string(dump))
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}

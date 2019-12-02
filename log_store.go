@@ -3,6 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
@@ -10,8 +11,8 @@ import (
 	"strconv"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/glog"
 	"github.com/pierrec/lz4"
+	"github.com/go-kit/kit/log/level"
 )
 
 // this file is deprecated and no maintenance
@@ -331,8 +332,8 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}
@@ -389,8 +390,8 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		if err != nil {
 			err = fmt.Errorf("failed to get cursor")
 			dump, _ := httputil.DumpResponse(r, true)
-			if glog.V(1) {
-				glog.Error(string(dump))
+			if IsDebugLevelMatched(1) {
+				level.Error(Logger).Log("msg", string(dump))
 			}
 			return
 		}

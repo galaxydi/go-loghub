@@ -5,13 +5,11 @@ import (
 
 	"encoding/json"
 
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestETLJob_UnmarshalJSON(t *testing.T) {
 	suite.Run(t, new(ETLJobTestSuite))
-	glog.Flush()
 }
 
 type ETLJobTestSuite struct {

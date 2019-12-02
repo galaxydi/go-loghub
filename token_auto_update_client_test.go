@@ -6,13 +6,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestTolenAutoUpdateClient(t *testing.T) {
 	suite.Run(t, new(TolenAutoUpdateClientTestSuite))
-	glog.Flush()
 }
 
 type TolenAutoUpdateClientTestSuite struct {

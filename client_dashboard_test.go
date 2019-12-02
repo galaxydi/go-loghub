@@ -4,13 +4,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/stretchr/testify/suite"
 )
 
 func TestDashboard(t *testing.T) {
 	suite.Run(t, new(DashboardTestSuite))
-	glog.Flush()
 }
 
 type DashboardTestSuite struct {
