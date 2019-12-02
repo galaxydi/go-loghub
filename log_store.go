@@ -570,6 +570,49 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	return &getLogsResponse, nil
 }
 
+// GetContextLogs ...
+func (s *LogStore) GetContextLogs(backLines int32, forwardLines int32,
+	packID string, packMeta string) (*GetContextLogsResponse, error) {
+
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Accept":            "application/json",
+	}
+
+	urlVal := url.Values{}
+	urlVal.Add("type", "context_log")
+	urlVal.Add("back_lines", strconv.Itoa(int(backLines)))
+	urlVal.Add("forward_lines", strconv.Itoa(int(forwardLines)))
+	urlVal.Add("pack_id", packID)
+	urlVal.Add("pack_meta", packMeta)
+
+	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
+	r, err := request(s.project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err)
+
+	}
+	defer r.Body.Close()
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+
+		}
+		return nil, err
+
+	}
+
+	resp := GetContextLogsResponse{}
+	err = json.Unmarshal(body, &resp)
+	if err != nil {
+		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+
+	}
+	return &resp, nil
+}
+
 // CreateIndex ...
 func (s *LogStore) CreateIndex(index Index) error {
 	body, err := json.Marshal(index)
