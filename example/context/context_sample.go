@@ -1,7 +1,9 @@
 package main
 
 import (
+	"crypto/md5"
 	"fmt"
+	"os"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -37,6 +39,16 @@ func postLogGroup(logCount int, packID string, logstore *sls.LogStore) {
 	panicCheck(logstore.PutLogs(lg), "PutLogs")
 }
 
+// generatePackIDPrefix generates a PackID by MD5(time, hostname, PID).
+func generatePackIDPrefix() string {
+	m := md5.New()
+	m.Write([]byte(time.Now().String()))
+	hostName, _ := os.Hostname()
+	m.Write([]byte(hostName))
+	m.Write([]byte(fmt.Sprintf("%v", os.Getpid())))
+	return fmt.Sprintf("%X", m.Sum(nil))
+}
+
 func main() {
 	sls.GlobalForceUsingHTTP = true
 	fmt.Println(util.AccessKeyID)
@@ -48,19 +60,19 @@ func main() {
 
 	beginTime := time.Now()
 
-	// Write 3 log groups: 150 -> 20 -> 150
-	prefix := "D" + fmt.Sprint(beginTime.Unix())
-	postLogGroup(150, prefix+"-0", logstore)
-	postLogGroup(20, prefix+"-1", logstore)
-	postLogGroup(150, prefix+"-2", logstore)
-
+	// Write several log groups with same pack prefix. PackID format: {PackPrefix}-{HexSequenceID}.
+	packagePrefix := generatePackIDPrefix()
+	for seqID := 0; seqID <= 10; seqID++ {
+		postLogGroup(20, fmt.Sprintf("%v-%X", packagePrefix, seqID), logstore)
+	}
 	time.Sleep(time.Second * 5)
 
-	// GetLogs to acquire packID and packMeta
+	// Use GetLogs to acquire packMeta by querying packID.
+	queriedPackID := fmt.Sprintf("%v-%X", packagePrefix, 8)
 	from := beginTime.Unix() - 120
 	to := time.Now().Unix() + 60
 	resp, err := logstore.GetLogs("", from, to,
-		"__tag__:__pack_id__:"+prefix+"-1|with_pack_meta",
+		fmt.Sprintf("__tag__:__pack_id__:%v|with_pack_meta", queriedPackID),
 		20, 0, false)
 	panicCheck(err, "GetLogs")
 	fmt.Println("GetLogs response", resp.Count)
@@ -69,8 +81,8 @@ func main() {
 	packMeta := middleLog["__pack_meta__"]
 	fmt.Println(packID, packMeta)
 
-	// Get context logs
-	contextResp, err := logstore.GetContextLogs(5, 5, packID, packMeta)
+	// Get context logs from both directions.
+	contextResp, err := logstore.GetContextLogs(30, 30, packID, packMeta)
 	panicCheck(err, "GetContextLogs")
 	fmt.Println("GetContextLogs response", contextResp.TotalLines)
 	fmt.Println("back lines", contextResp.BackLines)
@@ -79,13 +91,14 @@ func main() {
 	fmt.Println("newest context log", contextResp.Logs[contextResp.TotalLines-1])
 
 	// Use the first log to fetch backward.
+	fmt.Println("fetch context logs backward...")
 	{
 		log := contextResp.Logs[0]
 		for loopIdx := 0; loopIdx < 5; loopIdx++ {
 			packID := log["__tag__:__pack_id__"]
 			packMeta := log["__pack_meta__"]
 			fmt.Printf("[Loop %v] ID: %v, meta: %v\n", loopIdx, packID, packMeta)
-			resp, err := logstore.GetContextLogs(1, 0, packID, packMeta)
+			resp, err := logstore.GetContextLogs(30, 0, packID, packMeta)
 			panicCheck(err, fmt.Sprintf("GetContextLogs backward %v", loopIdx))
 			fmt.Printf("[Loop %v] backward total lines: %v, back lines: %v\n",
 				loopIdx, resp.TotalLines, resp.BackLines)
@@ -98,14 +111,16 @@ func main() {
 			time.Sleep(time.Second)
 		}
 	}
+
 	// Use the last log to fetch forward.
+	fmt.Println("fetch context logs forward...")
 	{
 		log := contextResp.Logs[contextResp.TotalLines-1]
 		for loopIdx := 0; loopIdx < 5; loopIdx++ {
 			packID := log["__tag__:__pack_id__"]
 			packMeta := log["__pack_meta__"]
 			fmt.Printf("[Loop %v] ID: %v, meta: %v\n", loopIdx, packID, packMeta)
-			resp, err := logstore.GetContextLogs(0, 1, packID, packMeta)
+			resp, err := logstore.GetContextLogs(0, 30, packID, packMeta)
 			panicCheck(err, fmt.Sprintf("GetContextLogs backward %v", loopIdx))
 			fmt.Printf("[Loop %v] forward total lines: %v, lines: %v\n",
 				loopIdx, resp.TotalLines, resp.ForwardLines)
