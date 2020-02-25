@@ -87,6 +87,12 @@ func (p *LogProject) WithRetryTimeout(timeout time.Duration) *LogProject {
 	return p
 }
 
+// RawRequest send raw http request to LogService and return the raw http response
+// @note you should call http.Response.Body.Close() to close body stream
+func (p *LogProject) RawRequest(method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
+	return request(p, method, uri, headers, body)
+}
+
 // ListLogStore returns all logstore names of project p.
 func (p *LogProject) ListLogStore() ([]string, error) {
 	h := map[string]string{
