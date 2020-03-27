@@ -109,6 +109,7 @@ func (ioWorker *IoWorker) closeSendTask(ioWorkerWaitGroup *sync.WaitGroup) {
 
 func (ioWorker *IoWorker) excuteFailedCallback(producerBatch *ProducerBatch) {
 	level.Info(ioWorker.logger).Log("msg", "sendToServer failed,Execute failed callback function")
+	atomic.AddInt64(&producerLogGroupSize, -producerBatch.totalDataSize)
 	if len(producerBatch.callBackList) > 0 {
 		for _, callBack := range producerBatch.callBackList {
 			callBack.Fail(producerBatch.result)
