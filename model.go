@@ -61,6 +61,12 @@ func (resp *GetContextLogsResponse) IsComplete() bool {
 	return strings.ToLower(resp.Progress) == "complete"
 }
 
+type JsonKey struct{
+	Type      string `json:"type"`
+	Alias     string `json:"alias,omitempty"`
+	DocValue  bool   `json:"doc_value,omitempty"`
+}
+
 // IndexKey ...
 type IndexKey struct {
 	Token         []string `json:"token"` // tokens that split the log line.
@@ -69,6 +75,7 @@ type IndexKey struct {
 	DocValue      bool     `json:"doc_value,omitempty"`
 	Alias         string   `json:"alias,omitempty"`
 	Chn           bool     `json:"chn"` // parse chinese or not
+	JsonKeys      map[string]*JsonKey  `json:"json_keys,omitempty"`
 }
 
 type IndexLine struct {
