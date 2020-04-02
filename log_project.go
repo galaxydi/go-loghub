@@ -954,6 +954,100 @@ func (p *LogProject) ListEtlMetaName(offset, size int) (total int, count int, et
 	return body.Total, body.Count, body.MetaNameList, nil
 }
 
+func (p *LogProject) CreateLogging(detail *Logging) (err error) {
+	body, err := json.Marshal(detail)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate",
+	}
+	r, err := request(p, "POST", fmt.Sprintf("/%v", LoggingURI), h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, err = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+func (p *LogProject) UpdateLogging(detail *Logging) (err error) {
+	body, err := json.Marshal(detail)
+	if err != nil {
+		return NewClientError(err)
+	}
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "deflate",
+	}
+	r, err := request(p, "PUT", fmt.Sprintf("/%v", LoggingURI), h, body)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
+func (p *LogProject) GetLogging() (c *Logging, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	r, err := request(p, "GET", fmt.Sprintf("/%v", LoggingURI), h, nil)
+	if err != nil {
+		return nil, NewClientError(err)
+	}
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, err
+	}
+
+	c = &Logging{}
+	json.Unmarshal(buf, c)
+	if IsDebugLevelMatched(4) {
+		level.Info(Logger).Log("msg", "Get logging, result", *c)
+	}
+
+	return c, nil
+}
+
+func (p *LogProject) DeleteLogging() (err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+	uri := fmt.Sprintf("/%v", LoggingURI)
+	r, err := request(p, "DELETE", uri, h, nil)
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(body, err)
+		return err
+	}
+	return nil
+}
+
 func (p *LogProject) init() {
 	if p.retryTimeout == time.Duration(0) {
 		p.httpClient = defaultHttpClient

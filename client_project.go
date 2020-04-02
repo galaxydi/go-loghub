@@ -262,3 +262,23 @@ func (c *Client) ListEtlMetaName(project string, offset, size int) (total int, c
 	proj := convert(c, project)
 	return proj.ListEtlMetaName(offset, size)
 }
+
+func (c *Client) CreateLogging(project string, detail *Logging) error {
+	proj := convert(c, project)
+	return proj.CreateLogging(detail)
+}
+
+func (c *Client) UpdateLogging(project string, detail *Logging) error {
+	proj := convert(c, project)
+	return proj.UpdateLogging(detail)
+}
+
+func (c *Client) GetLogging(project string) (*Logging, error) {
+	proj := convert(c, project)
+	return proj.GetLogging()
+}
+
+func (c *Client) DeleteLogging(project string) error {
+	proj := convert(c, project)
+	return proj.DeleteLogging()
+}
