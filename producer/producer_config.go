@@ -1,5 +1,7 @@
 package producer
 
+import "time"
+
 const Delimiter = "|"
 
 type ProducerConfig struct {
@@ -25,6 +27,8 @@ type ProducerConfig struct {
 	AccessKeyID           string
 	AccessKeySecret       string
 	NoRetryStatusCodeList []int
+	UpdateStsToken    	  func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
+	StsTokenShutDown      chan struct{}
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {

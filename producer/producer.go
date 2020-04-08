@@ -33,10 +33,15 @@ type Producer struct {
 
 func InitProducer(producerConfig *ProducerConfig) *Producer {
 	logger := logConfig(producerConfig)
-	client := &sls.Client{
-		Endpoint:        producerConfig.Endpoint,
-		AccessKeyID:     producerConfig.AccessKeyID,
-		AccessKeySecret: producerConfig.AccessKeySecret,
+
+	client := sls.CreateNormalInterface(producerConfig.Endpoint, producerConfig.AccessKeyID, producerConfig.AccessKeySecret, "")
+	if producerConfig.UpdateStsToken != nil && producerConfig.StsTokenShutDown != nil {
+		stsClient, err := sls.CreateTokenAutoUpdateClient(producerConfig.Endpoint, producerConfig.UpdateStsToken, producerConfig.StsTokenShutDown)
+		if err != nil {
+			level.Warn(logger).Log("msg", "Failed to create ststoken client, use default client without ststoken.", "error", err)
+		} else {
+			client = stsClient
+		}
 	}
 	finalProducerConfig := validateProducerConfig(producerConfig)
 	retryQueue := initRetryQueue()
@@ -267,7 +272,15 @@ func (producer *Producer) SafeClose() {
 
 func (producer *Producer) sendCloseProdcerSignal() {
 	level.Info(producer.logger).Log("msg", "producer start closing")
+	producer.closeStstokenChannel()
 	producer.mover.moverShutDownFlag = true
 	producer.logAccumulator.shutDownFlag = true
 	producer.mover.ioWorker.retryQueueShutDownFlag = true
+}
+
+func (producer *Producer) closeStstokenChannel() {
+	if producer.producerConfig.StsTokenShutDown != nil {
+		close(producer.producerConfig.StsTokenShutDown)
+		level.Info(producer.logger).Log("msg", "producer closed ststoken")
+	}
 }

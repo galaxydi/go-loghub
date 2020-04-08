@@ -134,6 +134,8 @@ func(callback *Callback)Fail(result *producer.Result){
 | AccessKeyID         | String | 账户的AK id。                                                |
 | AccessKeySecret     | String | 账户的AK 密钥。                                              |
 | NoRetryStatusCodeList  | []int  | 用户配置的不需要重试的错误码列表，当发送日志失败时返回的错误码在列表中，则不会重试。默认包含400，404两个值。                 |
+| UpdateStsToken      | Func   | 函数类型，该函数内去实现自己的获取ststoken 的逻辑，producer 会自动刷新ststoken并放入client 当中。
+| StsTokenShutDown    | channel| 关闭ststoken 自动刷新的通讯信道，当该信道关闭时，不再自动刷新ststoken值。当producer关闭的时候，该参数不为nil值，则会主动调用close去关闭该信道停止ststoken的自动刷新。 |
 
 ## 关于性能
 
