@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"strconv"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/gogo/protobuf/proto"
 	"github.com/pierrec/lz4"
-	"github.com/go-kit/kit/log/level"
 )
 
 // this file is deprecated and no maintenance
@@ -475,8 +475,14 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		"Accept":            "application/json",
 	}
 
-	uri := fmt.Sprintf("/logstores/%v?type=histogram&topic=%v&from=%v&to=%v&query=%v", s.Name, topic, from, to, queryExp)
+	urlVal := url.Values{}
+	urlVal.Add("type", "histogram")
+	urlVal.Add("from", strconv.Itoa(int(from)))
+	urlVal.Add("to", strconv.Itoa(int(to)))
+	urlVal.Add("topic", topic)
+	urlVal.Add("query", queryExp)
 
+	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
 		return nil, NewClientError(err)
