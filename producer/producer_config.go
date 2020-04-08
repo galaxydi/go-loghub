@@ -25,6 +25,9 @@ type ProducerConfig struct {
 	AccessKeyID           string
 	AccessKeySecret       string
 	NoRetryStatusCodeList []int
+	SecurityToken         string
+	StsTokenExpireTime    string // such as "300ms", "-1.5h" or "2h45m". Valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h".
+	StsTokenShutDown      chan struct{}
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {

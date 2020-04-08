@@ -33,11 +33,21 @@ type Producer struct {
 
 func InitProducer(producerConfig *ProducerConfig) *Producer {
 	logger := logConfig(producerConfig)
-	client := &sls.Client{
-		Endpoint:        producerConfig.Endpoint,
-		AccessKeyID:     producerConfig.AccessKeyID,
-		AccessKeySecret: producerConfig.AccessKeySecret,
+
+	updateStsToken := func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error) {
+		parseTime, _ := time.ParseDuration(producerConfig.StsTokenExpireTime)
+		return producerConfig.AccessKeyID, producerConfig.AccessKeySecret, producerConfig.SecurityToken, time.Now().Add(parseTime), err
 	}
+	client, err := sls.CreateTokenAutoUpdateClient(producerConfig.Endpoint, updateStsToken, producerConfig.StsTokenShutDown)
+	if err != nil {
+		client = &sls.Client{
+			Endpoint:        producerConfig.Endpoint,
+			AccessKeyID:     producerConfig.AccessKeyID,
+			AccessKeySecret: producerConfig.AccessKeySecret,
+		}
+		level.Warn(logger).Log("msg", "Failed to create ststoken client, use default client without ststoken.", "error", err)
+	}
+
 	finalProducerConfig := validateProducerConfig(producerConfig)
 	retryQueue := initRetryQueue()
 	errorStatusMap := func() map[int]*string {

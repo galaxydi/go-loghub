@@ -134,6 +134,9 @@ func(callback *Callback)Fail(result *producer.Result){
 | AccessKeyID         | String | 账户的AK id。                                                |
 | AccessKeySecret     | String | 账户的AK 密钥。                                              |
 | NoRetryStatusCodeList  | []int  | 用户配置的不需要重试的错误码列表，当发送日志失败时返回的错误码在列表中，则不会重试。默认包含400，404两个值。                 |
+| SecurityToken       | String | STS临时凭证，用于访问日志服务API接口。                          |
+| StsTokenExpireTime  | String | ststoken 过期时间。有效时间单位为“ns”、“us”（或“μs”）、“ms”、“s”、“m”、“h”。例如10s（10秒钟），1h（1小时）。                                     |
+| StsTokenShutDown    | channel| 关闭ststoken 自动刷新的通讯信道，当该信道关闭时，不再自动刷新ststoken值。 |
 
 ## 关于性能
 
