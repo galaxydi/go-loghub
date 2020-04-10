@@ -17,7 +17,7 @@ type CallBack interface {
 }
 
 type IoWorker struct {
-	client                 *sls.Client
+	client                 sls.ClientInterface
 	retryQueue             *RetryQueue
 	taskCount              int64
 	retryQueueShutDownFlag bool
@@ -26,7 +26,7 @@ type IoWorker struct {
 	noRetryStatusCodeMap   map[int]*string
 }
 
-func initIoWorker(client *sls.Client, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64, errorStatusMap map[int]*string) *IoWorker {
+func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64, errorStatusMap map[int]*string) *IoWorker {
 	return &IoWorker{
 		client:                 client,
 		retryQueue:             retryQueue,
