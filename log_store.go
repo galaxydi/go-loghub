@@ -567,11 +567,18 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 			contents = r.Header[GetLogsQueryInfo][0]
 		}
 	}
+	hasSQL := false
+	if _, ok := r.Header[HasSQLHeader]; ok {
+		if len(r.Header[HasSQLHeader]) > 0 && r.Header[HasSQLHeader][0] == "true" {
+			hasSQL = true
+		}
+	}
 	getLogsResponse := GetLogsResponse{
 		Progress: r.Header[ProgressHeader][0],
 		Count:    count,
 		Logs:     logs,
 		Contents: contents,
+		HasSQL:   hasSQL,
 	}
 
 	return &getLogsResponse, nil
