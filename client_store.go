@@ -232,13 +232,13 @@ func (c *Client) DeleteIndex(project, logstore string) error {
 	return ls.DeleteIndex()
 }
 
-// ListSortedSubStore ...
-func (c *Client) ListSortedSubStore(project, logstore string) (sortedSubStores []string, err error) {
+// ListSubStore ...
+func (c *Client) ListSubStore(project, logstore string) (sortedSubStores []string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 
-	uri := fmt.Sprintf("/logstores/%v/sortedsubstores", logstore)
+	uri := fmt.Sprintf("/logstores/%v/substores", logstore)
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
 		return
@@ -265,7 +265,7 @@ func (c *Client) ListSortedSubStore(project, logstore string) (sortedSubStores [
 	}
 
 	type sortedSubStoreList struct {
-		SortedSubStores []string `json:"sortedsubstores"`
+		SubStores []string `json:"substores"`
 	}
 
 	body := &sortedSubStoreList{}
@@ -274,17 +274,17 @@ func (c *Client) ListSortedSubStore(project, logstore string) (sortedSubStores [
 		return
 	}
 
-	sortedSubStores = body.SortedSubStores
+	sortedSubStores = body.SubStores
 	return
 }
 
-// GetSortedSubStore ...
-func (c *Client) GetSortedSubStore(project, logstore, name string) (sortedSubStore *SortedSubStore, err error) {
+// GetSubStore ...
+func (c *Client) GetSubStore(project, logstore, name string) (sortedSubStore *SubStore, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
 
-	uri := fmt.Sprintf("/logstores/%s/sortedsubstores/%s", logstore, name)
+	uri := fmt.Sprintf("/logstores/%s/substores/%s", logstore, name)
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
 		return
@@ -309,7 +309,7 @@ func (c *Client) GetSortedSubStore(project, logstore, name string) (sortedSubSto
 		err = fmt.Errorf("%v:%v", errMsg.Code, errMsg.Message)
 		return
 	}
-	sortedSubStore = &SortedSubStore{}
+	sortedSubStore = &SubStore{}
 	err = json.Unmarshal(buf, sortedSubStore)
 	if err != nil {
 		sortedSubStore = nil
@@ -318,8 +318,8 @@ func (c *Client) GetSortedSubStore(project, logstore, name string) (sortedSubSto
 	return
 }
 
-// CreateSortedSubStore ...
-func (c *Client) CreateSortedSubStore(project, logstore string, sss *SortedSubStore) (err error) {
+// CreateSubStore ...
+func (c *Client) CreateSubStore(project, logstore string, sss *SubStore) (err error) {
 	body, err := json.Marshal(sss)
 	if err != nil {
 		return NewClientError(err)
@@ -330,7 +330,7 @@ func (c *Client) CreateSortedSubStore(project, logstore string, sss *SortedSubSt
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate",
 	}
-	r, err := c.request(project, "POST", fmt.Sprintf("/logstores/%s/sortedsubstores", logstore), h, body)
+	r, err := c.request(project, "POST", fmt.Sprintf("/logstores/%s/substores", logstore), h, body)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -344,8 +344,8 @@ func (c *Client) CreateSortedSubStore(project, logstore string, sss *SortedSubSt
 	return
 }
 
-// UpdateSortedSubStore ...
-func (c *Client) UpdateSortedSubStore(project, logstore string, sss *SortedSubStore) (err error) {
+// UpdateSubStore ...
+func (c *Client) UpdateSubStore(project, logstore string, sss *SubStore) (err error) {
 	body, err := json.Marshal(sss)
 	if err != nil {
 		return NewClientError(err)
@@ -356,7 +356,7 @@ func (c *Client) UpdateSortedSubStore(project, logstore string, sss *SortedSubSt
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate",
 	}
-	r, err := c.request(project, "PUT", fmt.Sprintf("/logstores/%s/sortedsubstores/%s", logstore, sss.Name), h, body)
+	r, err := c.request(project, "PUT", fmt.Sprintf("/logstores/%s/substores/%s", logstore, sss.Name), h, body)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -370,13 +370,13 @@ func (c *Client) UpdateSortedSubStore(project, logstore string, sss *SortedSubSt
 	return
 }
 
-// DeleteSortedSubStore ...
-func (c *Client) DeleteSortedSubStore(project, logstore string, name string) (err error) {
+// DeleteSubStore ...
+func (c *Client) DeleteSubStore(project, logstore string, name string) (err error) {
 
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 	}
-	r, err := c.request(project, "DELETE", fmt.Sprintf("/logstores/%s/sortedsubstores/%s", logstore, name), h, nil)
+	r, err := c.request(project, "DELETE", fmt.Sprintf("/logstores/%s/substores/%s", logstore, name), h, nil)
 	if err != nil {
 		return NewClientError(err)
 	}

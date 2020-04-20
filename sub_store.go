@@ -1,13 +1,13 @@
 package sls
 
-// SortedSubStoreKey key define
-type SortedSubStoreKey struct {
+// SubStoreKey key define
+type SubStoreKey struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
 }
 
 // IsValid ...
-func (s *SortedSubStoreKey) IsValid() bool {
+func (s *SubStoreKey) IsValid() bool {
 	if len(s.Name) == 0 {
 		return false
 	}
@@ -19,22 +19,22 @@ func (s *SortedSubStoreKey) IsValid() bool {
 	return true
 }
 
-// SortedSubStore define
-type SortedSubStore struct {
-	Name           string              `json:"name,omitempty"`
-	TTL            int                 `json:"ttl"`
-	SortedKeyCount int                 `json:"sortedKeyCount"`
-	TimeIndex      int                 `json:"timeIndex"`
-	Keys           []SortedSubStoreKey `json:"keys"`
+// SubStore define
+type SubStore struct {
+	Name           string        `json:"name,omitempty"`
+	TTL            int           `json:"ttl"`
+	SortedKeyCount int           `json:"sortedKeyCount"`
+	TimeIndex      int           `json:"timeIndex"`
+	Keys           []SubStoreKey `json:"keys"`
 }
 
-// NewSortedSubStore create a new sorted sub store
-func NewSortedSubStore(name string,
+// NewSubStore create a new sorted sub store
+func NewSubStore(name string,
 	ttl int,
 	sortedKeyCount int,
 	timeIndex int,
-	keys []SortedSubStoreKey) *SortedSubStore {
-	sss := &SortedSubStore{
+	keys []SubStoreKey) *SubStore {
+	sss := &SubStore{
 		Name:           name,
 		TTL:            ttl,
 		SortedKeyCount: sortedKeyCount,
@@ -48,7 +48,7 @@ func NewSortedSubStore(name string,
 }
 
 // IsValid ...
-func (s *SortedSubStore) IsValid() bool {
+func (s *SubStore) IsValid() bool {
 	if s.SortedKeyCount <= 0 || s.SortedKeyCount >= len(s.Keys) {
 		return false
 	}
