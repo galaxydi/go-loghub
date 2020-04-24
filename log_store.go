@@ -27,6 +27,8 @@ type LogStore struct {
 	AutoSplit     bool   `json:"autoSplit"`
 	MaxSplitShard int    `json:"maxSplitShard"`
 	AppendMeta    bool   `json:"appendMeta"`
+	ArchiveSecons int    `json:"archiveSeconds"`
+	TelemetryType string `json:"telemetryType"`
 
 	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`

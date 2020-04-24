@@ -17,6 +17,15 @@ func (c *Client) ListLogStore(project string) ([]string, error) {
 	return proj.ListLogStore()
 }
 
+// ListLogStoreV2 list logstores with params :
+//                offset: start offset
+//                size: max return size
+//                telemetryType : telemetry type filter
+func (c *Client) ListLogStoreV2(project string, offset, size int, telemetryType string) ([]string, error) {
+	proj := convert(c, project)
+	return proj.ListLogStoreV2(offset, size, telemetryType)
+}
+
 // GetLogStore returns logstore according by logstore name.
 func (c *Client) GetLogStore(project string, logstore string) (*LogStore, error) {
 	proj := convert(c, project)

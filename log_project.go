@@ -124,6 +124,35 @@ func (p *LogProject) ListLogStore() ([]string, error) {
 	return storeNames, nil
 }
 
+// ListLogStoreV2 ...
+func (p *LogProject) ListLogStoreV2(offset, size int, telemetryType string) ([]string, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/logstores?offset=%d&size=%d&telemetryType=%s", offset, size, telemetryType)
+	r, err := request(p, "GET", uri, h, nil)
+	if err != nil {
+		return nil, NewClientError(err)
+	}
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, err
+	}
+
+	type Body struct {
+		Count     int
+		LogStores []string
+	}
+	body := &Body{}
+	json.Unmarshal(buf, body)
+	storeNames := body.LogStores
+	return storeNames, nil
+}
+
 // GetLogStore returns logstore according by logstore name.
 func (p *LogProject) GetLogStore(name string) (*LogStore, error) {
 	h := map[string]string{
