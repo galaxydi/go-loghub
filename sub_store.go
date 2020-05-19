@@ -52,7 +52,7 @@ func (s *SubStore) IsValid() bool {
 	if s.SortedKeyCount <= 0 || s.SortedKeyCount >= len(s.Keys) {
 		return false
 	}
-	if s.TimeIndex < 0 || s.TimeIndex <= s.SortedKeyCount {
+	if s.TimeIndex >= len(s.Keys) || s.TimeIndex < s.SortedKeyCount {
 		return false
 	}
 	if s.TTL <= 0 || s.TTL > 3650 {
