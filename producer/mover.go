@@ -1,14 +1,16 @@
 package producer
 
 import (
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"sync"
 	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"go.uber.org/atomic"
 )
 
 type Mover struct {
-	moverShutDownFlag bool
+	moverShutDownFlag *atomic.Bool
 	retryQueue        *RetryQueue
 	ioWorker          *IoWorker
 	logAccumulator    *LogAccumulator
@@ -18,7 +20,7 @@ type Mover struct {
 
 func initMover(logAccumulator *LogAccumulator, retryQueue *RetryQueue, ioWorker *IoWorker, logger log.Logger, threadPool *IoThreadPool) *Mover {
 	mover := &Mover{
-		moverShutDownFlag: false,
+		moverShutDownFlag: atomic.NewBool(false),
 		retryQueue:        retryQueue,
 		ioWorker:          ioWorker,
 		logAccumulator:    logAccumulator,
@@ -43,7 +45,7 @@ func (mover *Mover) sendToServer(key interface{}, batch *ProducerBatch, config *
 
 func (mover *Mover) run(moverWaitGroup *sync.WaitGroup, config *ProducerConfig) {
 	defer moverWaitGroup.Done()
-	for !mover.moverShutDownFlag {
+	for !mover.moverShutDownFlag.Load() {
 		sleepMs := config.LingerMs
 		mapCount := 0
 		mover.logAccumulator.logGroupData.Range(func(key, value interface{}) bool {
@@ -66,7 +68,7 @@ func (mover *Mover) run(moverWaitGroup *sync.WaitGroup, config *ProducerConfig) 
 			sleepMs = config.LingerMs
 		}
 
-		retryProducerBatchList := mover.retryQueue.getRetryBatch(mover.moverShutDownFlag)
+		retryProducerBatchList := mover.retryQueue.getRetryBatch(mover.moverShutDownFlag.Load())
 		if retryProducerBatchList == nil {
 			// If there is nothing to send in the retry queue, just wait for the minimum time that was given to me last time.
 			time.Sleep(time.Duration(sleepMs) * time.Millisecond)
@@ -84,7 +86,7 @@ func (mover *Mover) run(moverWaitGroup *sync.WaitGroup, config *ProducerConfig) 
 		return true
 	})
 
-	producerBatchList := mover.retryQueue.getRetryBatch(mover.moverShutDownFlag)
+	producerBatchList := mover.retryQueue.getRetryBatch(mover.moverShutDownFlag.Load())
 	count := len(producerBatchList)
 	for i := 0; i < count; i++ {
 		mover.threadPool.addTask(producerBatchList[i])

@@ -2,12 +2,14 @@ package producer
 
 import (
 	"errors"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	uberatomic "go.uber.org/atomic"
 )
 
 type LogAccumulator struct {
@@ -15,7 +17,7 @@ type LogAccumulator struct {
 	logGroupData   sync.Map //map[string]*ProducerBatch,
 	producerConfig *ProducerConfig
 	ioWorker       *IoWorker
-	shutDownFlag   bool
+	shutDownFlag   *uberatomic.Bool
 	logger         log.Logger
 	threadPool     *IoThreadPool
 }
@@ -24,7 +26,7 @@ func initLogAccumulator(config *ProducerConfig, ioWorker *IoWorker, logger log.L
 	return &LogAccumulator{
 		producerConfig: config,
 		ioWorker:       ioWorker,
-		shutDownFlag:   false,
+		shutDownFlag:   uberatomic.NewBool(false),
 		logger:         logger,
 		threadPool:     threadPool,
 	}
@@ -54,7 +56,7 @@ func (logAccumulator *LogAccumulator) addLogToProducerBatch(project, logstore, s
 	logData interface{}, callback CallBack) error {
 	defer logAccumulator.lock.Unlock()
 	logAccumulator.lock.Lock()
-	if logAccumulator.shutDownFlag {
+	if logAccumulator.shutDownFlag.Load() {
 		level.Warn(logAccumulator.logger).Log("msg", "Producer has started and shut down and cannot write to new logs")
 		return errors.New("Producer has started and shut down and cannot write to new logs")
 	}

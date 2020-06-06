@@ -9,6 +9,7 @@ import (
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	uberatomic "go.uber.org/atomic"
 )
 
 type CallBack interface {
@@ -20,7 +21,7 @@ type IoWorker struct {
 	taskCount              int64
 	client                 sls.ClientInterface
 	retryQueue             *RetryQueue
-	retryQueueShutDownFlag bool
+	retryQueueShutDownFlag *uberatomic.Bool
 	logger                 log.Logger
 	maxIoWorker            chan int64
 	noRetryStatusCodeMap   map[int]*string
@@ -31,7 +32,7 @@ func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log
 		client:                 client,
 		retryQueue:             retryQueue,
 		taskCount:              0,
-		retryQueueShutDownFlag: false,
+		retryQueueShutDownFlag: uberatomic.NewBool(false),
 		logger:                 logger,
 		maxIoWorker:            make(chan int64, maxIoWorkerCount),
 		noRetryStatusCodeMap:   errorStatusMap,
@@ -63,7 +64,7 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 			}
 		}
 	} else {
-		if ioWorker.retryQueueShutDownFlag {
+		if ioWorker.retryQueueShutDownFlag.Load() {
 			if len(producerBatch.callBackList) > 0 {
 				for _, callBack := range producerBatch.callBackList {
 					callBack.Fail(producerBatch.result)

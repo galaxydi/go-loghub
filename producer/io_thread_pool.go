@@ -7,10 +7,11 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"go.uber.org/atomic"
 )
 
 type IoThreadPool struct {
-	threadPoolShutDownFlag bool
+	threadPoolShutDownFlag *atomic.Bool
 	queue                  *list.List
 	lock                   sync.RWMutex
 	ioworker               *IoWorker
@@ -19,7 +20,7 @@ type IoThreadPool struct {
 
 func initIoThreadPool(ioworker *IoWorker, logger log.Logger) *IoThreadPool {
 	return &IoThreadPool{
-		threadPoolShutDownFlag: false,
+		threadPoolShutDownFlag: atomic.NewBool(false),
 		queue:                  list.New(),
 		ioworker:               ioworker,
 		logger:                 logger,
@@ -56,7 +57,7 @@ func (threadPool *IoThreadPool) start(ioWorkerWaitGroup *sync.WaitGroup, ioThrea
 				go threadPool.ioworker.sendToServer(threadPool.popTask(), ioWorkerWaitGroup)
 			}
 		} else {
-			if !threadPool.threadPoolShutDownFlag {
+			if !threadPool.threadPoolShutDownFlag.Load() {
 				time.Sleep(100 * time.Millisecond)
 			} else {
 				level.Info(threadPool.logger).Log("msg", "All cache tasks in the thread pool have been successfully sent")

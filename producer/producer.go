@@ -244,7 +244,7 @@ func (producer *Producer) Close(timeoutMs int64) error {
 	startCloseTime := time.Now()
 	producer.sendCloseProdcerSignal()
 	producer.moverWaitGroup.Wait()
-	producer.threadPool.threadPoolShutDownFlag = true
+	producer.threadPool.threadPoolShutDownFlag.Store(true)
 	for {
 		if atomic.LoadInt64(&producer.mover.ioWorker.taskCount) == 0 && !producer.threadPool.hasTask() {
 			level.Info(producer.logger).Log("msg", "All groutines of producer have been shutdown")
@@ -262,7 +262,7 @@ func (producer *Producer) Close(timeoutMs int64) error {
 func (producer *Producer) SafeClose() {
 	producer.sendCloseProdcerSignal()
 	producer.moverWaitGroup.Wait()
-	producer.threadPool.threadPoolShutDownFlag = true
+	producer.threadPool.threadPoolShutDownFlag.Store(true)
 	producer.ioThreadPoolWaitGroup.Wait()
 	producer.ioWorkerWaitGroup.Wait()
 	level.Info(producer.logger).Log("msg", "Producer close finish")
@@ -271,9 +271,9 @@ func (producer *Producer) SafeClose() {
 func (producer *Producer) sendCloseProdcerSignal() {
 	level.Info(producer.logger).Log("msg", "producer start closing")
 	producer.closeStstokenChannel()
-	producer.mover.moverShutDownFlag = true
-	producer.logAccumulator.shutDownFlag = true
-	producer.mover.ioWorker.retryQueueShutDownFlag = true
+	producer.mover.moverShutDownFlag.Store(true)
+	producer.logAccumulator.shutDownFlag.Store(true)
+	producer.mover.ioWorker.retryQueueShutDownFlag.Store(true)
 }
 
 func (producer *Producer) closeStstokenChannel() {
