@@ -2,12 +2,13 @@ package producer
 
 import (
 	"errors"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 const (
@@ -240,23 +241,20 @@ func (producer *Producer) Start() {
 
 // Limited closing transfer parameter nil, safe closing transfer timeout time, timeout Ms parameter in milliseconds
 func (producer *Producer) Close(timeoutMs int64) error {
-	startCloseTime := time.Now().Unix()
+	startCloseTime := time.Now()
 	producer.sendCloseProdcerSignal()
 	producer.moverWaitGroup.Wait()
 	producer.threadPool.threadPoolShutDownFlag = true
 	for {
-		taskCount := atomic.LoadInt64(&producer.mover.ioWorker.taskCount)
-		if taskCount != 0 && time.Now().Unix()-startCloseTime <= timeoutMs {
-			time.Sleep(time.Second)
-		} else if taskCount == 0 && len(producer.threadPool.queue) == 0 {
-			level.Info(producer.logger).Log("msg", "All groutines of producee have been shut down")
+		if atomic.LoadInt64(&producer.mover.ioWorker.taskCount) == 0 && !producer.threadPool.hasTask() {
+			level.Info(producer.logger).Log("msg", "All groutines of producer have been shutdown")
 			return nil
-		} else if time.Now().Unix()-startCloseTime > timeoutMs {
-			level.Warn(producer.logger).Log("msg", "The producer timeout closes, and some of the cached data may not be sent properly")
-			return errors.New(IllegalStateException)
-		} else {
-			time.Sleep(time.Second)
 		}
+		if time.Since(startCloseTime) > time.Duration(timeoutMs)*time.Millisecond {
+			level.Warn(producer.logger).Log("msg", "The producer timeout closes, and some of the cached data may not be sent properly")
+			return errors.New(TimeoutExecption)
+		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 }

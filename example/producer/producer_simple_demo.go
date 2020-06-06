@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-log-go-sdk/producer"
 	"os"
 	"os/signal"
 	"sync"
 	"time"
+
+	"github.com/aliyun/aliyun-log-go-sdk/producer"
 )
 
 func main() {
@@ -38,6 +39,6 @@ func main() {
 	fmt.Println("Send completion")
 	if _, ok := <-ch; ok {
 		fmt.Println("Get the shutdown signal and start to shut down")
-		producerInstance.Close(60)
+		producerInstance.Close(60000)
 	}
 }

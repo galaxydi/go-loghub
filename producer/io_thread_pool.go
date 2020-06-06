@@ -1,15 +1,17 @@
 package producer
 
 import (
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	"container/list"
 	"sync"
 	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 )
 
 type IoThreadPool struct {
 	threadPoolShutDownFlag bool
-	queue                  []*ProducerBatch
+	queue                  *list.List
 	lock                   sync.RWMutex
 	ioworker               *IoWorker
 	logger                 log.Logger
@@ -18,7 +20,7 @@ type IoThreadPool struct {
 func initIoThreadPool(ioworker *IoWorker, logger log.Logger) *IoThreadPool {
 	return &IoThreadPool{
 		threadPoolShutDownFlag: false,
-		queue:                  []*ProducerBatch{},
+		queue:                  list.New(),
 		ioworker:               ioworker,
 		logger:                 logger,
 	}
@@ -27,21 +29,27 @@ func initIoThreadPool(ioworker *IoWorker, logger log.Logger) *IoThreadPool {
 func (threadPool *IoThreadPool) addTask(batch *ProducerBatch) {
 	defer threadPool.lock.Unlock()
 	threadPool.lock.Lock()
-	threadPool.queue = append(threadPool.queue, batch)
+	threadPool.queue.PushBack(batch)
 }
 
 func (threadPool *IoThreadPool) popTask() *ProducerBatch {
 	defer threadPool.lock.Unlock()
 	threadPool.lock.Lock()
-	batch := threadPool.queue[0]
-	threadPool.queue = threadPool.queue[1:]
-	return batch
+	ele := threadPool.queue.Front()
+	threadPool.queue.Remove(ele)
+	return ele.Value.(*ProducerBatch)
+}
+
+func (threadPool *IoThreadPool) hasTask() bool {
+	defer threadPool.lock.RUnlock()
+	threadPool.lock.RLock()
+	return threadPool.queue.Len() > 0
 }
 
 func (threadPool *IoThreadPool) start(ioWorkerWaitGroup *sync.WaitGroup, ioThreadPoolwait *sync.WaitGroup) {
 	defer ioThreadPoolwait.Done()
 	for {
-		if len(threadPool.queue) > 0 {
+		if threadPool.hasTask() {
 			select {
 			case threadPool.ioworker.maxIoWorker <- 1:
 				ioWorkerWaitGroup.Add(1)
