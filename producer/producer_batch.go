@@ -1,13 +1,15 @@
 package producer
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/gogo/protobuf/proto"
 	"sync"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/gogo/protobuf/proto"
 )
 
 type ProducerBatch struct {
+	totalDataSize        int64
 	lock                 sync.RWMutex
 	logGroup             *sls.LogGroup
 	logGroupSize         int
@@ -24,7 +26,6 @@ type ProducerBatch struct {
 	shardHash            *string
 	result               *Result
 	maxReservedAttempts  int
-	totalDataSize        int64
 }
 
 func initProducerBatch(logData interface{}, callBackFunc CallBack, project, logstore, logTopic, logSource, shardHash string, config *ProducerConfig) *ProducerBatch {
