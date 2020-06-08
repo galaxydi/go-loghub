@@ -66,7 +66,7 @@ for i:=0;i<10000;i++ {
 }
 ```
 
-producer中提供了GenerateLog方法供用户生成可以投递到LogHub的日志实例，但是因为每次sendLog接口调用都要通过GenerateLog方法序列化生成日志，性能非常低，推荐用户自己使用go sdk中原生的创建sls.Log的接口和在调用SendLog接口之前把。
+producer中提供了GenerateLog方法供用户生成可以投递到LogHub的日志实例。GenerateLog方法中使用了proto去对数据进行了序列，效率较低，推荐用户使用原生的sls.Log接口去创建日志，该方法仅供测试调试使用。
 
 **4.关闭producer**
 
