@@ -44,6 +44,12 @@ func TestAdjustHash(t *testing.T) {
 	}
 }
 
+func Benchmark_AdjustHash(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		AdjustHash("192.168.0.2", 256)
+	}
+}
+
 func TestBitCount(t *testing.T) {
 	type args struct {
 		buckets int

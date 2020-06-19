@@ -9,8 +9,54 @@ import (
 	"strings"
 )
 
-func AdjustHash(shardhash string, buckets int) (string, error) {
+const zero32Str = "00000000000000000000000000000000"
 
+func toHex(x byte) byte {
+	if x < 10 {
+		return '0' + x
+	}
+	return 'a' - 10 + x
+}
+
+func getBitValue(val byte, bits int) byte {
+	if bits >= 16 {
+		return val
+	}
+	if bits >= 8 {
+		return val & (0xf - 1)
+	}
+	if bits >= 4 {
+		return val & (0xf - 3)
+	}
+	if bits >= 2 {
+		return val & (0xf - 7)
+	}
+	return val & (0xf - 15)
+}
+
+func AdjustHash(shardhash string, buckets int) (string, error) {
+	h := md5.New()
+	h.Write([]byte(shardhash))
+	cipherStr := h.Sum(nil)
+
+	var destBuf strings.Builder
+	destBuf.Grow(32)
+	i := 0
+
+	for buckets > 0 && i < len(cipherStr) {
+		if (i & 0x01) == 0 {
+			destBuf.WriteByte(toHex(getBitValue(cipherStr[i>>1]>>4, buckets)))
+		} else {
+			destBuf.WriteByte(toHex(getBitValue(cipherStr[i>>1]&0xF, buckets)))
+		}
+		buckets = buckets >> 4
+		i++
+	}
+	destBuf.WriteString(zero32Str[0 : 32-i])
+	return destBuf.String(), nil
+}
+
+func AdjustHashOld(shardhash string, buckets int) (string, error) {
 	res := Md5ToBin(ToMd5(shardhash))
 	x, err := BitCount(buckets)
 	if err != nil {
