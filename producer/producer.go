@@ -27,7 +27,6 @@ type Producer struct {
 	moverWaitGroup        *sync.WaitGroup
 	ioWorkerWaitGroup     *sync.WaitGroup
 	ioThreadPoolWaitGroup *sync.WaitGroup
-	adjustShardHash       bool
 	buckets               int
 	logger                log.Logger
 }
@@ -110,7 +109,7 @@ func (producer *Producer) HashSendLogWithCallBack(project, logstore, shardHash, 
 		return err
 	}
 	var newShardHash string
-	if producer.adjustShardHash {
+	if producer.producerConfig.AdjustShargHash {
 		newShardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
@@ -126,7 +125,7 @@ func (producer *Producer) HashSendLogListWithCallBack(project, logstore, shardHa
 		return err
 	}
 	var newShardHash string
-	if producer.adjustShardHash {
+	if producer.producerConfig.AdjustShargHash {
 		newShardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
@@ -159,7 +158,7 @@ func (producer *Producer) HashSendLog(project, logstore, shardHash, topic, sourc
 		return err
 	}
 	var newShardHash string
-	if producer.adjustShardHash {
+	if producer.producerConfig.AdjustShargHash {
 		newShardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
@@ -174,7 +173,7 @@ func (producer *Producer) HashSendLogList(project, logstore, shardHash, topic, s
 		return err
 	}
 	var newShardHash string
-	if producer.adjustShardHash {
+	if producer.producerConfig.AdjustShargHash {
 		newShardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
