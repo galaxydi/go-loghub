@@ -7,6 +7,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 // README :
@@ -28,7 +29,7 @@ func main() {
 
 	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
 	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
 		level.Info(consumerWorker.Logger).Log("msg", "get stop signal, start to stop consumer worker", "consumer worker name", option.ConsumerName)
