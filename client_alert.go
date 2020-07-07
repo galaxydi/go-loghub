@@ -30,6 +30,7 @@ type Alert struct {
 	DisplayName      string              `json:"displayName"`
 	Description      string              `json:"description"`
 	State            string              `json:"state"`
+	Status           string              `json:"status"`
 	Configuration    *AlertConfiguration `json:"configuration"`
 	Schedule         *Schedule           `json:"schedule"`
 	CreateTime       int64               `json:"createTime,omitempty"`
@@ -42,6 +43,7 @@ func (alert *Alert) MarshalJSON() ([]byte, error) {
 		"displayName":   alert.DisplayName,
 		"description":   alert.Description,
 		"state":         alert.State,
+		"status":        alert.Status,
 		"configuration": alert.Configuration,
 		"schedule":      alert.Schedule,
 		"type":          "Alert",
