@@ -2,12 +2,13 @@ package main
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-log-go-sdk/consumer"
-	"github.com/go-kit/kit/log/level"
 	"os"
 	"os/signal"
 	"syscall"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	consumerLibrary "github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"github.com/go-kit/kit/log/level"
 )
 
 // README :
@@ -24,7 +25,7 @@ func main() {
 		ConsumerName:      "",
 		// This options is used for initialization, will be ignored once consumer group is created and each shard has been started to be consumed.
 		// Could be "begin", "end", "specific time format in time stamp", it's log receiving time.
-		CursorPosition: consumerLibrary.BEGIN_CURSOR,
+		CursorPosition: consumerLibrary.END_CURSOR,
 	}
 
 	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
