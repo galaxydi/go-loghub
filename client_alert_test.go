@@ -79,7 +79,7 @@ func (s *AlertTestSuite) createAlert() error {
 		DisplayName: "AlertTest",
 		Description: "Description for alert",
 		Schedule: &Schedule{
-			Type:     "FixedRate",
+			Type:     ScheduleTypeFixedRate,
 			Interval: "1h",
 		},
 		Configuration: &AlertConfiguration{
