@@ -1,19 +1,21 @@
 package consumerLibrary
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"sync"
 	"time"
+
+	"github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"go.uber.org/atomic"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 type ConsumerWorker struct {
 	consumerHeatBeat   *ConsumerHeatBeat
 	client             *ConsumerClient
-	workerShutDownFlag bool
+	workerShutDownFlag *atomic.Bool
 	shardConsumer      map[int]*ShardConsumerWorker
 	do                 func(shard int, logGroup *sls.LogGroupList) string
 	waitGroup          sync.WaitGroup
@@ -27,7 +29,7 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 	consumerWorker := &ConsumerWorker{
 		consumerHeatBeat:   consumerHeatBeat,
 		client:             consumerClient,
-		workerShutDownFlag: false,
+		workerShutDownFlag: atomic.NewBool(false),
 		shardConsumer:      make(map[int]*ShardConsumerWorker),
 		do:                 do,
 		Logger:             logger,
@@ -43,7 +45,7 @@ func (consumerWorker *ConsumerWorker) Start() {
 
 func (consumerWorker *ConsumerWorker) StopAndWait() {
 	level.Info(consumerWorker.Logger).Log("msg", "*** try to exit ***")
-	consumerWorker.workerShutDownFlag = true
+	consumerWorker.workerShutDownFlag.Store(true)
 	consumerWorker.consumerHeatBeat.shutDownHeart()
 	consumerWorker.waitGroup.Wait()
 	level.Info(consumerWorker.Logger).Log("msg", "consumer worker %v stopped", "consumer name", consumerWorker.client.option.ConsumerName)
@@ -54,12 +56,12 @@ func (consumerWorker *ConsumerWorker) run() {
 	defer consumerWorker.waitGroup.Done()
 	go consumerWorker.consumerHeatBeat.heartBeatRun()
 
-	for !consumerWorker.workerShutDownFlag {
+	for !consumerWorker.workerShutDownFlag.Load() {
 		heldShards := consumerWorker.consumerHeatBeat.getHeldShards()
 		lastFetchTime := time.Now().UnixNano() / 1000 / 1000
 
 		for _, shard := range heldShards {
-			if consumerWorker.workerShutDownFlag {
+			if consumerWorker.workerShutDownFlag.Load() {
 				break
 			}
 			shardConsumer := consumerWorker.getShardConsumer(shard)
@@ -70,7 +72,7 @@ func (consumerWorker *ConsumerWorker) run() {
 			}
 		}
 		consumerWorker.cleanShardConsumer(heldShards)
-		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag)
+		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag.Load())
 
 	}
 	level.Info(consumerWorker.Logger).Log("msg", "consumer worker try to cleanup consumers", "worker name", consumerWorker.client.option.ConsumerName)
