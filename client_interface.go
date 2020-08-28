@@ -225,4 +225,13 @@ type ClientInterface interface {
 	DisableAlert(project string, alertName string) error
 	EnableAlert(project string, alertName string) error
 	ListAlert(project, alertName, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error)
+
+	// #################### Consumer Operations #####################
+	CreateConsumerGroup(project, logstore string, cg ConsumerGroup) (err error)
+	UpdateConsumerGroup(project, logstore string, cg ConsumerGroup) (err error)
+	DeleteConsumerGroup(project, logstore string, cgName string) (err error)
+	ListConsumerGroup(project, logstore string) (cgList []*ConsumerGroup, err error)
+	HeartBeat(project, logstore string, cgName, consumer string, heartBeatShardIDs []int) (shardIDs []int, err error)
+	UpdateCheckpoint(project, logstore string, cgName string, consumer string, shardID int, checkpoint string, forceSuccess bool) (err error)
+	GetCheckpoint(project, logstore string, cgName string) (checkPointList []*ConsumerGroupCheckPoint, err error)
 }
