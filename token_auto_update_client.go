@@ -155,6 +155,17 @@ func (c *TokenAutoUpdateClient) CreateProject(name, description string) (prj *Lo
 	return
 }
 
+// UpdateProject create a new loghub project.
+func (c *TokenAutoUpdateClient) UpdateProject(name, description string) (prj *LogProject, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		prj, err = c.logClient.UpdateProject(name, description)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetProject(name string) (prj *LogProject, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		prj, err = c.logClient.GetProject(name)
@@ -1054,6 +1065,44 @@ func (c *TokenAutoUpdateClient) UpdateCheckpoint(project, logstore string, cgNam
 func (c *TokenAutoUpdateClient) GetCheckpoint(project, logstore string, cgName string) (checkPointList []*ConsumerGroupCheckPoint, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		checkPointList, err = c.logClient.GetCheckpoint(project, logstore, cgName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// ####################### Resource Tags API ######################
+// TagResources tag specific resource
+func (c *TokenAutoUpdateClient) TagResources(project string, tags *ResourceTags) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.TagResources(project, tags)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// UnTagResources untag specific resource
+func (c *TokenAutoUpdateClient) UnTagResources(project string, tags *ResourceUnTags) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UnTagResources(project, tags)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+// ListTagResources list rag resources
+func (c *TokenAutoUpdateClient) ListTagResources(project string,
+	resourceType string,
+	resourceIDs []string,
+	tags []ResourceFilterTag,
+	nextToken string) (respTags []*ResourceTagResponse, respNextToken string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		respTags, respNextToken, err = c.logClient.ListTagResources(project, resourceType, resourceIDs, tags, nextToken)
 		if !c.processError(err) {
 			return
 		}

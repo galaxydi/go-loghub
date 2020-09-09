@@ -50,6 +50,8 @@ type ClientInterface interface {
 	// CreateProject create a new loghub project.
 	CreateProject(name, description string) (*LogProject, error)
 	GetProject(name string) (*LogProject, error)
+	// UpdateProject create a new loghub project.
+	UpdateProject(name, description string) (*LogProject, error)
 	// ListProject list all projects in specific region
 	// the region is related with the client's endpoint
 	ListProject() (projectNames []string, err error)
@@ -234,4 +236,16 @@ type ClientInterface interface {
 	HeartBeat(project, logstore string, cgName, consumer string, heartBeatShardIDs []int) (shardIDs []int, err error)
 	UpdateCheckpoint(project, logstore string, cgName string, consumer string, shardID int, checkpoint string, forceSuccess bool) (err error)
 	GetCheckpoint(project, logstore string, cgName string) (checkPointList []*ConsumerGroupCheckPoint, err error)
+
+	// ####################### Resource Tags API ######################
+	// TagResources tag specific resource
+	TagResources(project string, tags *ResourceTags) error
+	// UnTagResources untag specific resource
+	UnTagResources(project string, tags *ResourceUnTags) error
+	// ListTagResources list rag resources
+	ListTagResources(project string,
+		resourceType string,
+		resourceIDs []string,
+		tags []ResourceFilterTag,
+		nextToken string) (respTags []*ResourceTagResponse, respNextToken string, err error)
 }
