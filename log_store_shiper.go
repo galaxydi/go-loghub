@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 )
 
 // CreateShipper ...
@@ -86,4 +87,37 @@ func (s *LogStore) GetShipper(shipperName string) (*Shipper, error) {
 		return nil, NewBadResponseError(string(buf), r.Header, r.StatusCode)
 	}
 	return shipper, nil
+}
+
+// ListShipper ...
+func (s *LogStore) ListShipper() ([]string, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+	}
+
+	uri := fmt.Sprintf("/logstores/%s/shipper", s.Name)
+	r, err := request(s.project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+
+	buf, err := ioutil.ReadAll(r.Body)
+	body1 := string(buf)
+	fmt.Println(body1)
+
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		json.Unmarshal(buf, err)
+		return nil, err
+	}
+	type Body struct{
+		Count int
+		Shipper []string
+		Total int
+	}
+
+	body := &Body{}
+	json.Unmarshal(buf, body)
+	return body.Shipper, nil
 }
