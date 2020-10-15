@@ -719,6 +719,17 @@ func (c *TokenAutoUpdateClient) ListDashboard(project string, dashboardName stri
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) ListDashboardV2(project string, dashboardName string, offset, size int) (dashboardList []string, dashboardItems []ResponseDashboardItem, count, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		dashboardList, dashboardItems, count, total, err = c.logClient.ListDashboardV2(project, dashboardName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetDashboard(project, name string) (dashboard *Dashboard, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		dashboard, err = c.logClient.GetDashboard(project, name)
@@ -835,6 +846,16 @@ func (c *TokenAutoUpdateClient) GetSavedSearch(project string, savedSearchName s
 func (c *TokenAutoUpdateClient) ListSavedSearch(project string, savedSearchName string, offset, size int) (savedSearches []string, total int, count int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		savedSearches, total, count, err = c.logClient.ListSavedSearch(project, savedSearchName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListSavedSearchV2(project string, savedSearchName string, offset, size int) (savedSearches []string, savedsearchItems []ResponseSavedSearchItem, total int, count int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		savedSearches, savedsearchItems, total, count, err = c.logClient.ListSavedSearchV2(project, savedSearchName, offset, size)
 		if !c.processError(err) {
 			return
 		}

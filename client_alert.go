@@ -17,6 +17,11 @@ type SavedSearch struct {
 	DisplayName     string `json:"displayName"`
 }
 
+type ResponseSavedSearchItem struct {
+	SavedSearchName string `json:"savedsearchName"`
+	DisplayName     string `json:"displayName"`
+}
+
 const (
 	NotificationTypeSMS           = "SMS"
 	NotificationTypeWebhook       = "Webhook"
@@ -201,6 +206,38 @@ func (c *Client) ListSavedSearch(project string, savedSearchName string, offset,
 		err = NewClientError(err)
 	}
 	return listSavedSearch.Savedsearches, listSavedSearch.Total, listSavedSearch.Count, err
+}
+
+
+func (c *Client) ListSavedSearchV2(project string, savedSearchName string, offset, size int) (savedSearches []string, savedsearchItems []ResponseSavedSearchItem, total int, count int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+		"savedsearchName":   savedSearchName,
+		"offset":            strconv.Itoa(offset),
+		"size":              strconv.Itoa(size),
+	}
+
+	uri := "/savedsearches"
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, nil,0, 0, err
+	}
+	defer r.Body.Close()
+
+	type ListSavedSearch struct {
+		Total         int      `json:"total"`
+		Count         int      `json:"count"`
+		Savedsearches []string `json:"savedsearches"`
+		SavedsearchItems []ResponseSavedSearchItem `json:"savedsearchItems"`
+	}
+
+	buf, _ := ioutil.ReadAll(r.Body)
+	listSavedSearch := &ListSavedSearch{}
+	if err = json.Unmarshal(buf, listSavedSearch); err != nil {
+		err = NewClientError(err)
+	}
+	return listSavedSearch.Savedsearches, listSavedSearch.SavedsearchItems, listSavedSearch.Total, listSavedSearch.Count, err
 }
 
 func (c *Client) CreateAlert(project string, alert *Alert) error {
