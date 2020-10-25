@@ -22,7 +22,7 @@ Aliyun LOG Go Producer 是一个易于使用且高度可配置的 golang类库�
 2.克隆代码到创建的aliyun目录下 (源码地址：[aliyun-go-consumer-library](https://github.com/aliyun/aliyun-log-go-sdk))。
 
 ```shell
-git clone git@github.com:aliyun/aliyun-log-go-sdk.git
+git clone https://github.com/aliyun/aliyun-log-go-sdk.git
 ```
 
 3.安装google提供的序列化工具包到自己的GOPATH目录下面
