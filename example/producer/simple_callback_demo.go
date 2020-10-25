@@ -48,7 +48,7 @@ func main() {
 				// GenerateLog  is producer's function for generating SLS format logs
 				// GenerateLog has low performance, and native Log interface is the best choice for high performance.
 				log := producer.GenerateLog(uint32(time.Now().Unix()), map[string]string{"content": "test", "content2": fmt.Sprintf("%v", i)})
-				err := producerInstance.SendLogWithCallBack("project", "logstrore", "127.0.0.1", "topic", log, callBack)
+				err := producerInstance.SendLogWithCallBack("project", "logstrore", "topic", "127.0.0.1", log, callBack)
 				if err != nil {
 					fmt.Println(err)
 				}
