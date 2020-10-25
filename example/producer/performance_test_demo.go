@@ -32,7 +32,7 @@ func main() {
 	producerInstance.Start()
 	fmt.Println("start send logs")
 	for i := 0; i < 10; i++ {
-		go func() {
+		go func(id int) {
 			for i := 0; i < 200000000; i++ {
 				r := rand.Intn(200000000)
 				err := producerInstance.SendLog("project", "logstore", generateTopic(r), generateSource(r), getLog(keys))
@@ -41,8 +41,8 @@ func main() {
 					break
 				}
 			}
-			fmt.Println("All data in the queue has been sent, groutine id:", i)
-		}()
+			fmt.Println("All data in the queue has been sent, goroutine id:", id)
+		}(i)
 	}
 	if _, ok := <-ch; ok {
 		fmt.Println("Get the shutdown signal and start to shut down")
