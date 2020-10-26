@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"time"
 )
 
 type ETLJobV2 struct {
@@ -21,7 +22,7 @@ type ETLJobV2 struct {
 type ETLConfiguration struct {
 	AccessKeyId     string            `json:"accessKeyId"`
 	AccessKeySecret string            `json:"accessKeySecret"`
-	FromTime        int32             `json:"fromTime"`
+	FromTime        int64             `json:"fromTime"`
 	Logstore        string            `json:"logstore"`
 	Parameters      map[string]string `json:"parameters"`
 	RoleArn         string            `json:"roleArn"`
@@ -50,6 +51,44 @@ type ListETLResponse struct {
 	Count   int         `json:"count"`
 	Results []*ETLJobV2 `json:"results"`
 }
+
+
+func NewLogETLJobV2(endpoint, accessKeyId, accessKeySecret, logstore, name, project string) ETLJobV2 {
+	sink := ETLSink{
+		AccessKeyId:accessKeyId,
+		AccessKeySecret:accessKeySecret,
+		Endpoint:endpoint,
+		Logstore:logstore,
+		Name:name,
+		Project:project,
+	}
+	config := ETLConfiguration {
+		AccessKeyId:accessKeyId,
+		AccessKeySecret:accessKeySecret,
+		FromTime: time.Now().Unix(),
+		Script: "e_set('new','aliyun')",
+		Version:2,
+		Logstore:logstore,
+		ETLSinks:[]ETLSink{sink},
+		Parameters: map[string]string{},
+
+	}
+	schedule := ETLSchedule{
+		Type:"Resident",
+	}
+	etljob := ETLJobV2 {
+		Configuration:config,
+		DisplayName:"displayname",
+		Description:"go sdk case",
+		Name:name,
+		Schedule:schedule,
+		Type:"ETL",
+
+	}
+	return etljob
+}
+
+
 
 func (c *Client) CreateETL(project string, etljob ETLJobV2) error {
 	body, err := json.Marshal(etljob)

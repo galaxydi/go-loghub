@@ -49,7 +49,7 @@ func (s *ETLJobTestV2Suite) createETLJobV2() error {
 	config := ETLConfiguration{
 		AccessKeyId:     s.accessKeyID,
 		AccessKeySecret: s.accessKeySecret,
-		FromTime:        int32(time.Now().Unix()),
+		FromTime:        time.Now().Unix(),
 		Script:          "e_set('aliyun','new')",
 		Version:         2,
 		Logstore:        s.logstoreName,
