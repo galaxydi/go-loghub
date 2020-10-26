@@ -86,12 +86,13 @@ type AlertQuery struct {
 }
 
 type Notification struct {
-	Type       string   `json:"type"`
-	Content    string   `json:"content"`
-	EmailList  []string `json:"emailList,omitempty"`
-	Method     string   `json:"method,omitempty"`
-	MobileList []string `json:"mobileList,omitempty"`
-	ServiceUri string   `json:"serviceUri,omitempty"`
+	Type       string            `json:"type"`
+	Content    string            `json:"content"`
+	EmailList  []string          `json:"emailList,omitempty"`
+	Method     string            `json:"method,omitempty"`
+	MobileList []string          `json:"mobileList,omitempty"`
+	ServiceUri string            `json:"serviceUri,omitempty"`
+	Headers    map[string]string `json:"headers,omitempty"`
 }
 
 type Schedule struct {
@@ -208,7 +209,6 @@ func (c *Client) ListSavedSearch(project string, savedSearchName string, offset,
 	return listSavedSearch.Savedsearches, listSavedSearch.Total, listSavedSearch.Count, err
 }
 
-
 func (c *Client) ListSavedSearchV2(project string, savedSearchName string, offset, size int) (savedSearches []string, savedsearchItems []ResponseSavedSearchItem, total int, count int, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
@@ -221,14 +221,14 @@ func (c *Client) ListSavedSearchV2(project string, savedSearchName string, offse
 	uri := "/savedsearches"
 	r, err := c.request(project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, nil,0, 0, err
+		return nil, nil, 0, 0, err
 	}
 	defer r.Body.Close()
 
 	type ListSavedSearch struct {
-		Total         int      `json:"total"`
-		Count         int      `json:"count"`
-		Savedsearches []string `json:"savedsearches"`
+		Total            int                       `json:"total"`
+		Count            int                       `json:"count"`
+		Savedsearches    []string                  `json:"savedsearches"`
 		SavedsearchItems []ResponseSavedSearchItem `json:"savedsearchItems"`
 	}
 
