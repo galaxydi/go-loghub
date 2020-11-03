@@ -59,7 +59,7 @@ func (s *ETLJobTestV2Suite) createETLJobV2() error {
 	schedule := ETLSchedule{
 		Type: "Resident",
 	}
-	etljob := ETLJobV2{
+	etljob := ETL{
 		Configuration: config,
 		DisplayName:   "displayName",
 		Description:   "go sdk case",
@@ -116,17 +116,33 @@ func (s *ETLJobTestV2Suite) TestClient_ListETLJobV2() {
 func (s *ETLJobTestV2Suite) TestClient_StartStopETLJobV2() {
 	err := s.createETLJobV2()
 	s.Require().Nil(err)
-	etljob, err := s.client.GetETL(s.projectName, s.etlName)
-	s.Require().Equal("RUNNING", etljob.Status)
+	for {
+		etljob, err := s.client.GetETL(s.projectName, s.etlName)
+		s.Require().Nil(err)
+		time.Sleep(10 * time.Second)
+		if etljob.Status == "RUNNING" {
+			break
+		}
+	}
 
-	err = s.client.StopETL(s.projectName, s.etlName)
-	time.Sleep(time.Second * 120)
-	etljob, err = s.client.GetETL(s.projectName, s.etlName)
-	s.Require().Equal("STOPPED", etljob.Status)
+		err = s.client.StopETL(s.projectName, s.etlName)
+	for {
+		etljob, err := s.client.GetETL(s.projectName, s.etlName)
+		s.Require().Nil(err)
+		time.Sleep(10 * time.Second)
+		if etljob.Status == "STOPPED" {
+			break
+		}
+	}
+		err = s.client.StartETL(s.projectName, s.etlName)
+	for {
+		etljob, err := s.client.GetETL(s.projectName, s.etlName)
+		s.Require().Nil(err)
+		time.Sleep(10 * time.Second)
+		if etljob.Status == "RUNNING" {
+			break
+		}
+	}
 
-	err = s.client.StartETL(s.projectName, s.etlName)
-	time.Sleep(time.Second * 120)
-	etljob, err = s.client.GetETL(s.projectName, s.etlName)
-	s.Require().Equal("RUNNING", etljob.Status)
 
 }

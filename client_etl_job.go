@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-type ETLJobV2 struct {
+type ETL struct {
 	Configuration    ETLConfiguration `json:"configuration"`
 	Description      string           `json:"description"`
 	DisplayName      string           `json:"displayName"`
@@ -15,8 +15,8 @@ type ETLJobV2 struct {
 	Schedule         ETLSchedule      `json:"schedule"`
 	Type             string           `json:"type"`
 	Status           string           `json:"status"`
-	CreateTime       int32            `json:"createTime"`
-	LastModifiedTime int32            `json:"lastModifiedTime"`
+	CreateTime       int32            `json:"createTime,omitempty"`
+	LastModifiedTime int32            `json:"lastModifiedTime,omitempty"`
 }
 
 type ETLConfiguration struct {
@@ -25,7 +25,7 @@ type ETLConfiguration struct {
 	FromTime        int64             `json:"fromTime"`
 	Logstore        string            `json:"logstore"`
 	Parameters      map[string]string `json:"parameters"`
-	RoleArn         string            `json:"roleArn"`
+	RoleArn         string            `json:"roleArn,omitempty"`
 	Script          string            `json:"script"`
 	ToTime          int32             `json:"toTime"`
 	Version         int8              `json:"version"`
@@ -43,17 +43,17 @@ type ETLSink struct {
 	Logstore        string `json:"logstore"`
 	Name            string `json:"name"`
 	Project         string `json:"project"`
-	RoleArn         string `json:"roleArn"`
+	RoleArn         string `json:"roleArn,omitempty"`
 }
 
 type ListETLResponse struct {
 	Total   int         `json:"total"`
 	Count   int         `json:"count"`
-	Results []*ETLJobV2 `json:"results"`
+	Results []*ETL `json:"results"`
 }
 
 
-func NewLogETLJobV2(endpoint, accessKeyId, accessKeySecret, logstore, name, project string) ETLJobV2 {
+func NewETL(endpoint, accessKeyId, accessKeySecret, logstore, name, project string) ETL {
 	sink := ETLSink{
 		AccessKeyId:accessKeyId,
 		AccessKeySecret:accessKeySecret,
@@ -76,7 +76,7 @@ func NewLogETLJobV2(endpoint, accessKeyId, accessKeySecret, logstore, name, proj
 	schedule := ETLSchedule{
 		Type:"Resident",
 	}
-	etljob := ETLJobV2 {
+	etljob := ETL {
 		Configuration:config,
 		DisplayName:"displayname",
 		Description:"go sdk case",
@@ -90,7 +90,7 @@ func NewLogETLJobV2(endpoint, accessKeyId, accessKeySecret, logstore, name, proj
 
 
 
-func (c *Client) CreateETL(project string, etljob ETLJobV2) error {
+func (c *Client) CreateETL(project string, etljob ETL) error {
 	body, err := json.Marshal(etljob)
 	if err != nil {
 		return NewClientError(err)
@@ -109,7 +109,7 @@ func (c *Client) CreateETL(project string, etljob ETLJobV2) error {
 	return nil
 }
 
-func (c *Client) GetETL(project string, etlName string) (ETLJob *ETLJobV2, err error) {
+func (c *Client) GetETL(project string, etlName string) (ETLJob *ETL, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
@@ -121,14 +121,14 @@ func (c *Client) GetETL(project string, etlName string) (ETLJob *ETLJobV2, err e
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
-	etlJob := &ETLJobV2{}
+	etlJob := &ETL{}
 	if err = json.Unmarshal(buf, etlJob); err != nil {
 		err = NewClientError(err)
 	}
 	return etlJob, nil
 }
 
-func (c *Client) UpdateETL(project string, etljob ETLJobV2) error {
+func (c *Client) UpdateETL(project string, etljob ETL) error {
 	body, err := json.Marshal(etljob)
 	if err != nil {
 		return NewClientError(err)
