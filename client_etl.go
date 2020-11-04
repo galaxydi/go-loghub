@@ -9,7 +9,7 @@ import (
 
 type ETL struct {
 	Configuration    ETLConfiguration `json:"configuration"`
-	Description      string           `json:"description"`
+	Description      string           `json:"description,omitempty"`
 	DisplayName      string           `json:"displayName"`
 	Name             string           `json:"name"`
 	Schedule         ETLSchedule      `json:"schedule"`
@@ -22,12 +22,12 @@ type ETL struct {
 type ETLConfiguration struct {
 	AccessKeyId     string            `json:"accessKeyId"`
 	AccessKeySecret string            `json:"accessKeySecret"`
-	FromTime        int64             `json:"fromTime"`
+	FromTime        int64             `json:"fromTime,omitempty"`
 	Logstore        string            `json:"logstore"`
-	Parameters      map[string]string `json:"parameters"`
+	Parameters      map[string]string `json:"parameters,omitempty"`
 	RoleArn         string            `json:"roleArn,omitempty"`
 	Script          string            `json:"script"`
-	ToTime          int32             `json:"toTime"`
+	ToTime          int32             `json:"toTime,omitempty"`
 	Version         int8              `json:"version"`
 	ETLSinks        []ETLSink         `json:"sinks"`
 }
@@ -44,6 +44,7 @@ type ETLSink struct {
 	Name            string `json:"name"`
 	Project         string `json:"project"`
 	RoleArn         string `json:"roleArn,omitempty"`
+	Type            string `json:"type,omitempty"`
 }
 
 type ListETLResponse struct {
@@ -61,13 +62,14 @@ func NewETL(endpoint, accessKeyId, accessKeySecret, logstore, name, project stri
 		Logstore:logstore,
 		Name:name,
 		Project:project,
+		Type: ETLSinksType,
 	}
 	config := ETLConfiguration {
 		AccessKeyId:accessKeyId,
 		AccessKeySecret:accessKeySecret,
 		FromTime: time.Now().Unix(),
 		Script: "e_set('new','aliyun')",
-		Version:2,
+		Version:ETLVersion,
 		Logstore:logstore,
 		ETLSinks:[]ETLSink{sink},
 		Parameters: map[string]string{},
@@ -82,7 +84,7 @@ func NewETL(endpoint, accessKeyId, accessKeySecret, logstore, name, project stri
 		Description:"go sdk case",
 		Name:name,
 		Schedule:schedule,
-		Type:"ETL",
+		Type:ETLType,
 
 	}
 	return etljob

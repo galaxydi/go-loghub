@@ -2,6 +2,7 @@ package sls
 
 import "encoding/json"
 
+// This module is only used for function calculation.
 type ETLJob struct {
 	JobName        string          `json:"etlJobName"`
 	SourceConfig   *SourceConfig   `json:"sourceConfig"`
