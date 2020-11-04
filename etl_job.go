@@ -2,7 +2,7 @@ package sls
 
 import "encoding/json"
 
-// This module is only used for function calculation.
+// This module is only used in SLS Trigger for Aliyun FunctionCompute.
 type ETLJob struct {
 	JobName        string          `json:"etlJobName"`
 	SourceConfig   *SourceConfig   `json:"sourceConfig"`
