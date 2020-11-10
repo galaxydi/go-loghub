@@ -62,6 +62,6 @@ func process(shardId int, logGroupList *sls.LogGroupList) string {
 			fmt.Println(err)
 		}
 	}
-	fmt.Println("shardId %v processing works sucess", shardId)
+	fmt.Printf("shardId %v processing works sucess\n", shardId)
 	return ""
 }

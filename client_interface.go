@@ -184,6 +184,8 @@ type ClientInterface interface {
 	// GetLogs query logs with [from, to) time range
 	GetLogs(project, logstore string, topic string, from int64, to int64, queryExp string,
 		maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
+	GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
+		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
 
 	// #################### Index Operations #####################
 	// CreateIndex ...

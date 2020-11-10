@@ -32,6 +32,12 @@ type GetLogsResponse struct {
 	HasSQL   bool                `json:"hasSQL"`
 }
 
+// GetLogLinesResponse defines response from GetJsonLogs call
+type GetLogLinesResponse struct {
+	GetLogsResponse
+	Lines     []string  `json:"lines"`
+}
+
 func (resp *GetLogsResponse) IsComplete() bool {
 	return strings.ToLower(resp.Progress) == "complete"
 }
