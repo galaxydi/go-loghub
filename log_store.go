@@ -518,9 +518,9 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	return &getHistogramsResponse, nil
 }
 
-// GetJsonLogs query logs with [from, to) time range
+// getLogs query logs with [from, to) time range
 func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
-	maxLineNum int64, offset int64, reverse bool) ([]byte, *GetLogsResponse, error) {
+	maxLineNum int64, offset int64, reverse bool) (*http.Response, []byte, *GetLogsResponse, error) {
 
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
@@ -540,21 +540,22 @@ func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
 	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, nil, NewClientError(err)
+		return nil, nil, nil, NewClientError(err)
 	}
 	defer r.Body.Close()
+
 	body, _ := ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
 		if jErr := json.Unmarshal(body, err); jErr != nil {
-			return nil, nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
+			return nil, nil, nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 		}
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	var contents string
 	if _, ok := r.Header[GetLogsQueryInfo]; ok {
@@ -567,7 +568,7 @@ func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
 		hasSQL = true
 	}
 
-	return body, &GetLogsResponse{
+	return r, body, &GetLogsResponse{
 		Progress: r.Header[ProgressHeader][0],
 		Count:    count,
 		Contents: contents,
@@ -579,14 +580,14 @@ func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
 func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
 
-	b, logRsp, err := s.getLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
+	rsp, b, logRsp, err := s.getLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
 	if err != nil {
 		return nil, err
 	}
 	var logs []string
 	err = json.Unmarshal(b, &logs)
 	if err != nil {
-		return nil, err
+		return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
 	}
 
 	lineRsp := GetLogLinesResponse{
@@ -601,12 +602,12 @@ func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp stri
 func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
 
-	b, logRsp, err := s.getLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
+	rsp, b, logRsp, err := s.getLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
 	if err == nil && len(b) != 0 {
 		logs := []map[string]string{}
 		err = json.Unmarshal(b, &logs)
 		if err != nil {
-			return nil, err
+			return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
 		}
 		logRsp.Logs = logs
 	}

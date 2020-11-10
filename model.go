@@ -32,7 +32,8 @@ type GetLogsResponse struct {
 	HasSQL   bool                `json:"hasSQL"`
 }
 
-// GetLogLinesResponse defines response from GetJsonLogs call
+// GetLogLinesResponse defines response from GetLogLines call
+// note: GetLogLinesResponse.Logs is nil when use GetLogLinesResponse
 type GetLogLinesResponse struct {
 	GetLogsResponse
 	Lines     []string  `json:"lines"`
