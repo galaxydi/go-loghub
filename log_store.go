@@ -584,7 +584,7 @@ func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp stri
 	if err != nil {
 		return nil, err
 	}
-	var logs []string
+	var logs []json.RawMessage
 	err = json.Unmarshal(b, &logs)
 	if err != nil {
 		return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
