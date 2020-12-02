@@ -38,7 +38,6 @@ func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFun
 	return tauc, nil
 }
 
-
 // ClientInterface for all log's open api
 type ClientInterface interface {
 	// #################### Client Operations #####################
@@ -134,7 +133,8 @@ type ClientInterface interface {
 	// RemoveConfigFromMachineGroup removes config from machine group.
 	RemoveConfigFromMachineGroup(project string, confName, groupName string) (err error)
 
-	// #################### ETL Operations #####################
+	// #################### ETLMeta Operations #####################
+	//
 	CreateEtlMeta(project string, etlMeta *EtlMeta) (err error)
 	UpdateEtlMeta(project string, etlMeta *EtlMeta) (err error)
 	DeleteEtlMeta(project string, etlMetaName, etlMetaKey string) (err error)
@@ -151,6 +151,15 @@ type ClientInterface interface {
 	SplitShard(project, logstore string, shardID int, splitKey string) (shards []*Shard, err error)
 	// MergeShards https://help.aliyun.com/document_detail/29022.html
 	MergeShards(project, logstore string, shardID int) (shards []*Shard, err error)
+
+	// #################### ETL Operations #####################
+	CreateETL(project string, etljob ETL) error
+	GetETL(project string, etlName string) (ETLJob *ETL, err error)
+	UpdateETL(project string, etljob ETL) error
+	DeleteETL(project string, etlName string) error
+	ListETL(project string, offset int, size int) (*ListETLResponse, error)
+	StartETL(project, name string) error
+	StopETL(project, name string) error
 
 	// #################### Log Operations #####################
 	// PutLogs put logs into logstore.

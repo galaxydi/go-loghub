@@ -210,7 +210,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	lg := &LogGroup{
 		Topic:  proto.String("demo topic"),
 		Source: proto.String("10.230.201.117"),
-		Logs: []*Log{},
+		Logs:   []*Log{},
 	}
 	logCount := 50
 	for i := 0; i < logCount; i++ {
@@ -454,7 +454,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 
 	storage := ShipperStorage{
 		Format: "json",
-		Detail: OssStorageJsonDetail{EnableTag:true},
+		Detail: OssStorageJsonDetail{EnableTag: true},
 	}
 	ossShipperConfig := &OSSShipperConfig{
 		OssBucket:      "test_bucket",
@@ -464,7 +464,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 		BufferSize:     100,
 		CompressType:   "none",
 		PathFormat:     "%Y/%m/%d/%H/%M",
-		Storage:		storage,
+		Storage:        storage,
 	}
 	ossShipper := &Shipper{
 		ShipperName:         ossShipperName,
