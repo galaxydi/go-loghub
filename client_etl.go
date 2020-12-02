@@ -205,7 +205,6 @@ func (c *Client) StopETL(project, name string) error {
 	}
 
 	uri := fmt.Sprintf("/jobs/%s?action=STOP", name)
-	fmt.Println(uri)
 	r, err := c.request(project, "PUT", uri, h, nil)
 	if err != nil {
 		return err
