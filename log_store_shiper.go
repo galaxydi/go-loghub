@@ -103,8 +103,6 @@ func (s *LogStore) ListShipper() ([]string, error) {
 	defer r.Body.Close()
 
 	buf, err := ioutil.ReadAll(r.Body)
-	body1 := string(buf)
-	fmt.Println(body1)
 
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)

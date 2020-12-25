@@ -295,7 +295,6 @@ func (c *Client) ListDashboardV2(project string, dashboardName string, offset, s
 	}
 
 	buf, _ := ioutil.ReadAll(r.Body)
-	fmt.Println(string(buf))
 	dashboards := &ListDashboardResponse{}
 	if err = json.Unmarshal(buf, dashboards); err != nil {
 		err = NewClientError(err)
