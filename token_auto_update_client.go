@@ -627,6 +627,16 @@ func (c *TokenAutoUpdateClient) GetCursor(project, logstore string, shardID int,
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetCursorTime(project, logstore string, shardID int, cursor string) (cursorTime time.Time, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		cursorTime, err = c.logClient.GetCursorTime(project, logstore, shardID, cursor)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
