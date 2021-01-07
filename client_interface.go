@@ -168,6 +168,9 @@ type ClientInterface interface {
 	// The from can be in three form: a) unix timestamp in seccond, b) "begin", c) "end".
 	// For more detail please read: https://help.aliyun.com/document_detail/29024.html
 	GetCursor(project, logstore string, shardID int, from string) (cursor string, err error)
+    // GetCursorTime gets the server time based on the cursor.
+    // For more detail please read: https://help.aliyun.com/document_detail/113274.html
+    GetCursorTime(project, logstore string, shardID int, cursor string) (cursorTime time.Time, err error)
 	// GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 	// The logGroupMaxCount is the max number of logGroup could be returned.
 	// The nextCursor is the next curosr can be used to read logs at next time.
