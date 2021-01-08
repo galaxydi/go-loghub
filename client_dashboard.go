@@ -18,10 +18,10 @@ type ChartSearch struct {
 type ChartDisplay struct {
 	XAxisKeys   []string `json:"xAxis,omitempty"`
 	YAxisKeys   []string `json:"yAxis,omitempty"`
-	XPosition   int      `json:"xPos"`
-	YPosition   int      `json:"yPos"`
-	Width       int      `json:"width"`
-	Height      int      `json:"height"`
+	XPosition   float64  `json:"xPos"`
+	YPosition   float64  `json:"yPos"`
+	Width       float64  `json:"width"`
+	Height      float64  `json:"height"`
 	DisplayName string   `json:"displayName"`
 }
 
@@ -38,6 +38,12 @@ type Dashboard struct {
 	ChartList     []Chart `json:"charts"`
 	DisplayName   string  `json:"displayName"`
 }
+
+type ResponseDashboardItem struct {
+	DashboardName string  `json:"dashboardName"`
+	DisplayName   string  `json:"displayName"`
+}
+
 
 func (c *Client) CreateChart(project, dashboardName string, chart Chart) error {
 	body, err := json.Marshal(chart)
@@ -264,4 +270,34 @@ func (c *Client) ListDashboard(project string, dashboardName string, offset, siz
 		err = NewClientError(err)
 	}
 	return dashboards.DashboardList, dashboards.Count, dashboards.Total, err
+}
+
+func (c *Client) ListDashboardV2(project string, dashboardName string, offset, size int) (dashboardList []string, dashboardItems []ResponseDashboardItem, count, total int, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+		"dashboardName":     dashboardName,
+		"offset":            strconv.Itoa(offset),
+		"size":              strconv.Itoa(size),
+	}
+	uri := "/dashboards"
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return nil, nil,0, 0, err
+	}
+	defer r.Body.Close()
+
+	type ListDashboardResponse struct {
+		DashboardList []string `json:"dashboards"`
+		Total         int      `json:"total"`
+		Count         int      `json:"count"`
+		DashboardItems []ResponseDashboardItem `json:"dashboardItems"`
+	}
+
+	buf, _ := ioutil.ReadAll(r.Body)
+	dashboards := &ListDashboardResponse{}
+	if err = json.Unmarshal(buf, dashboards); err != nil {
+		err = NewClientError(err)
+	}
+	return dashboards.DashboardList, dashboards.DashboardItems, dashboards.Count, dashboards.Total, err
 }

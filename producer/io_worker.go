@@ -67,6 +67,7 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 		if ioWorker.retryQueueShutDownFlag.Load() {
 			if len(producerBatch.callBackList) > 0 {
 				for _, callBack := range producerBatch.callBackList {
+					ioWorker.addErrorMessageToBatchAttempt(producerBatch, err, false)
 					callBack.Fail(producerBatch.result)
 				}
 			}
@@ -75,19 +76,13 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 		level.Info(ioWorker.logger).Log("msg", "sendToServer failed", "error", err)
 		if slsError, ok := err.(*sls.Error); ok {
 			if _, ok := ioWorker.noRetryStatusCodeMap[int(slsError.HTTPCode)]; ok {
+				ioWorker.addErrorMessageToBatchAttempt(producerBatch, err, false)
 				ioWorker.excuteFailedCallback(producerBatch)
 				return
 			}
 		}
 		if producerBatch.attemptCount < producerBatch.maxRetryTimes {
-			if producerBatch.attemptCount < producerBatch.maxReservedAttempts {
-				slsError := err.(*sls.Error)
-				level.Info(ioWorker.logger).Log("msg", "sendToServer failed,start retrying", "retry times", producerBatch.attemptCount, "requestId", slsError.RequestID, "error code", slsError.Code, "error message", slsError.Message)
-				attempt := createAttempt(false, slsError.RequestID, slsError.Code, slsError.Message, GetTimeMs(time.Now().UnixNano()))
-				producerBatch.result.attemptList = append(producerBatch.result.attemptList, attempt)
-			}
-			producerBatch.result.successful = false
-			producerBatch.attemptCount += 1
+			ioWorker.addErrorMessageToBatchAttempt(producerBatch, err, true)
 			retryWaitTime := producerBatch.baseRetryBackoffMs * int64(math.Pow(2, float64(producerBatch.attemptCount)-1))
 			if retryWaitTime < producerBatch.maxRetryIntervalInMs {
 				producerBatch.nextRetryMs = GetTimeMs(time.Now().UnixNano()) + retryWaitTime
@@ -100,6 +95,19 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 			ioWorker.excuteFailedCallback(producerBatch)
 		}
 	}
+}
+
+func (ioWorker *IoWorker) addErrorMessageToBatchAttempt(producerBatch *ProducerBatch, err error, retryInfo bool) {
+	if producerBatch.attemptCount < producerBatch.maxReservedAttempts {
+		slsError := err.(*sls.Error)
+		if retryInfo {
+			level.Info(ioWorker.logger).Log("msg", "sendToServer failed,start retrying", "retry times", producerBatch.attemptCount, "requestId", slsError.RequestID, "error code", slsError.Code, "error message", slsError.Message)
+		}
+		attempt := createAttempt(false, slsError.RequestID, slsError.Code, slsError.Message, GetTimeMs(time.Now().UnixNano()))
+		producerBatch.result.attemptList = append(producerBatch.result.attemptList, attempt)
+	}
+	producerBatch.result.successful = false
+	producerBatch.attemptCount += 1
 }
 
 func (ioWorker *IoWorker) closeSendTask(ioWorkerWaitGroup *sync.WaitGroup) {

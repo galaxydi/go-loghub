@@ -452,6 +452,10 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 	// In case shipper exists
 	s.Logstore.DeleteShipper(ossShipperName)
 
+	storage := ShipperStorage{
+		Format: "json",
+		Detail: OssStorageJsonDetail{EnableTag:true},
+	}
 	ossShipperConfig := &OSSShipperConfig{
 		OssBucket:      "test_bucket",
 		OssPrefix:      "testPrefix",
@@ -460,6 +464,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 		BufferSize:     100,
 		CompressType:   "none",
 		PathFormat:     "%Y/%m/%d/%H/%M",
+		Storage:		storage,
 	}
 	ossShipper := &Shipper{
 		ShipperName:         ossShipperName,
@@ -473,6 +478,8 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 	assert.Equal(ossShipperConfig, getShipper.TargetConfiguration)
 	assert.Equal(ossShipperName, getShipper.ShipperName)
 	assert.Equal(OSSShipperType, getShipper.TargetType)
+	shipperList, err := s.Logstore.ListShipper()
+	assert.Equal(1, len(shipperList))
 
 	ossShipperConfig.OssPrefix = "newPrefix"
 	err = s.Logstore.UpdateShipper(ossShipper)

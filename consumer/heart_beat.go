@@ -7,13 +7,14 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"go.uber.org/atomic"
 )
 
 var shardLock sync.RWMutex
 
 type ConsumerHeatBeat struct {
 	client                   *ConsumerClient
-	shutDownFlag             bool
+	shutDownFlag             *atomic.Bool
 	heldShards               []int
 	heartShards              []int
 	logger                   log.Logger
@@ -23,7 +24,7 @@ type ConsumerHeatBeat struct {
 func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *ConsumerHeatBeat {
 	consumerHeatBeat := &ConsumerHeatBeat{
 		client:                   consumerClient,
-		shutDownFlag:             false,
+		shutDownFlag:             atomic.NewBool(false),
 		heldShards:               []int{},
 		heartShards:              []int{},
 		logger:                   logger,
@@ -58,13 +59,13 @@ func (consumerHeatBeat *ConsumerHeatBeat) getHeartShards() []int {
 
 func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
 	level.Info(consumerHeatBeat.logger).Log("msg", "try to stop heart beat")
-	consumerHeatBeat.shutDownFlag = true
+	consumerHeatBeat.shutDownFlag.Store(true)
 }
 
 func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
 
-	for !consumerHeatBeat.shutDownFlag {
+	for !consumerHeatBeat.shutDownFlag.Load() {
 		lastHeartBeatTime = time.Now().Unix()
 		uploadShards := append(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards...)
 		consumerHeatBeat.setHeartShards(Set(uploadShards))
@@ -88,7 +89,7 @@ func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
 			}
 
 		}
-		TimeToSleepInSecond(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag)
+		TimeToSleepInSecond(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag.Load())
 	}
 	level.Info(consumerHeatBeat.logger).Log("msg", "heart beat exit")
 }

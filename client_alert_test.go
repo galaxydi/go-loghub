@@ -108,6 +108,13 @@ func (s *AlertTestSuite) createAlert() error {
 					Content:    "${alertName} triggered at ${firetime}",
 					MobileList: []string{"1234567891"},
 				},
+				{
+					Type:       NotificationTypeWebhook,
+					Method:     "OPTIONS",
+					Content:    "${alertName} triggered at ${firetime}",
+					Headers:    map[string]string{"content-type": "test", "name": "aliyun"},
+					ServiceUri: "https://www.aliyun.com/",
+				},
 			},
 			NotifyThreshold: 1,
 		},
@@ -166,6 +173,14 @@ func (s *AlertTestSuite) TestClient_GetAlert() {
 	getAlert, err := s.client.GetAlert(s.projectName, s.alertName)
 	s.Require().Nil(err)
 	s.Require().Equal(getAlert.Name, s.alertName)
+	s.Require().Equal(len(getAlert.Configuration.NotificationList), 3)
+	for _, v := range getAlert.Configuration.NotificationList {
+		if v.Type == NotificationTypeWebhook {
+			s.Require().Equal(v.Method, "OPTIONS")
+			s.Require().Equal(v.Headers, map[string]string{"content-type": "test", "name": "aliyun"})
+		}
+	}
+
 	err = s.client.DeleteAlert(s.projectName, s.alertName)
 	s.Require().Nil(err)
 }

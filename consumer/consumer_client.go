@@ -50,11 +50,11 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 func (consumer *ConsumerClient) createConsumerGroup() {
 	err := consumer.client.CreateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup)
 	if err != nil {
-		if slsError, ok := err.(sls.Error); ok {
+		if slsError, ok := err.(*sls.Error); ok {
 			if slsError.Code == "ConsumerGroupAlreadyExist" {
 				level.Info(consumer.logger).Log("msg", "New consumer join the consumer group", "consumer name", consumer.option.ConsumerName, "group name", consumer.option.ConsumerGroupName)
 			} else {
-				level.Warn(consumer.logger).Log("msg", "create consumer group error", "error", err)
+				level.Error(consumer.logger).Log("msg", "create consumer group error", "error", err)
 
 			}
 		}
