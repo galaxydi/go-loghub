@@ -8,9 +8,9 @@ import (
 
 const (
 	// MetricAggRulesSQL sql type
-	MetricAggRulesSQL = "SQL"
+	MetricAggRulesSQL = "sql"
 	// MetricAggRulesPromQL promql type
-	MetricAggRulesPromQL = "PromQL"
+	MetricAggRulesPromQL = "promql"
 )
 
 type MetricAggRules struct {
@@ -45,7 +45,7 @@ type MetricAggRuleItem struct {
 	DelaySeconds  int64
 }
 
-func (c *Client) getScheduledSQLParams(aggRules []MetricAggRuleItem) map[string]string {
+func (c *Client) getScheduledSQLParams(aggRules []MetricAggRuleItem) (map[string]string, error) {
 	params := make(map[string]string)
 	params["sls.config.job_mode"] = `{"type":"ml","source":"ScheduledSQL"}`
 
@@ -78,14 +78,14 @@ func (c *Client) getScheduledSQLParams(aggRules []MetricAggRuleItem) map[string]
 	scheduledSql["agg_rules"] = aggRuleJsons
 	scheduledSqlJson, err := json.Marshal(scheduledSql)
 	if err != nil {
-		fmt.Printf("Marshal scheduledSql error, %s \n %s\n", err.Error(), scheduledSqlJson)
+		return nil, err
 	}
 	params["config.ml.scheduled_sql"] = string(scheduledSqlJson)
 
-	return params
+	return params, nil
 }
 
-func (c *Client) createMetricAggRulesConfig(aggRules *MetricAggRules) *ETL {
+func (c *Client) createMetricAggRulesConfig(aggRules *MetricAggRules) (*ETL, error) {
 	etl := new(ETL)
 
 	etl.Name = aggRules.ID
@@ -97,7 +97,11 @@ func (c *Client) createMetricAggRulesConfig(aggRules *MetricAggRules) *ETL {
 	etl.Configuration.AccessKeySecret = aggRules.SrcAccessKeySecret
 	etl.Configuration.Script = ""
 	etl.Configuration.Logstore = aggRules.SrcStore
-	etl.Configuration.Parameters = c.getScheduledSQLParams(aggRules.AggRules)
+	parameters, err := c.getScheduledSQLParams(aggRules.AggRules)
+	if err != nil {
+		return nil, err
+	}
+	etl.Configuration.Parameters = parameters
 	etl.Configuration.FromTime = time.Now().Unix()
 
 	var sink ETLSink
@@ -111,11 +115,14 @@ func (c *Client) createMetricAggRulesConfig(aggRules *MetricAggRules) *ETL {
 
 	etl.Schedule.Type = ScheduleTypeResident
 
-	return etl
+	return etl, nil
 }
 
 func (c *Client) CreateMetricAggRules(project string, aggRules *MetricAggRules) error {
-	etl := c.createMetricAggRulesConfig(aggRules)
+	etl, err := c.createMetricAggRulesConfig(aggRules)
+	if err != nil {
+		return err
+	}
 	if err := c.CreateETL(project, *etl); err != nil {
 		return err
 	}
@@ -123,61 +130,62 @@ func (c *Client) CreateMetricAggRules(project string, aggRules *MetricAggRules) 
 }
 
 func (c *Client) UpdateMetricAggRules(project string, aggRules *MetricAggRules) error {
-	etl := c.createMetricAggRulesConfig(aggRules)
+	etl, err := c.createMetricAggRulesConfig(aggRules)
+	if err != nil {
+		return err
+	}
 	if err := c.UpdateETL(project, *etl); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Client) castInterfaceArrayToStringArray(inter map[string]interface{}, key string) []string {
+func (c *Client) castInterfaceArrayToStringArray(inter map[string]interface{}, key string) ([]string, error) {
 	t, ok := inter[key].([]interface{})
 	if !ok {
-		fmt.Printf("castInterfaceArrayToStringArray is not ok, key: %s, value: %v\n", key, inter[key])
-		return []string{}
+		return nil, fmt.Errorf("castInterfaceArrayToStringArray is not ok, key: %s, value: %v\n", key, inter[key])
 	}
 	s := make([]string, len(t))
 	for i, v := range t {
 		s[i] = fmt.Sprint(v)
 	}
-	return s
+	return s, nil
 }
 
-func (c *Client) castInterfaceMapToStringMap(inter map[string]interface{}, key string) map[string]string {
+func (c *Client) castInterfaceMapToStringMap(inter map[string]interface{}, key string) (map[string]string, error) {
 	t, ok := inter[key].(map[string]interface{})
 	if !ok {
-		fmt.Printf("castInterfaceMapToStringMap is not ok, key: %s, value: %v\n", key, inter[key])
-		return map[string]string{}
+		return nil, fmt.Errorf("castInterfaceMapToStringMap is not ok, key: %s, value: %v\n", key, inter[key])
 	}
 	s := make(map[string]string, len(t))
 	for k, v := range t {
 		s[k] = fmt.Sprint(v)
 	}
-	return s
+	return s, nil
 }
 
-func (c *Client) castInterfaceToInt(inter map[string]interface{}, key string) int64 {
+func (c *Client) castInterfaceToInt(inter map[string]interface{}, key string) (int64, error) {
 	t, ok := inter[key].(float64)
 	if !ok {
-		fmt.Printf("castInterfaceToInt is not ok, key: %s, value: %v\n", key, inter[key])
+		return 0, fmt.Errorf("castInterfaceToInt is not ok, key: %s, value: %v\n", key, inter[key])
 	}
-	return int64(t)
+	return int64(t), nil
 }
 
-func (c *Client) castInterfaceToString(inter map[string]interface{}, key string) string {
+func (c *Client) castInterfaceToString(inter map[string]interface{}, key string) (string, error) {
 	t, ok := inter[key].(string)
 	if !ok {
-		fmt.Printf("castInterfaceToString is not ok, key: %s, value: %v\n", key, inter[key])
+		return "", fmt.Errorf("castInterfaceToString is not ok, key: %s, value: %v\n", key, inter[key])
 	}
-	return t
+	return t, nil
 }
 
-func (c *Client) castInterfaceToMap(inter map[string]interface{}, key string) (map[string]interface{}, bool) {
+func (c *Client) castInterfaceToMap(inter map[string]interface{}, key string) (map[string]interface{}, error) {
 	t, ok := inter[key].(map[string]interface{})
 	if !ok {
-		fmt.Printf("castInterfaceToMap is not ok, key: %s, value: %v\n", key, inter[key])
+		return nil, fmt.Errorf("castInterfaceToMap is not ok, key: %s, value: %v\n", key, inter[key])
 	}
-	return t, ok
+	return t, nil
 }
 
 func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRules, error) {
@@ -198,8 +206,7 @@ func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRul
 	aggRuleJson := make(map[string][]map[string]interface{})
 	err = json.Unmarshal([]byte(scheduledSqlJson), &aggRuleJson)
 	if err != nil {
-		fmt.Printf("Unmarshal scheduledSqlJson error, %s \n %s\n", err.Error(), scheduledSqlJson)
-		panic(err)
+		return nil, err
 	}
 	aggRuleMaps := aggRuleJson["agg_rules"]
 
@@ -207,24 +214,55 @@ func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRul
 	for _, aggRuleMap := range aggRuleMaps {
 		aggRuleItem := new(MetricAggRuleItem)
 
-		aggRuleItem.Name = c.castInterfaceToString(aggRuleMap, "rule_name")
-
-		advancedQuery, ok := c.castInterfaceToMap(aggRuleMap, "advanced_query")
-		if ok {
-			aggRuleItem.QueryType = c.castInterfaceToString(advancedQuery, "type")
-			aggRuleItem.Query = c.castInterfaceToString(advancedQuery, "query")
-			aggRuleItem.TimeName = c.castInterfaceToString(advancedQuery, "time_name")
-			aggRuleItem.MetricNames = c.castInterfaceArrayToStringArray(advancedQuery, "metric_names")
-			aggRuleItem.LabelNames = c.castInterfaceMapToStringMap(advancedQuery, "labels")
+		aggRuleItem.Name, err = c.castInterfaceToString(aggRuleMap, "rule_name")
+		if err != nil {
+			return nil, err
+		}
+		advancedQuery, err := c.castInterfaceToMap(aggRuleMap, "advanced_query")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.QueryType, err = c.castInterfaceToString(advancedQuery, "type")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.Query, err = c.castInterfaceToString(advancedQuery, "query")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.TimeName, err = c.castInterfaceToString(advancedQuery, "time_name")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.MetricNames, err = c.castInterfaceArrayToStringArray(advancedQuery, "metric_names")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.LabelNames, err = c.castInterfaceMapToStringMap(advancedQuery, "labels")
+		if err != nil {
+			return nil, err
+		}
+		scheduleControl, err := c.castInterfaceToMap(aggRuleMap, "schedule_control")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.BeginUnixTime, err = c.castInterfaceToInt(scheduleControl, "from_unixtime")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.EndUnixTime, err = c.castInterfaceToInt(scheduleControl, "to_unixtime")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.Interval, err = c.castInterfaceToInt(scheduleControl, "granularity")
+		if err != nil {
+			return nil, err
+		}
+		aggRuleItem.DelaySeconds, err = c.castInterfaceToInt(scheduleControl, "delay")
+		if err != nil {
+			return nil, err
 		}
 
-		scheduleControl, ok := c.castInterfaceToMap(aggRuleMap, "schedule_control")
-		if ok {
-			aggRuleItem.BeginUnixTime = c.castInterfaceToInt(scheduleControl, "from_unixtime")
-			aggRuleItem.EndUnixTime = c.castInterfaceToInt(scheduleControl, "to_unixtime")
-			aggRuleItem.Interval = c.castInterfaceToInt(scheduleControl, "granularity")
-			aggRuleItem.DelaySeconds = c.castInterfaceToInt(scheduleControl, "delay")
-		}
 		aggRuleItems = append(aggRuleItems, *aggRuleItem)
 	}
 	aggRules.AggRules = aggRuleItems
