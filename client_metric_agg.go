@@ -140,54 +140,6 @@ func (c *Client) UpdateMetricAggRules(project string, aggRules *MetricAggRules) 
 	return nil
 }
 
-func (c *Client) castInterfaceArrayToStringArray(inter map[string]interface{}, key string) ([]string, error) {
-	t, ok := inter[key].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("castInterfaceArrayToStringArray is not ok, key: %s, value: %v\n", key, inter[key])
-	}
-	s := make([]string, len(t))
-	for i, v := range t {
-		s[i] = fmt.Sprint(v)
-	}
-	return s, nil
-}
-
-func (c *Client) castInterfaceMapToStringMap(inter map[string]interface{}, key string) (map[string]string, error) {
-	t, ok := inter[key].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("castInterfaceMapToStringMap is not ok, key: %s, value: %v\n", key, inter[key])
-	}
-	s := make(map[string]string, len(t))
-	for k, v := range t {
-		s[k] = fmt.Sprint(v)
-	}
-	return s, nil
-}
-
-func (c *Client) castInterfaceToInt(inter map[string]interface{}, key string) (int64, error) {
-	t, ok := inter[key].(float64)
-	if !ok {
-		return 0, fmt.Errorf("castInterfaceToInt is not ok, key: %s, value: %v\n", key, inter[key])
-	}
-	return int64(t), nil
-}
-
-func (c *Client) castInterfaceToString(inter map[string]interface{}, key string) (string, error) {
-	t, ok := inter[key].(string)
-	if !ok {
-		return "", fmt.Errorf("castInterfaceToString is not ok, key: %s, value: %v\n", key, inter[key])
-	}
-	return t, nil
-}
-
-func (c *Client) castInterfaceToMap(inter map[string]interface{}, key string) (map[string]interface{}, error) {
-	t, ok := inter[key].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("castInterfaceToMap is not ok, key: %s, value: %v\n", key, inter[key])
-	}
-	return t, nil
-}
-
 func (c *Client) castEtlToMetricAggRules(etl *ETL) (*MetricAggRules, error) {
 	aggRules := new(MetricAggRules)
 	aggRules.ID = etl.Name
@@ -209,51 +161,51 @@ func (c *Client) castEtlToMetricAggRules(etl *ETL) (*MetricAggRules, error) {
 	for _, aggRuleMap := range aggRuleMaps {
 		aggRuleItem := new(MetricAggRuleItem)
 
-		aggRuleItem.Name, err = c.castInterfaceToString(aggRuleMap, "rule_name")
+		aggRuleItem.Name, err = castInterfaceToString(aggRuleMap, "rule_name")
 		if err != nil {
 			return nil, err
 		}
-		advancedQuery, err := c.castInterfaceToMap(aggRuleMap, "advanced_query")
+		advancedQuery, err := castInterfaceToMap(aggRuleMap, "advanced_query")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.QueryType, err = c.castInterfaceToString(advancedQuery, "type")
+		aggRuleItem.QueryType, err = castInterfaceToString(advancedQuery, "type")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.Query, err = c.castInterfaceToString(advancedQuery, "query")
+		aggRuleItem.Query, err = castInterfaceToString(advancedQuery, "query")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.TimeName, err = c.castInterfaceToString(advancedQuery, "time_name")
+		aggRuleItem.TimeName, err = castInterfaceToString(advancedQuery, "time_name")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.MetricNames, err = c.castInterfaceArrayToStringArray(advancedQuery, "metric_names")
+		aggRuleItem.MetricNames, err = castInterfaceArrayToStringArray(advancedQuery, "metric_names")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.LabelNames, err = c.castInterfaceMapToStringMap(advancedQuery, "labels")
+		aggRuleItem.LabelNames, err = castInterfaceMapToStringMap(advancedQuery, "labels")
 		if err != nil {
 			return nil, err
 		}
-		scheduleControl, err := c.castInterfaceToMap(aggRuleMap, "schedule_control")
+		scheduleControl, err := castInterfaceToMap(aggRuleMap, "schedule_control")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.BeginUnixTime, err = c.castInterfaceToInt(scheduleControl, "from_unixtime")
+		aggRuleItem.BeginUnixTime, err = castInterfaceToInt(scheduleControl, "from_unixtime")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.EndUnixTime, err = c.castInterfaceToInt(scheduleControl, "to_unixtime")
+		aggRuleItem.EndUnixTime, err = castInterfaceToInt(scheduleControl, "to_unixtime")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.Interval, err = c.castInterfaceToInt(scheduleControl, "granularity")
+		aggRuleItem.Interval, err = castInterfaceToInt(scheduleControl, "granularity")
 		if err != nil {
 			return nil, err
 		}
-		aggRuleItem.DelaySeconds, err = c.castInterfaceToInt(scheduleControl, "delay")
+		aggRuleItem.DelaySeconds, err = castInterfaceToInt(scheduleControl, "delay")
 		if err != nil {
 			return nil, err
 		}
@@ -308,4 +260,52 @@ func (c *Client) DeleteMetricAggRules(project string, ruleID string) error {
 		return err
 	}
 	return nil
+}
+
+func castInterfaceArrayToStringArray(inter map[string]interface{}, key string) ([]string, error) {
+	t, ok := inter[key].([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("castInterfaceArrayToStringArray is not ok, key: %s, value: %v\n", key, inter[key])
+	}
+	s := make([]string, len(t))
+	for i, v := range t {
+		s[i] = v.(string)
+	}
+	return s, nil
+}
+
+func castInterfaceMapToStringMap(inter map[string]interface{}, key string) (map[string]string, error) {
+	t, ok := inter[key].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("castInterfaceMapToStringMap is not ok, key: %s, value: %v\n", key, inter[key])
+	}
+	s := make(map[string]string, len(t))
+	for k, v := range t {
+		s[k] = v.(string)
+	}
+	return s, nil
+}
+
+func castInterfaceToInt(inter map[string]interface{}, key string) (int64, error) {
+	t, ok := inter[key].(float64)
+	if !ok {
+		return 0, fmt.Errorf("castInterfaceToInt is not ok, key: %s, value: %v\n", key, inter[key])
+	}
+	return int64(t), nil
+}
+
+func castInterfaceToString(inter map[string]interface{}, key string) (string, error) {
+	t, ok := inter[key].(string)
+	if !ok {
+		return "", fmt.Errorf("castInterfaceToString is not ok, key: %s, value: %v\n", key, inter[key])
+	}
+	return t, nil
+}
+
+func castInterfaceToMap(inter map[string]interface{}, key string) (map[string]interface{}, error) {
+	t, ok := inter[key].(map[string]interface{})
+	if !ok {
+		return nil, fmt.Errorf("castInterfaceToMap is not ok, key: %s, value: %v\n", key, inter[key])
+	}
+	return t, nil
 }

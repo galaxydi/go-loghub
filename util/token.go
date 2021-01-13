@@ -183,8 +183,8 @@ func updateTokenFunction(configFilePath string) (accessKeyID, accessKeySecret, s
 }
 
 // NewTokenUpdateFunc create a token update function for ACK or ECS
-func NewTokenUpdateFunc(role string, configFilePath string) (tokenUpdateFunc sls.UpdateTokenFunction, shutdown <-chan struct{}) {
+func NewTokenUpdateFunc(role string, configFilePath string) (tokenUpdateFunc sls.UpdateTokenFunction, shutdown chan struct{}) {
 	return func() (accessKeyID string, accessKeySecret string, securityToken string, expireTime time.Time, err error) {
 		return updateTokenFunction(configFilePath)
-	}, make(<-chan struct{})
+	}, make(chan struct{})
 }
