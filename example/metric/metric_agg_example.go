@@ -12,6 +12,13 @@ func crud(client sls.Client, sourceProject string, aggRules *sls.MetricAggRules,
 		panic(err)
 	}
 
+	listAggRules, err := client.ListMetricAggRules(sourceProject, 0, 10)
+	if err != nil {
+		panic(err)
+	}
+	listAggRulesJson, _ := json.Marshal(listAggRules)
+	fmt.Println(string(listAggRulesJson))
+
 	err = client.UpdateMetricAggRules(sourceProject, aggRules)
 	if err != nil {
 		panic(err)
@@ -30,7 +37,7 @@ func crud(client sls.Client, sourceProject string, aggRules *sls.MetricAggRules,
 	}
 }
 
-func configSql(accessKeyID string, accessKeySecret string, testId string) *sls.MetricAggRules {
+func sqlConfig(accessKeyID string, accessKeySecret string, testId string) *sls.MetricAggRules {
 	aggRuleItem := &sls.MetricAggRuleItem{
 		Name:      testId,
 		QueryType: sls.MetricAggRulesSQL,
@@ -86,7 +93,7 @@ func configSql(accessKeyID string, accessKeySecret string, testId string) *sls.M
 	return aggRules
 }
 
-func configPromql(accessKeyID string, accessKeySecret string, testId string) *sls.MetricAggRules {
+func promqlConfig(accessKeyID string, accessKeySecret string, testId string) *sls.MetricAggRules {
 	aggRuleItem := &sls.MetricAggRuleItem{
 		Name:      testId,
 		QueryType: sls.MetricAggRulesPromQL,
@@ -129,10 +136,10 @@ func main() {
 	}
 
 	testId := "metric_agg_rules1"
-	aggRules := configSql(accessKeyID, accessKeySecret, testId)
+	aggRules := sqlConfig(accessKeyID, accessKeySecret, testId)
 	crud(*client, sourceProject, aggRules, testId)
 
 	testId = "metric_agg_rules2"
-	aggRules = configPromql(accessKeyID, accessKeySecret, testId)
+	aggRules = promqlConfig(accessKeyID, accessKeySecret, testId)
 	crud(*client, sourceProject, aggRules, testId)
 }

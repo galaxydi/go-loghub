@@ -188,12 +188,7 @@ func (c *Client) castInterfaceToMap(inter map[string]interface{}, key string) (m
 	return t, nil
 }
 
-func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRules, error) {
-	etl, err := c.GetETL(project, ruleID)
-	if err != nil {
-		return nil, err
-	}
-
+func (c *Client) castEtlToMetricAggRules(etl *ETL) (*MetricAggRules, error) {
 	aggRules := new(MetricAggRules)
 	aggRules.ID = etl.Name
 	aggRules.Name = etl.DisplayName
@@ -204,7 +199,7 @@ func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRul
 
 	scheduledSqlJson := etl.Configuration.Parameters["config.ml.scheduled_sql"]
 	aggRuleJson := make(map[string][]map[string]interface{})
-	err = json.Unmarshal([]byte(scheduledSqlJson), &aggRuleJson)
+	err := json.Unmarshal([]byte(scheduledSqlJson), &aggRuleJson)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +268,37 @@ func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRul
 		aggRules.DestProject = sink.Project
 		aggRules.DestStore = sink.Logstore
 	}
+	return aggRules, nil
+}
 
+func (c *Client) ListMetricAggRules(project string, offset int, size int) ([]*MetricAggRules, error) {
+	listEtl, err := c.ListETL(project, offset, size)
+	if err != nil {
+		return nil, err
+	}
+	etls := listEtl.Results
+	var aggRules []*MetricAggRules
+	for _, etl := range etls {
+		if _, ok := etl.Configuration.Parameters["config.ml.scheduled_sql"]; ok {
+			aggRule, err := c.castEtlToMetricAggRules(etl)
+			if err != nil {
+				return nil, err
+			}
+			aggRules = append(aggRules, aggRule)
+		}
+	}
+	return aggRules, nil
+}
+
+func (c *Client) GetMetricAggRules(project string, ruleID string) (*MetricAggRules, error) {
+	etl, err := c.GetETL(project, ruleID)
+	if err != nil {
+		return nil, err
+	}
+	aggRules, err := c.castEtlToMetricAggRules(etl)
+	if err != nil {
+		return nil, err
+	}
 	return aggRules, nil
 
 }
