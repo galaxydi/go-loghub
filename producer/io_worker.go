@@ -25,9 +25,10 @@ type IoWorker struct {
 	logger                 log.Logger
 	maxIoWorker            chan int64
 	noRetryStatusCodeMap   map[int]*string
+	producer               *Producer
 }
 
-func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64, errorStatusMap map[int]*string) *IoWorker {
+func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log.Logger, maxIoWorkerCount int64, errorStatusMap map[int]*string, producer *Producer) *IoWorker {
 	return &IoWorker{
 		client:                 client,
 		retryQueue:             retryQueue,
@@ -36,10 +37,14 @@ func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log
 		logger:                 logger,
 		maxIoWorker:            make(chan int64, maxIoWorkerCount),
 		noRetryStatusCodeMap:   errorStatusMap,
+		producer:               producer,
 	}
 }
 
 func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWaitGroup *sync.WaitGroup) {
+	if producerBatch == nil || ioWorkerWaitGroup == nil {
+		return
+	}
 	level.Debug(ioWorker.logger).Log("msg", "ioworker send data to server")
 	defer ioWorker.closeSendTask(ioWorkerWaitGroup)
 	var err error
@@ -57,7 +62,7 @@ func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWai
 		}
 		producerBatch.result.successful = true
 		// After successful delivery, producer removes the batch size sent out
-		atomic.AddInt64(&producerLogGroupSize, -producerBatch.totalDataSize)
+		atomic.AddInt64(&ioWorker.producer.producerLogGroupSize, -producerBatch.totalDataSize)
 		if len(producerBatch.callBackList) > 0 {
 			for _, callBack := range producerBatch.callBackList {
 				callBack.Success(producerBatch.result)
@@ -118,7 +123,7 @@ func (ioWorker *IoWorker) closeSendTask(ioWorkerWaitGroup *sync.WaitGroup) {
 
 func (ioWorker *IoWorker) excuteFailedCallback(producerBatch *ProducerBatch) {
 	level.Info(ioWorker.logger).Log("msg", "sendToServer failed,Execute failed callback function")
-	atomic.AddInt64(&producerLogGroupSize, -producerBatch.totalDataSize)
+	atomic.AddInt64(&ioWorker.producer.producerLogGroupSize, -producerBatch.totalDataSize)
 	if len(producerBatch.callBackList) > 0 {
 		for _, callBack := range producerBatch.callBackList {
 			callBack.Fail(producerBatch.result)

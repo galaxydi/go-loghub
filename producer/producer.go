@@ -16,9 +16,6 @@ const (
 	IllegalStateException = "IllegalStateException"
 )
 
-var producerLogGroupSize int64
-var ioLock sync.RWMutex
-
 type Producer struct {
 	producerConfig        *ProducerConfig
 	logAccumulator        *LogAccumulator
@@ -29,6 +26,7 @@ type Producer struct {
 	ioThreadPoolWaitGroup *sync.WaitGroup
 	buckets               int
 	logger                log.Logger
+	producerLogGroupSize  int64
 }
 
 func InitProducer(producerConfig *ProducerConfig) *Producer {
@@ -52,17 +50,18 @@ func InitProducer(producerConfig *ProducerConfig) *Producer {
 		}
 		return errorCodeMap
 	}()
-	ioWorker := initIoWorker(client, retryQueue, logger, finalProducerConfig.MaxIoWorkerCount, errorStatusMap)
-	threadPool := initIoThreadPool(ioWorker, logger)
-	logAccumulator := initLogAccumulator(finalProducerConfig, ioWorker, logger, threadPool)
-	mover := initMover(logAccumulator, retryQueue, ioWorker, logger, threadPool)
 	producer := &Producer{
 		producerConfig: finalProducerConfig,
-		logAccumulator: logAccumulator,
-		mover:          mover,
-		threadPool:     threadPool,
 		buckets:        finalProducerConfig.Buckets,
 	}
+	ioWorker := initIoWorker(client, retryQueue, logger, finalProducerConfig.MaxIoWorkerCount, errorStatusMap, producer)
+	threadPool := initIoThreadPool(ioWorker, logger)
+	logAccumulator := initLogAccumulator(finalProducerConfig, ioWorker, logger, threadPool, producer)
+	mover := initMover(logAccumulator, retryQueue, ioWorker, logger, threadPool)
+
+	producer.logAccumulator = logAccumulator
+	producer.mover = mover
+	producer.threadPool = threadPool
 	producer.moverWaitGroup = &sync.WaitGroup{}
 	producer.ioWorkerWaitGroup = &sync.WaitGroup{}
 	producer.ioThreadPoolWaitGroup = &sync.WaitGroup{}
@@ -205,7 +204,7 @@ func (producer *Producer) waitTime() error {
 	if producer.producerConfig.MaxBlockSec > 0 {
 		for i := 0; i < producer.producerConfig.MaxBlockSec; i++ {
 
-			if atomic.LoadInt64(&producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
+			if atomic.LoadInt64(&producer.producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
 				time.Sleep(time.Second)
 			} else {
 				return nil
@@ -214,13 +213,13 @@ func (producer *Producer) waitTime() error {
 		level.Error(producer.logger).Log("msg", "Over producer set maximum blocking time")
 		return errors.New(TimeoutExecption)
 	} else if producer.producerConfig.MaxBlockSec == 0 {
-		if atomic.LoadInt64(&producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
+		if atomic.LoadInt64(&producer.producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
 			level.Error(producer.logger).Log("msg", "Over producer set maximum blocking time")
 			return errors.New(TimeoutExecption)
 		}
 	} else if producer.producerConfig.MaxBlockSec < 0 {
 		for {
-			if atomic.LoadInt64(&producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
+			if atomic.LoadInt64(&producer.producerLogGroupSize) > producer.producerConfig.TotalSizeLnBytes {
 				time.Sleep(time.Second)
 			} else {
 				return nil
