@@ -954,6 +954,34 @@ func (c *TokenAutoUpdateClient) ListAlert(project string, alertName string, dash
 	return
 }
 
+func (c *TokenAutoUpdateClient) CreateAlertString(project string, alert string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateAlertString(project, alert)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateAlertString(project string, alertName, alert string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateAlertString(project, alertName, alert)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetAlertString(project string, alertName string) (alert string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		alert, err = c.logClient.GetAlertString(project, alertName)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) CreateDashboardString(project string, dashboardStr string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.CreateDashboardString(project, dashboardStr)

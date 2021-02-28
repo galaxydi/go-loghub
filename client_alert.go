@@ -259,6 +259,22 @@ func (c *Client) CreateAlert(project string, alert *Alert) error {
 	return nil
 }
 
+func (c *Client) CreateAlertString(project string, alert string) error {
+	body := []byte(alert)
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/jobs"
+	r, err := c.request(project, "POST", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
 func (c *Client) UpdateAlert(project string, alert *Alert) error {
 	body, err := json.Marshal(alert)
 	if err != nil {
@@ -271,6 +287,23 @@ func (c *Client) UpdateAlert(project string, alert *Alert) error {
 	}
 
 	uri := "/jobs/" + alert.Name
+	r, err := c.request(project, "PUT", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+func (c *Client) UpdateAlertString(project string, alertName, alert string) error {
+	body := []byte(alert)
+
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+
+	uri := "/jobs/" + alertName
 	r, err := c.request(project, "PUT", uri, h, body)
 	if err != nil {
 		return err
@@ -339,6 +372,21 @@ func (c *Client) GetAlert(project string, alertName string) (*Alert, error) {
 		err = NewClientError(err)
 	}
 	return alert, err
+}
+
+func (c *Client) GetAlertString(project string, alertName string) (string, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := "/jobs/" + alertName
+	r, err := c.request(project, "GET", uri, h, nil)
+	if err != nil {
+		return "", err
+	}
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	return string(buf), err
 }
 
 func (c *Client) ListAlert(project, alertName, dashboard string, offset, size int) (alerts []*Alert, total int, count int, err error) {
