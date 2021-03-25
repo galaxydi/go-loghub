@@ -210,7 +210,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	lg := &LogGroup{
 		Topic:  proto.String("demo topic"),
 		Source: proto.String("10.230.201.117"),
-		Logs: []*Log{},
+		Logs:   []*Log{},
 	}
 	logCount := 50
 	for i := 0; i < logCount; i++ {
@@ -454,7 +454,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 
 	storage := ShipperStorage{
 		Format: "json",
-		Detail: OssStorageJsonDetail{EnableTag:true},
+		Detail: OssStorageJsonDetail{EnableTag: true},
 	}
 	ossShipperConfig := &OSSShipperConfig{
 		OssBucket:      "test_bucket",
@@ -464,7 +464,7 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 		BufferSize:     100,
 		CompressType:   "none",
 		PathFormat:     "%Y/%m/%d/%H/%M",
-		Storage:		storage,
+		Storage:        storage,
 	}
 	ossShipper := &Shipper{
 		ShipperName:         ossShipperName,
@@ -490,11 +490,47 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 	assert.Equal(ossShipperName, getShipper.ShipperName)
 	assert.Equal(OSSShipperType, getShipper.TargetType)
 
-	err = s.Logstore.DeleteShipper(ossShipperName)
+	detail := OssStoreageCsvDetail{
+		Delimiter:      ",",
+		Header:         false,
+		LineFeed:       "\n",
+		Columns:        []string{"__topic__", "alarm_count", "alarm_message", "alarm_type", "category", "project_name"},
+		NullIdentifier: "",
+		Quote:          "\\",
+	}
+	storage = ShipperStorage{
+		Format: "csv",
+		Detail: detail,
+	}
+	ossShipperConfig.Storage = storage
+	ossShipper.TargetConfiguration = ossShipperConfig
+	err = s.Logstore.UpdateShipper(ossShipper)
 	assert.Nil(err)
 
+	config1 := ParquetConfig{
+		Name: "name",
+		Type: "string",
+	}
+	config2 := ParquetConfig{
+		Name: "name2",
+		Type: "int64",
+	}
+	ParquetDetail := OssStoreageParquet{}
+	ParquetDetail.Columns = append(ParquetDetail.Columns, config1)
+	ParquetDetail.Columns = append(ParquetDetail.Columns, config2)
+	storage = ShipperStorage{
+		Format: "parquet",
+		Detail: ParquetDetail,
+	}
+	ossShipperConfig.Storage = storage
+	ossShipper.TargetConfiguration = ossShipperConfig
+	err = s.Logstore.UpdateShipper(ossShipper)
+	assert.Nil(err)
+	err = s.Logstore.DeleteShipper(ossShipperName)
+	assert.Nil(err)
 	_, err = s.Logstore.GetShipper(ossShipperName)
 	assert.NotNil(err)
 	assert.IsType(new(Error), err)
 	assert.Equal(int32(400), err.(*Error).HTTPCode)
+
 }
