@@ -505,7 +505,7 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 		return nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 64)
+	count, err := strconv.ParseInt(r.Header.Get(GetLogsCountHeader), 10, 64)
 	if err != nil {
 		return nil, err
 	}
@@ -553,7 +553,7 @@ func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
 		return nil, nil, nil, err
 	}
 
-	count, err := strconv.ParseInt(r.Header[GetLogsCountHeader][0], 10, 32)
+	count, err := strconv.ParseInt(r.Header.Get(GetLogsCountHeader), 10, 32)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -564,7 +564,7 @@ func (s *LogStore) getLogs(topic string, from int64, to int64, queryExp string,
 		}
 	}
 	hasSQL := false
-	if sqlHeaderArray, ok := r.Header[HasSQLHeader]; ok && len(sqlHeaderArray) > 0 && sqlHeaderArray[0] == "true" {
+	if r.Header.Get(HasSQLHeader) == "true" {
 		hasSQL = true
 	}
 
