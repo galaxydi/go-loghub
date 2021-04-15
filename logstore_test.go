@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudflare/golz4"
+	lz4 "github.com/cloudflare/golz4"
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/suite"
 )
@@ -326,7 +326,6 @@ func (s *LogstoreTestSuite) TestLogStoreReadErrorMock() {
 	s.Nil(err3)
 
 	// 发生retry，retry几次之后成功了
-	// 这个case太蛋疼...
 	mockErr.Err.Message = "server error 500"
 	mockErr.Err.HTTPCode = int32(500)
 	mockErr.RetryCnt = 3
