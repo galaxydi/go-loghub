@@ -35,6 +35,7 @@ type LogStore struct {
 
 	project            *LogProject
 	putLogCompressType int
+	EncryptConf        *EncryptConf `json:"encrypt_conf,omitempty"`
 }
 
 // Shard defines shard struct
@@ -44,6 +45,20 @@ type Shard struct {
 	InclusiveBeginKey string `json:"inclusiveBeginKey"`
 	ExclusiveBeginKey string `json:"exclusiveEndKey"`
 	CreateTime        int    `json:"createTime"`
+}
+
+// encrypt struct
+type EncryptConf struct {
+	Enable      bool                `json:"enable"`
+	EncryptType string              `json:"encrypt_type"`
+	UserCmkInfo *EncryptUserCmkConf `json:"user_cmk_info,omitempty"`
+}
+
+// EncryptUserCmkConf struct
+type EncryptUserCmkConf struct {
+	CmkKeyId string `json:"cmk_key_id"`
+	Arn      string `json:"arn"`
+	RegionId string `json:"region_id"`
 }
 
 // NewLogStore ...

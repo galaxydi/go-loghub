@@ -41,10 +41,34 @@ func (s *LogstoreTestSuite) SetupTest() {
 	s.Nil(err)
 	s.NotNil(slsProject)
 	s.Project = slsProject
-	slsLogstore, err := NewLogStore(s.logstoreName, s.Project)
-	s.Nil(err)
+	slsLogstore := createLogStore(s)
 	s.NotNil(slsLogstore)
 	s.Logstore = slsLogstore
+}
+
+func createLogStore(s *LogstoreTestSuite) *LogStore {
+	store, err := NewLogStore(s.logstoreName, s.Project)
+	s.Nil(err)
+	store.EncryptConf = &EncryptConf{
+		Enable:      true,
+		EncryptType: "m4",
+		UserCmkInfo: &EncryptUserCmkConf{
+			CmkKeyId: "your_cmk_id",
+			Arn:      "your_ram_role_arn",
+			RegionId: "your_region_id",
+		},
+	}
+	return store
+}
+
+func (s *LogstoreTestSuite) TestCheckLogStore() {
+	store, err := s.Project.GetLogStore(s.logstoreName)
+	s.Nil(err)
+	s.Equal(true, store.EncryptConf.Enable)
+	s.Equal("m4", store.EncryptConf.Enable)
+	s.Equal("your_cmk_id", store.EncryptConf.UserCmkInfo.CmkKeyId)
+	s.Equal("your_ram_role_arn", store.EncryptConf.UserCmkInfo.Arn)
+	s.Equal("your_region_id", store.EncryptConf.UserCmkInfo.RegionId)
 }
 
 func (s *LogstoreTestSuite) TestCheckLogstoreExist() {
