@@ -41,14 +41,9 @@ func initIoWorker(client sls.ClientInterface, retryQueue *RetryQueue, logger log
 	}
 }
 
-func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch, ioWorkerWaitGroup *sync.WaitGroup) {
-	if producerBatch == nil || ioWorkerWaitGroup == nil {
-		return
-	}
+func (ioWorker *IoWorker) sendToServer(producerBatch *ProducerBatch) {
 	level.Debug(ioWorker.logger).Log("msg", "ioworker send data to server")
-	defer ioWorker.closeSendTask(ioWorkerWaitGroup)
 	var err error
-	atomic.AddInt64(&ioWorker.taskCount, 1)
 	if producerBatch.shardHash != nil {
 		err = ioWorker.client.PostLogStoreLogs(producerBatch.getProject(), producerBatch.getLogstore(), producerBatch.logGroup, producerBatch.getShardHash())
 	} else {
@@ -116,9 +111,15 @@ func (ioWorker *IoWorker) addErrorMessageToBatchAttempt(producerBatch *ProducerB
 }
 
 func (ioWorker *IoWorker) closeSendTask(ioWorkerWaitGroup *sync.WaitGroup) {
-	ioWorkerWaitGroup.Done()
-	atomic.AddInt64(&ioWorker.taskCount, -1)
 	<-ioWorker.maxIoWorker
+	atomic.AddInt64(&ioWorker.taskCount, -1)
+	ioWorkerWaitGroup.Done()
+}
+
+func (ioWorker *IoWorker) startSendTask(ioWorkerWaitGroup *sync.WaitGroup) {
+	atomic.AddInt64(&ioWorker.taskCount, 1)
+	ioWorker.maxIoWorker <- 1
+	ioWorkerWaitGroup.Add(1)
 }
 
 func (ioWorker *IoWorker) excuteFailedCallback(producerBatch *ProducerBatch) {
