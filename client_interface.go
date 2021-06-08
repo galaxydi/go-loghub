@@ -258,4 +258,9 @@ type ClientInterface interface {
 		resourceIDs []string,
 		tags []ResourceFilterTag,
 		nextToken string) (respTags []*ResourceTagResponse, respNextToken string, err error)
+	CreateScheduledSQL(project string, scheduledsql *ScheduledSQL) error
+	DeleteScheduledSQL(project string, name string) error
+	UpdateScheduledSQL(project string, scheduledsql *ScheduledSQL) error
+	GetScheduledSQL(project string, name string) (*ScheduledSQL, error)
+	ListScheduledSQL(project, name, displayName string, offset, size int) ([]*ScheduledSQL, int, int, error)
 }

@@ -11,7 +11,6 @@ type ScheduledSQL struct {
 	Name             string                     `json:"name"`
 	DisplayName      string                     `json:"displayName"`
 	Description      string                     `json:"description"`
-	State            string                     `json:"state"`
 	Status           string                     `json:"status"`
 	ScheduleId       string                     `json:"scheduleId"`
 	Configuration    *ScheduledSQLConfiguration `json:"configuration"`
@@ -42,15 +41,16 @@ type ScheduledSQLConfiguration struct {
 
 func (s *ScheduledSQL) MarshalJSON() ([]byte, error) {
 	body := map[string]interface{}{
-		"name":          s.Name,
-		"displayName":   s.DisplayName,
-		"description":   s.Description,
-		"state":         s.State,
-		"status":        s.Status,
-		"scheduleId":    s.ScheduleId,
-		"configuration": s.Configuration,
-		"schedule":      s.Schedule,
-		"type":          "ScheduledSQL",
+		"name":             s.Name,
+		"displayName":      s.DisplayName,
+		"description":      s.Description,
+		"status":           s.Status,
+		"scheduleId":       s.ScheduleId,
+		"configuration":    s.Configuration,
+		"schedule":         s.Schedule,
+		"createTime":       s.CreateTime,
+		"lastModifiedTime": s.LastModifiedTime,
+		"type":             "ScheduledSQL",
 	}
 	return json.Marshal(body)
 }
@@ -82,7 +82,7 @@ func (c *Client) CreateScheduledSQL(project string, scheduledsql *ScheduledSQL) 
 	if !timeRange && !sustained {
 		return fmt.Errorf("invalid fromTime: %d toTime: %d, please ensure fromTime more than 1451577600", fromTime, toTime)
 	}
-	body, err := json.Marshal(scheduledsql)
+	body, err := scheduledsql.MarshalJSON()
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -116,7 +116,7 @@ func (c *Client) DeleteScheduledSQL(project string, name string) error {
 }
 
 func (c *Client) UpdateScheduledSQL(project string, scheduledsql *ScheduledSQL) error {
-	body, err := json.Marshal(scheduledsql)
+	body, err := scheduledsql.MarshalJSON()
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -153,7 +153,7 @@ func (c *Client) GetScheduledSQL(project string, name string) (*ScheduledSQL, er
 	return scheduledSQL, err
 }
 
-func (c *Client) ListScheduledSQL(project, name, displayName string, offset, size int) ([]*ScheduledSQL, int, int, error) {
+func (c *Client) ListScheduledSQL(project, name, displayName string, offset, size int) (scheduledsqls []*ScheduledSQL, total, count int, error error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
@@ -182,7 +182,7 @@ func (c *Client) ListScheduledSQL(project, name, displayName string, offset, siz
 	buf, _ := ioutil.ReadAll(r.Body)
 	scheduledSqlList := &ScheduledSqlList{}
 	if err = json.Unmarshal(buf, scheduledSqlList); err != nil {
-		return nil, 0, 0, NewClientError(err)
+		err = NewClientError(err)
 	}
-	return scheduledSqlList.Results, scheduledSqlList.Total, scheduledSqlList.Count, nil
+	return scheduledSqlList.Results, scheduledSqlList.Total, scheduledSqlList.Count, err
 }
