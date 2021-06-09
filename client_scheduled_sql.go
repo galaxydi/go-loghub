@@ -7,16 +7,52 @@ import (
 	"net/url"
 )
 
+type SqlType string
+type ResourcePool string
+type DataFormat string
+type JobType string
+type Status string
+
+const (
+	STANDARD     SqlType = "standard"
+	SEARCH_QUERY SqlType = "searchQuery"
+)
+const (
+	DEFAULT  ResourcePool = "default"
+	ENHANCED ResourcePool = "enhanced"
+)
+const (
+	LOG_TO_LOG       DataFormat = "log2log"
+	LOG_TO_METRIC    DataFormat = "log2metric"
+	METRIC_TO_metric DataFormat = "metric2metric"
+)
+const (
+	ALERT_JOB         JobType = "Alert"
+	REPORT_JOB        JobType = "Report"
+	ETL_JOB           JobType = "ETL"
+	INGESTION_JOB     JobType = "Ingestion"
+	REBUILD_INDEX_JOB JobType = "RebuildIndex"
+	AUDIT_JOB_JOB     JobType = "AuditJob"
+	EXPORT_JOB        JobType = "Export"
+	SCHEDULED_SQL_JOB JobType = "ScheduledSQL"
+)
+
+const (
+	ENABLED  Status = "Enabled"
+	DISABLED Status = "Disabled"
+)
+
 type ScheduledSQL struct {
 	Name             string                     `json:"name"`
 	DisplayName      string                     `json:"displayName"`
 	Description      string                     `json:"description"`
-	Status           string                     `json:"status"`
+	Status           Status                     `json:"status"`
 	ScheduleId       string                     `json:"scheduleId"`
 	Configuration    *ScheduledSQLConfiguration `json:"configuration"`
 	Schedule         *Schedule                  `json:"schedule"`
 	CreateTime       int64                      `json:"createTime,omitempty"`
 	LastModifiedTime int64                      `json:"lastModifiedTime,omitempty"`
+	Type             JobType                    `json:"type"`
 }
 
 type ScheduledSQLConfiguration struct {
@@ -25,8 +61,8 @@ type ScheduledSQLConfiguration struct {
 	DestEndpoint        string                  `json:"destEndpoint"`
 	DestLogStore        string                  `json:"destLogstore"`
 	Script              string                  `json:"script"`
-	SqlType             string                  `json:"sqlType"`
-	ResourcePool        string                  `json:"resourcePool"`
+	SqlType             SqlType                 `json:"sqlType"`
+	ResourcePool        ResourcePool            `json:"resourcePool"`
 	RoleArn             string                  `json:"roleArn"`
 	DestRoleArn         string                  `json:"destRoleArn"`
 	FromTimeExpr        string                  `json:"fromTimeExpr"`
@@ -35,33 +71,17 @@ type ScheduledSQLConfiguration struct {
 	MaxRetries          int32                   `json:"maxRetries"`
 	FromTime            int64                   `json:"fromTime"`
 	ToTime              int64                   `json:"toTime"`
-	DataFormat          string                  `json:"dataFormat"`
+	DataFormat          DataFormat              `json:"dataFormat"`
 	Parameters          *ScheduledSQLParameters `json:"parameters,omitempty"`
-}
-
-func (s *ScheduledSQL) MarshalJSON() ([]byte, error) {
-	body := map[string]interface{}{
-		"name":             s.Name,
-		"displayName":      s.DisplayName,
-		"description":      s.Description,
-		"status":           s.Status,
-		"scheduleId":       s.ScheduleId,
-		"configuration":    s.Configuration,
-		"schedule":         s.Schedule,
-		"createTime":       s.CreateTime,
-		"lastModifiedTime": s.LastModifiedTime,
-		"type":             "ScheduledSQL",
-	}
-	return json.Marshal(body)
 }
 
 func NewScheduledSQLConfiguration() *ScheduledSQLConfiguration {
 	return &ScheduledSQLConfiguration{
-		SqlType:      "standard",
-		ResourcePool: "default",
+		SqlType:      STANDARD,
+		ResourcePool: DEFAULT,
 		FromTime:     0,
 		ToTime:       0,
-		DataFormat:   "log2log",
+		DataFormat:   LOG_TO_LOG,
 	}
 }
 
@@ -82,7 +102,7 @@ func (c *Client) CreateScheduledSQL(project string, scheduledsql *ScheduledSQL) 
 	if !timeRange && !sustained {
 		return fmt.Errorf("invalid fromTime: %d toTime: %d, please ensure fromTime more than 1451577600", fromTime, toTime)
 	}
-	body, err := scheduledsql.MarshalJSON()
+	body, err := json.Marshal(scheduledsql)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -116,7 +136,7 @@ func (c *Client) DeleteScheduledSQL(project string, name string) error {
 }
 
 func (c *Client) UpdateScheduledSQL(project string, scheduledsql *ScheduledSQL) error {
-	body, err := scheduledsql.MarshalJSON()
+	body, err := json.Marshal(scheduledsql)
 	if err != nil {
 		return NewClientError(err)
 	}
