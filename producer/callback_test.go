@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-
-
 type Callback struct {
 	t *testing.T
 }
@@ -34,7 +32,6 @@ func (callback *Callback) Fail(result *Result) {
 		callback.t.Error("Failed to get error code")
 	}
 
-
 }
 
 func TestProducer_CallBack(t *testing.T) {
@@ -44,7 +41,7 @@ func TestProducer_CallBack(t *testing.T) {
 	producerConfig.AccessKeySecret = ""
 	producerInstance := InitProducer(producerConfig)
 	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	signal.Notify(ch, os.Kill, os.Interrupt)
 	producerInstance.Start()
 	var m sync.WaitGroup
 	callBack := &Callback{}
@@ -67,8 +64,5 @@ func TestProducer_CallBack(t *testing.T) {
 		fmt.Println("Get the shutdown signal and start to shut down")
 		producerInstance.Close(60000)
 	}
-
-
-
 
 }

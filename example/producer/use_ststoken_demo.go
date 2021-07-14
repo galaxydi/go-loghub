@@ -20,7 +20,7 @@ func main() {
 	producerConfig.UpdateStsToken = updateStsToken
 	producerInstance := producer.InitProducer(producerConfig)
 	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	signal.Notify(ch, os.Kill, os.Interrupt)
 	producerInstance.Start()
 	var m sync.WaitGroup
 	for i := 0; i < 10; i++ {

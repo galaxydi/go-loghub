@@ -754,27 +754,15 @@ func (s *LogStore) UpdateIndexString(indexStr string) error {
 
 // DeleteIndex ...
 func (s *LogStore) DeleteIndex() error {
-	type Body struct {
-		project string `json:"projectName"`
-		store   string `json:"logstoreName"`
-	}
-
-	body, err := json.Marshal(Body{
-		project: s.project.Name,
-		store:   s.Name,
-	})
-	if err != nil {
-		return err
-	}
 
 	h := map[string]string{
-		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
 		"Accept-Encoding":   "deflate", // TODO: support lz4
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	r, err := request(s.project, "DELETE", uri, h, body)
+	r, err := request(s.project, "DELETE", uri, h, nil)
 	if r != nil {
 		r.Body.Close()
 	}
@@ -783,27 +771,14 @@ func (s *LogStore) DeleteIndex() error {
 
 // GetIndex ...
 func (s *LogStore) GetIndex() (*Index, error) {
-	type Body struct {
-		project string `json:"projectName"`
-		store   string `json:"logstoreName"`
-	}
-
-	body, err := json.Marshal(Body{
-		project: s.project.Name,
-		store:   s.Name,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	h := map[string]string{
-		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
-		"Accept-Encoding":   "deflate", // TODO: support lz4
+		"x-log-bodyrawsize": "0",
+		"Accept-Encoding":   "deflate",
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	r, err := request(s.project, "GET", uri, h, body)
+	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -820,27 +795,14 @@ func (s *LogStore) GetIndex() (*Index, error) {
 
 // GetIndexString ...
 func (s *LogStore) GetIndexString() (string, error) {
-	type Body struct {
-		project string `json:"projectName"`
-		store   string `json:"logstoreName"`
-	}
-
-	body, err := json.Marshal(Body{
-		project: s.project.Name,
-		store:   s.Name,
-	})
-	if err != nil {
-		return "", err
-	}
-
 	h := map[string]string{
-		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
 		"Content-Type":      "application/json",
-		"Accept-Encoding":   "deflate", // TODO: support lz4
+		"x-log-bodyrawsize": "0",
+		"Accept-Encoding":   "deflate",
 	}
 
 	uri := fmt.Sprintf("/logstores/%s/index", s.Name)
-	r, err := request(s.project, "GET", uri, h, body)
+	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
 		return "", err
 	}

@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-log-go-sdk/consumer"
-	"github.com/go-kit/kit/log/level"
 	"os"
 	"os/signal"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	consumerLibrary "github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"github.com/go-kit/kit/log/level"
 )
 
 // README :
@@ -47,7 +48,7 @@ func main() {
 	}
 	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
 	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	signal.Notify(ch, os.Kill, os.Interrupt)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
 		level.Info(consumerWorker.Logger).Log("msg", "get stop signal, start to stop consumer worker", "consumer worker name", option.ConsumerName)

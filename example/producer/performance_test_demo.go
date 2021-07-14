@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-log-go-sdk/producer"
-	"github.com/gogo/protobuf/proto"
 	"math/rand"
 	"os"
 	"os/signal"
 	"runtime"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk/producer"
+	"github.com/gogo/protobuf/proto"
 )
 
 var valueList [][]*string
@@ -28,7 +29,7 @@ func main() {
 
 	producerInstance := producer.InitProducer(producerConfig)
 	ch := make(chan os.Signal)
-	signal.Notify(ch)
+	signal.Notify(ch, os.Kill, os.Interrupt)
 	producerInstance.Start()
 	fmt.Println("start send logs")
 	for i := 0; i < 10; i++ {

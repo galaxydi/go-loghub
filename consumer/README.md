@@ -77,7 +77,7 @@ consumerWorker.Start()
 
 ```
 ch:=make(chan os.Signal) //将os信号值作为信道
-signal.Notify(ch)
+signal.Notify(ch, os.Kill, os.Interrupt)
 consumerWorker.Start() 
 if _, ok := <-ch; ok { // 当获取到os停止信号以后，例如ctrl+c触发的os信号，会调用消费者退出方法进行退出。
     consumerWorker.StopAndWait() 

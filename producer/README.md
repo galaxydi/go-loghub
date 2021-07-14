@@ -47,7 +47,7 @@ producerConfig.AccessKeyID = os.Getenv("AccessKeyID")
 producerConfig.AccessKeySecret = os.Getenv("AccessKeySecret")
 producerInstance:=producer.InitProducer(producerConfig)
 ch := make(chan os.Signal)
-signal.Notify(ch)
+signal.Notify(ch, os.Kill, os.Interrupt)
 producerInstance.Start() // 启动producer实例
 ```
 
