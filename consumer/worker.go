@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aliyun/aliyun-log-go-sdk"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"go.uber.org/atomic"
@@ -16,7 +16,7 @@ type ConsumerWorker struct {
 	consumerHeatBeat   *ConsumerHeatBeat
 	client             *ConsumerClient
 	workerShutDownFlag *atomic.Bool
-	shardConsumer      map[int]*ShardConsumerWorker
+	shardConsumer      sync.Map // map[int]*ShardConsumerWorker
 	do                 func(shard int, logGroup *sls.LogGroupList) string
 	waitGroup          sync.WaitGroup
 	Logger             log.Logger
@@ -30,9 +30,9 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 		consumerHeatBeat:   consumerHeatBeat,
 		client:             consumerClient,
 		workerShutDownFlag: atomic.NewBool(false),
-		shardConsumer:      make(map[int]*ShardConsumerWorker),
-		do:                 do,
-		Logger:             logger,
+		//shardConsumer:      make(map[int]*ShardConsumerWorker),
+		do:     do,
+		Logger: logger,
 	}
 	consumerClient.createConsumerGroup()
 	return consumerWorker
@@ -82,14 +82,20 @@ func (consumerWorker *ConsumerWorker) run() {
 func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 	for {
 		time.Sleep(500 * time.Millisecond)
-		for shard, consumer := range consumerWorker.shardConsumer {
-			if !consumer.isShutDownComplete() {
-				consumer.consumerShutDown()
-			} else if consumer.isShutDownComplete() {
-				delete(consumerWorker.shardConsumer, shard)
-			}
-		}
-		if len(consumerWorker.shardConsumer) == 0 {
+		count := 0
+		consumerWorker.shardConsumer.Range(
+			func(key, value interface{}) bool {
+				count++
+				consumer := value.(*ShardConsumerWorker)
+				if !consumer.isShutDownComplete() {
+					consumer.consumerShutDown()
+				} else if consumer.isShutDownComplete() {
+					consumerWorker.shardConsumer.Delete(key)
+				}
+				return true
+			},
+		)
+		if count == 0 {
 			break
 		}
 	}
@@ -97,35 +103,41 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 }
 
 func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsumerWorker {
-	consumer := consumerWorker.shardConsumer[shardId]
-	if consumer != nil {
-		return consumer
+	consumer, ok := consumerWorker.shardConsumer.Load(shardId)
+	if ok {
+		return consumer.(*ShardConsumerWorker)
 	}
-	consumer = initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.do, consumerWorker.Logger)
-	consumerWorker.shardConsumer[shardId] = consumer
-	return consumer
+	consumerIns := initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.do, consumerWorker.Logger)
+	consumerWorker.shardConsumer.Store(shardId, consumerIns)
+	return consumerIns
 
 }
 
 func (consumerWorker *ConsumerWorker) cleanShardConsumer(owned_shards []int) {
-	for shard, consumer := range consumerWorker.shardConsumer {
 
-		if !Contain(shard, owned_shards) {
-			level.Info(consumerWorker.Logger).Log("msg", "try to call shut down for unassigned consumer shard", "shardId", shard)
-			consumer.consumerShutDown()
-			level.Info(consumerWorker.Logger).Log("msg", "Complete call shut down for unassigned consumer shard", "shardId", shard)
-		}
+	consumerWorker.shardConsumer.Range(
+		func(key, value interface{}) bool {
+			shard := key.(int)
+			consumer := value.(*ShardConsumerWorker)
 
-		if consumer.isShutDownComplete() {
-			isDeleteShard := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
-			if isDeleteShard {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard", "shardId", shard)
-				delete(consumerWorker.shardConsumer, shard)
-			} else {
-				level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard failed", "shardId", shard)
+			if !Contain(shard, owned_shards) {
+				level.Info(consumerWorker.Logger).Log("msg", "try to call shut down for unassigned consumer shard", "shardId", shard)
+				consumer.consumerShutDown()
+				level.Info(consumerWorker.Logger).Log("msg", "Complete call shut down for unassigned consumer shard", "shardId", shard)
 			}
-		}
-	}
+
+			if consumer.isShutDownComplete() {
+				isDeleteShard := consumerWorker.consumerHeatBeat.removeHeartShard(shard)
+				if isDeleteShard {
+					level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard", "shardId", shard)
+					consumerWorker.shardConsumer.Delete(shard)
+				} else {
+					level.Info(consumerWorker.Logger).Log("msg", "Remove an assigned consumer shard failed", "shardId", shard)
+				}
+			}
+			return true
+		},
+	)
 }
 
 // This function is used to initialize the global log configuration
