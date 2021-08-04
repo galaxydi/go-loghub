@@ -2,6 +2,7 @@ package sls
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -12,6 +13,7 @@ type ResourcePool string
 type DataFormat string
 type JobType string
 type Status string
+type ScheduledSQLState string
 
 const (
 	STANDARD     SqlType = "standard"
@@ -40,6 +42,12 @@ const (
 const (
 	ENABLED  Status = "Enabled"
 	DISABLED Status = "Disabled"
+)
+
+const (
+	ScheduledSQL_RUNNING   ScheduledSQLState = "RUNNING"
+	ScheduledSQL_FAILED    ScheduledSQLState = "FAILED"
+	ScheduledSQL_SUCCEEDED ScheduledSQLState = "SUCCEEDED"
 )
 
 type ScheduledSQL struct {
@@ -205,4 +213,99 @@ func (c *Client) ListScheduledSQL(project, name, displayName string, offset, siz
 		err = NewClientError(err)
 	}
 	return scheduledSqlList.Results, scheduledSqlList.Total, scheduledSqlList.Count, err
+}
+
+type ScheduledSQLJobInstance struct {
+	InstanceId           string            `json:"instanceId"`
+	JobName              string            `json:"jobName,omitempty"`
+	DisplayName          string            `json:"displayName,omitempty"`
+	Description          string            `json:"description,omitempty"`
+	JobScheduleId        string            `json:"jobScheduleId,omitempty"`
+	CreateTimeInMillis   int64             `json:"createTimeInMillis"`
+	ScheduleTimeInMillis int64             `json:"scheduleTimeInMillis"`
+	UpdateTimeInMillis   int64             `json:"updateTimeInMillis"`
+	State                ScheduledSQLState `json:"state"`
+	ErrorCode            string            `json:"errorCode"`
+	ErrorMessage         string            `json:"errorMessage"`
+	Summary              string            `json:"summary,omitempty"`
+}
+
+func (c *Client) GetScheduledSQLJobInstance(projectName, jobName, instanceId string, result bool) (*ScheduledSQLJobInstance, error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s/jobinstances/%s?result=%t", jobName, instanceId, result)
+	r, err := c.request(projectName, "GET", uri, h, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer r.Body.Close()
+	buf, _ := ioutil.ReadAll(r.Body)
+	instance := &ScheduledSQLJobInstance{}
+	if err = json.Unmarshal(buf, instance); err != nil {
+		err = NewClientError(err)
+	}
+	return instance, err
+}
+
+func (c *Client) ModifyScheduledSQLJobInstanceState(projectName, jobName, instanceId string, state ScheduledSQLState) error {
+	if ScheduledSQL_RUNNING != state {
+		return NewClientError(errors.New(fmt.Sprintf("Invalid state: %s, state must be RUNNING.", state)))
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+
+	uri := fmt.Sprintf("/jobs/%s/jobinstances/%s?state=%s", jobName, instanceId, state)
+	r, err := c.request(projectName, "PUT", uri, h, nil)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
+
+type InstanceStatus struct {
+	FromTime int64
+	ToTime   int64
+	Offset   int64
+	Size     int64
+	State    ScheduledSQLState
+}
+
+func (c *Client) ListScheduledSQLJobInstances(projectName, jobName string, status *InstanceStatus) (instances []*ScheduledSQLJobInstance, total, count int64, err error) {
+	h := map[string]string{
+		"x-log-bodyrawsize": "0",
+		"Content-Type":      "application/json",
+	}
+	v := url.Values{}
+	v.Add("jobType", "ScheduledSQL")
+	v.Add("start", fmt.Sprintf("%d", status.FromTime))
+	v.Add("end", fmt.Sprintf("%d", status.ToTime))
+	v.Add("offset", fmt.Sprintf("%d", status.Offset))
+	v.Add("size", fmt.Sprintf("%d", status.Size))
+	if status.State != "" {
+		v.Add("state", string(status.State))
+	}
+
+	uri := fmt.Sprintf("/jobs/%s/jobinstances?%s", jobName, v.Encode())
+	r, err := c.request(projectName, "GET", uri, h, nil)
+	if err != nil {
+		return nil, 0, 0, err
+	}
+	defer r.Body.Close()
+
+	type ScheduledSqlJobInstances struct {
+		Total   int64                      `json:"total"`
+		Count   int64                      `json:"count"`
+		Results []*ScheduledSQLJobInstance `json:"results"`
+	}
+	buf, _ := ioutil.ReadAll(r.Body)
+	jobInstances := &ScheduledSqlJobInstances{}
+	if err = json.Unmarshal(buf, jobInstances); err != nil {
+		err = NewClientError(err)
+	}
+	return jobInstances.Results, jobInstances.Total, jobInstances.Count, err
 }
