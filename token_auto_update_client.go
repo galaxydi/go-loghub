@@ -1230,3 +1230,33 @@ func (c *TokenAutoUpdateClient) ListScheduledSQL(project, name, displayName stri
 	}
 	return
 }
+
+func (c *TokenAutoUpdateClient) GetScheduledSQLJobInstance(projectName, jobName, instanceId string, result bool) (instance *ScheduledSQLJobInstance, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		instance, err = c.logClient.GetScheduledSQLJobInstance(projectName, jobName, instanceId, result)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return instance, err
+}
+
+func (c *TokenAutoUpdateClient) ModifyScheduledSQLJobInstanceState(projectName, jobName, instanceId string, state ScheduledSQLState) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.ModifyScheduledSQLJobInstanceState(projectName, jobName, instanceId, state)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return err
+}
+
+func (c *TokenAutoUpdateClient) ListScheduledSQLJobInstances(projectName, jobName string, status *InstanceStatus) (instances []*ScheduledSQLJobInstance, total, count int64, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		instances, total, count, err = c.logClient.ListScheduledSQLJobInstances(projectName, jobName, status)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return instances, total, count, err
+}

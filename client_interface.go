@@ -263,4 +263,7 @@ type ClientInterface interface {
 	UpdateScheduledSQL(project string, scheduledsql *ScheduledSQL) error
 	GetScheduledSQL(project string, name string) (*ScheduledSQL, error)
 	ListScheduledSQL(project, name, displayName string, offset, size int) ([]*ScheduledSQL, int, int, error)
+	GetScheduledSQLJobInstance(projectName, jobName, instanceId string, result bool) (instance *ScheduledSQLJobInstance, err error)
+	ModifyScheduledSQLJobInstanceState(projectName, jobName, instanceId string, state ScheduledSQLState) error
+	ListScheduledSQLJobInstances(projectName, jobName string, status *InstanceStatus) (instances []*ScheduledSQLJobInstance, total, count int64, err error)
 }
