@@ -177,7 +177,7 @@ func (c *Client) ListResource(resourceType string, resourceName string, offset, 
 	}
 	defer r.Body.Close()
 	type ListResourceResponse struct {
-		ResourceList []*Resource `json:"Items"`
+		ResourceList []*Resource `json:"items"`
 		Total        int         `json:"total"`
 		Count        int         `json:"count"`
 	}

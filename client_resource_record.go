@@ -15,8 +15,8 @@ type ResourceRecord struct {
 	LastModifyTime int64  `json:"lastModifyTime"`
 }
 
-func (c *Client) CreateResourceRecordString(resourceName, resourceStr string) error {
-	body := []byte(resourceStr)
+func (c *Client) CreateResourceRecordString(resourceName, recordStr string) error {
+	body := []byte(recordStr)
 
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
@@ -32,8 +32,8 @@ func (c *Client) CreateResourceRecordString(resourceName, resourceStr string) er
 	return nil
 }
 
-func (c *Client) CreateResourceRecord(resourceName string, resource *ResourceRecord) error {
-	body, err := json.Marshal(resource)
+func (c *Client) CreateResourceRecord(resourceName string, record *ResourceRecord) error {
+	body, err := json.Marshal(record)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -51,8 +51,8 @@ func (c *Client) CreateResourceRecord(resourceName string, resource *ResourceRec
 	return nil
 }
 
-func (c *Client) UpdateResourceRecord(resourceName string, resource *ResourceRecord) error {
-	body, err := json.Marshal(resource)
+func (c *Client) UpdateResourceRecord(resourceName string, record *ResourceRecord) error {
+	body, err := json.Marshal(record)
 	if err != nil {
 		return NewClientError(err)
 	}
@@ -62,7 +62,7 @@ func (c *Client) UpdateResourceRecord(resourceName string, resource *ResourceRec
 		"Content-Type":      "application/json",
 	}
 
-	uri := fmt.Sprintf("/resources/%s/records/%s", resourceName, resource.Id)
+	uri := fmt.Sprintf("/resources/%s/records/%s", resourceName, record.Id)
 	r, err := c.request("", "PUT", uri, h, body)
 	if err != nil {
 		return err
@@ -71,8 +71,8 @@ func (c *Client) UpdateResourceRecord(resourceName string, resource *ResourceRec
 	return nil
 }
 
-func (c *Client) UpdateResourceRecordString(resourceName, resourceStr string) error {
-	body := []byte(resourceStr)
+func (c *Client) UpdateResourceRecordString(resourceName, recordStr string) error {
+	body := []byte(recordStr)
 
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
@@ -104,7 +104,7 @@ func (c *Client) DeleteResourceRecord(resourceName, recordId string) error {
 	return nil
 }
 
-func (c *Client) GetResourceRecord(resourceName, recordId string) (resource *ResourceRecord, err error) {
+func (c *Client) GetResourceRecord(resourceName, recordId string) (record *ResourceRecord, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
@@ -116,19 +116,19 @@ func (c *Client) GetResourceRecord(resourceName, recordId string) (resource *Res
 	}
 	defer r.Body.Close()
 	buf, _ := ioutil.ReadAll(r.Body)
-	resource = &ResourceRecord{}
-	if err = json.Unmarshal(buf, resource); err != nil {
+	record = &ResourceRecord{}
+	if err = json.Unmarshal(buf, record); err != nil {
 		err = NewClientError(err)
 	}
-	return resource, err
+	return record, err
 }
 
-func (c *Client) GetResourceRecordString(resourceName, name string) (resource string, err error) {
+func (c *Client) GetResourceRecordString(resourceName, recordId string) (recordStr string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
 	}
-	uri := fmt.Sprintf("/resources/%s/records", resourceName)
+	uri := fmt.Sprintf("/resources/%s/records/%s", resourceName, recordId)
 	r, err := c.request("", "GET", uri, h, nil)
 	if err != nil {
 		return "", err
@@ -138,7 +138,7 @@ func (c *Client) GetResourceRecordString(resourceName, name string) (resource st
 	return string(buf), err
 }
 
-func (c *Client) ListResourceRecord(resourceName string, offset, size int) (resourceList []*ResourceRecord, count, total int, err error) {
+func (c *Client) ListResourceRecord(resourceName string, offset, size int) (recordList []*ResourceRecord, count, total int, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Content-Type":      "application/json",
@@ -152,7 +152,7 @@ func (c *Client) ListResourceRecord(resourceName string, offset, size int) (reso
 	}
 	defer r.Body.Close()
 	type ListResourceRecordResponse struct {
-		ResourceRecordList []*ResourceRecord `json:"Items"`
+		ResourceRecordList []*ResourceRecord `json:"items"`
 		Total              int               `json:"total"`
 		Count              int               `json:"count"`
 	}
