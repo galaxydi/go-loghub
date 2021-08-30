@@ -46,13 +46,6 @@ func (s *AlertTestSuite) SetupTest() {
 	}
 }
 
-func (s *AlertTestSuite) TestClient_CreateAlert() {
-	err := s.createAlert()
-	s.Require().Nil(err)
-	err = s.client.DeleteAlert(s.projectName, s.alertName)
-	s.Require().Nil(err)
-}
-
 func (s *AlertTestSuite) createAlert() error {
 	alerts, _, _, err := s.client.ListAlert(s.projectName, "", "", 0, 100)
 	s.Require().Nil(err)
@@ -76,7 +69,7 @@ func (s *AlertTestSuite) createAlert() error {
 	alert := &Alert{
 		Name:        s.alertName,
 		State:       "Enabled",
-		DisplayName: "AlertTest",
+		DisplayName: "AlertTest By GO SDK",
 		Description: "Description for alert",
 		Schedule: &Schedule{
 			Type:     ScheduleTypeFixedRate,
@@ -122,8 +115,130 @@ func (s *AlertTestSuite) createAlert() error {
 	return s.client.CreateAlert(s.projectName, alert)
 }
 
+func (s *AlertTestSuite) createAlert2() error {
+	alerts, _, _, err := s.client.ListAlert(s.projectName, "", "", 0, 100)
+	s.Require().Nil(err)
+	for _, x := range alerts {
+		err = s.client.DeleteAlert(s.projectName, x.Name)
+		s.Require().Nil(err)
+	}
+	alert := &Alert{
+		Name:        s.alertName,
+		State:       "Enabled",
+		DisplayName: "AlertTest By GO SDK ",
+		Description: "Description for alert by go sdk",
+		Schedule: &Schedule{
+			Type:     ScheduleTypeFixedRate,
+			Interval: "1m",
+		},
+		Configuration: &AlertConfiguration{
+			GroupConfiguration: GroupConfiguration{
+				Type: GroupTypeNoGroup,
+			},
+			QueryList: []*AlertQuery{
+				{
+					Query:        "* | select count(1) as count",
+					Start:        "-120s",
+					End:          "now",
+					TimeSpanType: "Custom",
+					StoreType:    StoreTypeLog,
+					Store:        "test-alert",
+					Region:       "cn-hangzhou",
+					Project:      s.projectName,
+				},
+			},
+			Dashboard:      s.dashboardName,
+			MuteUntil:      time.Now().Unix(),
+			Version:        "2.0",
+			Type:           "default",
+			Threshold:      1,
+			NoDataFire:     true,
+			NoDataSeverity: Medium,
+			SendResolved:   true,
+			Annotations: []*Tag{
+				&Tag{
+					Key:   "title",
+					Value: "this is title",
+				},
+				&Tag{
+					Key:   "desc",
+					Value: "this is desc, count is ${count}",
+				},
+			},
+			Labels: []*Tag{
+				&Tag{
+					Key:   "env",
+					Value: "test",
+				},
+			},
+			SeverityConfigurations: []*SeverityConfiguration{
+				&SeverityConfiguration{
+					Severity: Critical,
+					EvalCondition: ConditionConfiguration{
+						Condition: "count > 99",
+					},
+				},
+				&SeverityConfiguration{
+					Severity: High,
+					EvalCondition: ConditionConfiguration{
+						Condition: "count > 80",
+					},
+				},
+				&SeverityConfiguration{
+					Severity: Medium,
+					EvalCondition: ConditionConfiguration{
+						Condition: "count > 20",
+					},
+				},
+				&SeverityConfiguration{
+					Severity: Report,
+					EvalCondition: ConditionConfiguration{
+					},
+				},
+			},
+			PolicyConfiguration: PolicyConfiguration{
+				AlertPolicyId:  "sls.builtin.dynamic",
+				ActionPolicyId: "huolang.test",
+				RepeatInterval: "5m",
+			},
+		},
+	}
+	return s.client.CreateAlert(s.projectName, alert)
+}
+
+func (s *AlertTestSuite) TestClient_CreateAlert() {
+	err := s.createAlert()
+	s.Require().Nil(err)
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
+func (s *AlertTestSuite) TestClient_CreateAlert2() {
+	err := s.createAlert2()
+	s.Require().Nil(err)
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
 func (s *AlertTestSuite) TestClient_UpdateAlert() {
 	err := s.createAlert()
+	s.Require().Nil(err)
+	alert, err := s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	alert.DisplayName = "new display name"
+	alert.CreateTime = 0
+	alert.LastModifiedTime = 0
+	err = s.client.UpdateAlert(s.projectName, alert)
+	s.Require().Nil(err)
+	alert, err = s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	s.Require().Equal("new display name", alert.DisplayName, "update alert failed")
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
+func (s *AlertTestSuite) TestClient_UpdateAlert2() {
+	err := s.createAlert2()
 	s.Require().Nil(err)
 	alert, err := s.client.GetAlert(s.projectName, s.alertName)
 	s.Require().Nil(err)
@@ -150,8 +265,36 @@ func (s *AlertTestSuite) TestClient_DeleteAlert() {
 	s.Require().NotNil(err)
 }
 
+func (s *AlertTestSuite) TestClient_DeleteAlert2() {
+	err := s.createAlert2()
+	s.Require().Nil(err)
+	_, err = s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	_, err = s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().NotNil(err)
+}
+
 func (s *AlertTestSuite) TestClient_DisableAndEnableAlert() {
 	err := s.createAlert()
+	s.Require().Nil(err)
+	err = s.client.DisableAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	alert, err := s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	s.Require().Equal("Disabled", alert.State, "disable alert failed")
+	err = s.client.EnableAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	alert, err = s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	s.Require().Equal("Enabled", alert.State, "enable alert failed")
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
+func (s *AlertTestSuite) TestClient_DisableAndEnableAlert2() {
+	err := s.createAlert2()
 	s.Require().Nil(err)
 	err = s.client.DisableAlert(s.projectName, s.alertName)
 	s.Require().Nil(err)
@@ -185,8 +328,34 @@ func (s *AlertTestSuite) TestClient_GetAlert() {
 	s.Require().Nil(err)
 }
 
+func (s *AlertTestSuite) TestClient_GetAlert2() {
+	err := s.createAlert2()
+	s.Require().Nil(err)
+	getAlert, err := s.client.GetAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+	s.Require().Equal(getAlert.Name, s.alertName)
+	s.Require().Equal(getAlert.Configuration.GroupConfiguration.Type, GroupTypeNoGroup)
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
 func (s *AlertTestSuite) TestClient_ListAlert() {
 	err := s.createAlert()
+	s.Require().Nil(err)
+	alerts, total, count, err := s.client.ListAlert(s.projectName, "", "", 0, 100)
+	s.Require().Nil(err)
+	if total != 1 || count != 1 {
+		s.Require().Fail("list alert failed")
+	}
+	s.Require().Equal(1, len(alerts), "there should be only one alert")
+	alert := alerts[0]
+	s.Require().Equal(s.alertName, alert.Name, "list alert failed")
+	err = s.client.DeleteAlert(s.projectName, s.alertName)
+	s.Require().Nil(err)
+}
+
+func (s *AlertTestSuite) TestClient_ListAlert2() {
+	err := s.createAlert2()
 	s.Require().Nil(err)
 	alerts, total, count, err := s.client.ListAlert(s.projectName, "", "", 0, 100)
 	s.Require().Nil(err)
