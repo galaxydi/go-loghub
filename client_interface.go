@@ -189,6 +189,9 @@ type ClientInterface interface {
 	GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
 		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
 
+	GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
+	GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error)
+
 	// #################### Index Operations #####################
 	// CreateIndex ...
 	CreateIndex(project, logstore string, index Index) error

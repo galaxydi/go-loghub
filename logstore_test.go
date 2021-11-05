@@ -256,6 +256,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	lResp, lErr := s.Logstore.GetLogs("", int64(beginTime), int64(endTime), "InternalServerError", 100, 0, false)
 	s.Nil(lErr)
 	s.Equal(lResp.Count, int64(logCount))
+	fmt.Println(*lResp)
 }
 
 func (s *LogstoreTestSuite) TestLogstore() {
