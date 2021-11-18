@@ -137,9 +137,10 @@ func ConvertToApsaraLogConfigInputDetail(detail InputDetailInterface) (*ApsaraLo
 // RegexConfigInputDetail regex log config
 type RegexConfigInputDetail struct {
 	LocalFileConfigInputDetail
-	Key           []string `json:"key"`
-	LogBeginRegex string   `json:"logBeginRegex"`
-	Regex         string   `json:"regex"`
+	Key              []string `json:"key"`
+	LogBeginRegex    string   `json:"logBeginRegex"`
+	Regex            string   `json:"regex"`
+	CustomizedFields string   `json:"customizedFields,omitempty"`
 }
 
 // InitRegexConfigInputDetail ...
@@ -221,11 +222,12 @@ func ConvertToJSONConfigInputDetail(detail InputDetailInterface) (*JSONConfigInp
 // DelimiterConfigInputDetail delimiter log config
 type DelimiterConfigInputDetail struct {
 	LocalFileConfigInputDetail
-	Separator  string   `json:"separator"`
-	Quote      string   `json:"quote"`
-	Key        []string `json:"key"`
-	TimeKey    string   `json:"timeKey"`
-	AutoExtend bool     `json:"autoExtend"`
+	Separator          string   `json:"separator"`
+	Quote              string   `json:"quote"`
+	Key                []string `json:"key"`
+	TimeKey            string   `json:"timeKey"`
+	AutoExtend         bool     `json:"autoExtend"`
+	AcceptNoEnoughKeys bool     `json:"acceptNoEnoughKeys"`
 }
 
 // InitDelimiterConfigInputDetail ...
@@ -289,6 +291,14 @@ type LocalFileConfigInputDetail struct {
 	DockerExcludeLabel map[string]string `json:"dockerExcludeLabel,omitempty"`
 	DockerIncludeEnv   map[string]string `json:"dockerIncludeEnv,omitempty"`
 	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv,omitempty"`
+	PluginDetail       string            `json:"plugin,omitempty"`
+	Advanced           Advanced          `json:"advanced"`
+}
+
+type Advanced struct {
+	ForceMultiConfig bool                `json:"force_multiconfig,omitempty"`
+	BlackList        map[string][]string `json:"blacklist,omitempty"`
+	Others           string              `json:"other,omitempty"`
 }
 
 func GetFileConfigInputDetailType(detail InputDetailInterface) (string, bool) {
