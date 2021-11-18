@@ -61,6 +61,39 @@ func createLogStore(s *LogstoreTestSuite) *LogStore {
 	return store
 }
 
+func (s *LogstoreTestSuite) TestCreateLogStoreWithNewRequestBody() {
+	client := CreateNormalInterface(s.endpoint, s.accessKeyID, s.accessKeySecret, "")
+	exist, ce := client.CheckProjectExist(s.projectName)
+	s.Nil(ce)
+	if !exist {
+		_, cpe := client.CreateProject(s.projectName, "go sdk test")
+		s.Nil(cpe)
+	}
+	defer client.DeleteProject(s.projectName)
+	logStore := &LogStore{
+		Name:          s.logstoreName,
+		TTL:           7,
+		ShardCount:    2,
+		WebTracking:   false,
+		AutoSplit:     true,
+		MaxSplitShard: 16,
+		AppendMeta:    false,
+	}
+	err := s.Project.CreateLogStoreV2(logStore)
+	s.Nil(err)
+	time.Sleep(time.Second * 10)
+	store, err := s.Project.GetLogStore(s.logstoreName)
+	s.Nil(err)
+	s.Equal(s.logstoreName, store.Name)
+	s.Equal(7, store.TTL)
+	s.Equal(2, store.ShardCount)
+	s.Equal(false, store.WebTracking)
+	s.Equal(true, store.AutoSplit)
+	s.Equal(16, store.MaxSplitShard)
+	s.Equal(false, store.AppendMeta)
+	s.Equal(uint32(0), store.HotTTL)
+}
+
 func (s *LogstoreTestSuite) TestCheckLogStore() {
 	store, err := s.Project.GetLogStore(s.logstoreName)
 	s.Nil(err)
