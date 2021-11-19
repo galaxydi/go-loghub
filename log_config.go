@@ -273,32 +273,26 @@ func ConvertToDelimiterConfigInputDetail(detail InputDetailInterface) (*Delimite
 // LocalFileConfigInputDetail all file input detail's basic config
 type LocalFileConfigInputDetail struct {
 	CommonConfigInputDetail
-	LogType            string            `json:"logType"`
-	LogPath            string            `json:"logPath"`
-	FilePattern        string            `json:"filePattern"`
-	TimeFormat         string            `json:"timeFormat"`
-	TopicFormat        string            `json:"topicFormat,omitempty"`
-	Preserve           bool              `json:"preserve"`
-	PreserveDepth      int               `json:"preserveDepth"`
-	FileEncoding       string            `json:"fileEncoding,omitempty"`
-	DiscardUnmatch     bool              `json:"discardUnmatch"`
-	MaxDepth           int               `json:"maxDepth"`
-	TailExisted        bool              `json:"tailExisted"`
-	DiscardNonUtf8     bool              `json:"discardNonUtf8"`
-	DelaySkipBytes     int               `json:"delaySkipBytes"`
-	IsDockerFile       bool              `json:"dockerFile"`
-	DockerIncludeLabel map[string]string `json:"dockerIncludeLabel,omitempty"`
-	DockerExcludeLabel map[string]string `json:"dockerExcludeLabel,omitempty"`
-	DockerIncludeEnv   map[string]string `json:"dockerIncludeEnv,omitempty"`
-	DockerExcludeEnv   map[string]string `json:"dockerExcludeEnv,omitempty"`
-	PluginDetail       string            `json:"plugin,omitempty"`
-	Advanced           Advanced          `json:"advanced"`
-}
-
-type Advanced struct {
-	ForceMultiConfig bool                `json:"force_multiconfig,omitempty"`
-	BlackList        map[string][]string `json:"blacklist,omitempty"`
-	Others           string              `json:"other,omitempty"`
+	LogType            string                 `json:"logType"`
+	LogPath            string                 `json:"logPath"`
+	FilePattern        string                 `json:"filePattern"`
+	TimeFormat         string                 `json:"timeFormat"`
+	TopicFormat        string                 `json:"topicFormat,omitempty"`
+	Preserve           bool                   `json:"preserve"`
+	PreserveDepth      int                    `json:"preserveDepth"`
+	FileEncoding       string                 `json:"fileEncoding,omitempty"`
+	DiscardUnmatch     bool                   `json:"discardUnmatch"`
+	MaxDepth           int                    `json:"maxDepth"`
+	TailExisted        bool                   `json:"tailExisted"`
+	DiscardNonUtf8     bool                   `json:"discardNonUtf8"`
+	DelaySkipBytes     int                    `json:"delaySkipBytes"`
+	IsDockerFile       bool                   `json:"dockerFile"`
+	DockerIncludeLabel map[string]string      `json:"dockerIncludeLabel,omitempty"`
+	DockerExcludeLabel map[string]string      `json:"dockerExcludeLabel,omitempty"`
+	DockerIncludeEnv   map[string]string      `json:"dockerIncludeEnv,omitempty"`
+	DockerExcludeEnv   map[string]string      `json:"dockerExcludeEnv,omitempty"`
+	PluginDetail       map[string]interface{} `json:"plugin,omitempty"`
+	Advanced           map[string]interface{} `json:"advanced,omitempty"`
 }
 
 func GetFileConfigInputDetailType(detail InputDetailInterface) (string, bool) {
