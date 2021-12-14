@@ -124,7 +124,7 @@ func (s *ResourceTestSuite) TestClient_GetResource() {
 func (s *ResourceTestSuite) TestClient_ListResource() {
 	err := s.createResource()
 	s.Require().Nil(err)
-	resources, total, count, err := s.client.ListResource(ResourceTypeUserDefine, s.resourceName, 0, 100)
+	resources, count, total, err := s.client.ListResource(ResourceTypeUserDefine, s.resourceName, 0, 100)
 	s.Require().Nil(err)
 	if total != 1 || count != 1 {
 		s.Require().Fail("list resource failed")
