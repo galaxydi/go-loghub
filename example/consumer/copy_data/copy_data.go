@@ -12,7 +12,7 @@ import (
 
 // README :
 // This is an E2E test, which creates another logstore under the same project to simulate consumption.
-// If you don't want to use this method, you can comment out 31-45 lines of code and override your own process function
+// If you don't want to use this method, you can comment out 60-67 lines of code and override your own process function
 // Be careful not to change the parameter type of process function.
 
 var option consumerLibrary.LogHubConfig
