@@ -1284,7 +1284,7 @@ func (c *TokenAutoUpdateClient) ListScheduledSQLJobInstances(projectName, jobNam
 // ####################### Resource API ######################
 func (c *TokenAutoUpdateClient) ListResource(resourceType string, resourceName string, offset, size int) (resourceList []*Resource, count, total int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		resourceList, total, count, err = c.logClient.ListResource(resourceType, resourceName, offset, size)
+		resourceList, count, total, err = c.logClient.ListResource(resourceType, resourceName, offset, size)
 		if !c.processError(err) {
 			return
 		}
@@ -1365,7 +1365,7 @@ func (c *TokenAutoUpdateClient) CreateResourceString(resourceStr string) (err er
 // ####################### Resource Record API ######################
 func (c *TokenAutoUpdateClient) ListResourceRecord(resourceName string, offset, size int) (recordList []*ResourceRecord, count, total int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		recordList, total, count, err = c.logClient.ListResourceRecord(resourceName, offset, size)
+		recordList, count, total, err = c.logClient.ListResourceRecord(resourceName, offset, size)
 		if !c.processError(err) {
 			return
 		}

@@ -128,7 +128,7 @@ func (s *ResourceRecordTestSuite) TestClient_GetResourceRecord() {
 func (s *ResourceRecordTestSuite) TestClient_ListResourceRecord() {
 	err := s.createResourceRecord()
 	s.Require().Nil(err)
-	resourceRecords, total, count, err := s.client.ListResourceRecord(s.resourceName, 0, 100)
+	resourceRecords, count, total, err := s.client.ListResourceRecord(s.resourceName, 0, 100)
 	s.Require().Nil(err)
 	if total != 1 || count != 1 {
 		s.Require().Fail("list resourceRecord failed")
