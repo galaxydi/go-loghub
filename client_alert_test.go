@@ -17,7 +17,6 @@ type AlertTestSuite struct {
 	endpoint        string
 	projectName     string
 	logstoreName    string
-	logShipperRole  string
 	accessKeyID     string
 	accessKeySecret string
 	Project         *LogProject
@@ -145,6 +144,7 @@ func (s *AlertTestSuite) createAlert2() error {
 					Store:        "test-alert",
 					Region:       "cn-hangzhou",
 					Project:      s.projectName,
+					PowerSqlMode: PowerSqlModeAuto,
 				},
 			},
 			Dashboard:      s.dashboardName,
@@ -201,6 +201,7 @@ func (s *AlertTestSuite) createAlert2() error {
 				ActionPolicyId: "huolang.test",
 				RepeatInterval: "5m",
 			},
+			AutoAnnotation: true,
 		},
 	}
 	return s.client.CreateAlert(s.projectName, alert)
