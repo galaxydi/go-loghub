@@ -16,7 +16,7 @@ import (
 
 func convertLogstore(c *Client, project, logstore string) *LogStore {
 	c.accessKeyLock.RLock()
-	proj := convert(c, project)
+	proj := convertLogProject(c, project)
 	c.accessKeyLock.RUnlock()
 	return &LogStore{
 		project: proj,

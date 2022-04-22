@@ -95,6 +95,10 @@ type Client struct {
 func convert(c *Client, projName string) *LogProject {
 	c.accessKeyLock.RLock()
 	defer c.accessKeyLock.RUnlock()
+	return convertLogProject(c, projName)
+}
+
+func convertLogProject(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
