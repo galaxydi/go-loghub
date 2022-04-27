@@ -106,7 +106,11 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	// Get ready to do request
-	resp, err := defaultHttpClient.Do(req)
+	httpClient := c.HTTPClient
+	if httpClient == nil {
+		httpClient = defaultHttpClient
+	}
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}

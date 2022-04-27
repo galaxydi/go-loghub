@@ -88,6 +88,7 @@ type Client struct {
 	UserAgent       string // default defaultLogUserAgent
 	RequestTimeOut  time.Duration
 	RetryTimeOut    time.Duration
+	HTTPClient      *http.Client
 
 	accessKeyLock sync.RWMutex
 }
@@ -102,6 +103,9 @@ func convertLocked(c *Client, projName string) *LogProject {
 	p, _ := NewLogProject(projName, c.Endpoint, c.AccessKeyID, c.AccessKeySecret)
 	p.SecurityToken = c.SecurityToken
 	p.UserAgent = c.UserAgent
+	if c.HTTPClient != nil {
+		p.httpClient = c.HTTPClient
+	}
 	if c.RequestTimeOut != time.Duration(0) {
 		p.WithRequestTimeout(c.RequestTimeOut)
 	}
@@ -110,6 +114,11 @@ func convertLocked(c *Client, projName string) *LogProject {
 	}
 
 	return p
+}
+
+// SetHTTPClient set a custom http client, all request will send to sls by this client
+func (c *Client) SetHTTPClient(client *http.Client) {
+	c.HTTPClient = client
 }
 
 // ResetAccessKeyToken reset client's access key token

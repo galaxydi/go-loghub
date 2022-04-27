@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -40,6 +41,8 @@ func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFun
 
 // ClientInterface for all log's open api
 type ClientInterface interface {
+	// SetHTTPClient set a custom http client, all request will send to sls by this client
+	SetHTTPClient(client *http.Client)
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)

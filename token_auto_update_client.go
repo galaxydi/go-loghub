@@ -2,6 +2,7 @@ package sls
 
 import (
 	"errors"
+	"net/http"
 	"sync"
 	"time"
 
@@ -134,6 +135,11 @@ func (c *TokenAutoUpdateClient) processError(err error) (retry bool) {
 	}
 	return false
 
+}
+
+// SetHTTPClient set a custom http client, all request will send to sls by this client
+func (c *TokenAutoUpdateClient) SetHTTPClient(client *http.Client) {
+	c.logClient.SetHTTPClient(client)
 }
 
 func (c *TokenAutoUpdateClient) Close() error {
