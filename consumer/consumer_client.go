@@ -1,10 +1,11 @@
 package consumerLibrary
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
+	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"time"
 )
 
 type ConsumerClient struct {
@@ -31,6 +32,9 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 		AccessKeySecret: option.AccessKeySecret,
 		// SecurityToken:   option.SecurityToken,
 		UserAgent: option.ConsumerGroupName + "_" + option.ConsumerName,
+	}
+	if option.HTTPClient != nil {
+		client.SetHTTPClient(option.HTTPClient)
 	}
 	consumerGroup := sls.ConsumerGroup{
 		option.ConsumerGroupName,

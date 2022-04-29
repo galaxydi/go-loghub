@@ -41,6 +41,9 @@ func InitProducer(producerConfig *ProducerConfig) *Producer {
 			client = stsClient
 		}
 	}
+	if producerConfig.HTTPClient != nil {
+		client.SetHTTPClient(producerConfig.HTTPClient)
+	}
 	finalProducerConfig := validateProducerConfig(producerConfig)
 	retryQueue := initRetryQueue()
 	errorStatusMap := func() map[int]*string {

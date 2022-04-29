@@ -1,6 +1,9 @@
 package producer
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 const Delimiter = "|"
 
@@ -27,8 +30,9 @@ type ProducerConfig struct {
 	AccessKeyID           string
 	AccessKeySecret       string
 	NoRetryStatusCodeList []int
-	UpdateStsToken    	  func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
+	UpdateStsToken        func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
 	StsTokenShutDown      chan struct{}
+	HTTPClient            *http.Client
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {

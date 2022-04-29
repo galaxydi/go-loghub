@@ -1,5 +1,7 @@
 package consumerLibrary
 
+import "net/http"
+
 type LogHubConfig struct {
 	//:param Endpoint:
 	//:param AccessKeyID:
@@ -30,6 +32,7 @@ type LogHubConfig struct {
 	// 	is to retain all old log files (though MaxAge may still cause them to get
 	// 	deleted.)
 	//:param LogCompass: Compress determines if the rotated log files should be compressed using gzip.
+	//:param HTTPClient: custom http client for sending data to sls
 
 	Endpoint                  string
 	AccessKeyID               string
@@ -50,6 +53,7 @@ type LogHubConfig struct {
 	LogMaxSize                int
 	LogMaxBackups             int
 	LogCompass                bool
+	HTTPClient                *http.Client
 	// SecurityToken        string
 }
 
@@ -65,4 +69,3 @@ const (
 	CONSUME_PROCESSING_DONE = "CONSUME_PROCESSING_DONE"
 	SHUTDOWN_COMPLETE       = "SHUTDOWN_COMPLETE"
 )
-
