@@ -41,6 +41,8 @@ func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFun
 
 // ClientInterface for all log's open api
 type ClientInterface interface {
+	// SetUserAgent set userAgent for sls client
+	SetUserAgent(userAgent string)
 	// SetHTTPClient set a custom http client, all request will send to sls by this client
 	SetHTTPClient(client *http.Client)
 	// #################### Client Operations #####################

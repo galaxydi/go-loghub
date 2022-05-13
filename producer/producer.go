@@ -44,6 +44,9 @@ func InitProducer(producerConfig *ProducerConfig) *Producer {
 	if producerConfig.HTTPClient != nil {
 		client.SetHTTPClient(producerConfig.HTTPClient)
 	}
+	if producerConfig.UserAgent != "" {
+		client.SetUserAgent(producerConfig.UserAgent)
+	}
 	finalProducerConfig := validateProducerConfig(producerConfig)
 	retryQueue := initRetryQueue()
 	errorStatusMap := func() map[int]*string {
