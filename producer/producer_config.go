@@ -33,6 +33,7 @@ type ProducerConfig struct {
 	UpdateStsToken        func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
 	StsTokenShutDown      chan struct{}
 	HTTPClient            *http.Client
+	UserAgent             string
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {

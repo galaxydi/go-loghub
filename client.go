@@ -116,6 +116,11 @@ func convertLocked(c *Client, projName string) *LogProject {
 	return p
 }
 
+// SetUserAgent set a custom userAgent
+func (c *Client) SetUserAgent(userAgent string) {
+	c.UserAgent = userAgent
+}
+
 // SetHTTPClient set a custom http client, all request will send to sls by this client
 func (c *Client) SetHTTPClient(client *http.Client) {
 	c.HTTPClient = client
