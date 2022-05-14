@@ -29,7 +29,7 @@ const (
 
 var InvalidCompressError = errors.New("Invalid Compress Type")
 
-const defaultLogUserAgent = "golang-sdk-v0.1.0"
+const DefaultLogUserAgent = "golang-sdk-v0.1.0"
 
 // Error defines sls error
 type Error struct {
