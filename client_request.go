@@ -49,7 +49,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	if len(c.UserAgent) > 0 {
 		headers["User-Agent"] = c.UserAgent
 	} else {
-		headers["User-Agent"] = defaultLogUserAgent
+		headers["User-Agent"] = DefaultLogUserAgent
 	}
 
 	c.accessKeyLock.RLock()
