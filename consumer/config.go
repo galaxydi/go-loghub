@@ -6,6 +6,7 @@ type LogHubConfig struct {
 	//:param Endpoint:
 	//:param AccessKeyID:
 	//:param AccessKeySecret:
+	//:param SecurityToken: If you use sts token to consume data, you must make sure consumer will be stopped before this token expired.
 	//:param Project:
 	//:param Logstore:
 	//:param ConsumerGroupName:
