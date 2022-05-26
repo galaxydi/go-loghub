@@ -30,7 +30,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 		Endpoint:        option.Endpoint,
 		AccessKeyID:     option.AccessKeyID,
 		AccessKeySecret: option.AccessKeySecret,
-		// SecurityToken:   option.SecurityToken,
+		SecurityToken:   option.SecurityToken,
 		UserAgent: option.ConsumerGroupName + "_" + option.ConsumerName,
 	}
 	if option.HTTPClient != nil {
