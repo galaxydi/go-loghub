@@ -54,7 +54,7 @@ type LogHubConfig struct {
 	LogMaxBackups             int
 	LogCompass                bool
 	HTTPClient                *http.Client
-	// SecurityToken        string
+	SecurityToken             string
 }
 
 const (
