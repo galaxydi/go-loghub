@@ -96,9 +96,9 @@ type ClientInterface interface {
 
 	// #################### MetricStore Operations #####################
 	// CreateMetricStore creates a new metric store in SLS.
-	CreateMetricStore(project string, metricStore LogStore) error
+	CreateMetricStore(project string, metricStore *LogStore) error
 	// UpdateMetricStore updates a metric store.
-	UpdateMetricStore(project string, metricStore LogStore) error
+	UpdateMetricStore(project string, metricStore *LogStore) error
 	// DeleteMetricStore deletes a metric store.
 	DeleteMetricStore(project, name string) error
 	// GetMetricStore return a metric store.

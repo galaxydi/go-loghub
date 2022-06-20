@@ -1549,7 +1549,7 @@ func (c *TokenAutoUpdateClient) DeleteExport(project string, name string) (err e
 	}
 	return
 }
-func (c *TokenAutoUpdateClient) CreateMetricStore(project string, metricStore LogStore) (err error) {
+func (c *TokenAutoUpdateClient) CreateMetricStore(project string, metricStore *LogStore) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.CreateMetricStore(project, metricStore)
 		if !c.processError(err) {
@@ -1558,7 +1558,7 @@ func (c *TokenAutoUpdateClient) CreateMetricStore(project string, metricStore Lo
 	}
 	return
 }
-func (c *TokenAutoUpdateClient) UpdateMetricStore(project string, metricStore LogStore) (err error) {
+func (c *TokenAutoUpdateClient) UpdateMetricStore(project string, metricStore *LogStore) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.UpdateMetricStore(project, metricStore)
 		if !c.processError(err) {

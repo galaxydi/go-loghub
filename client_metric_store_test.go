@@ -49,7 +49,7 @@ func (m *MetricStoreTestSuite) TearDownSuite() {
 }
 
 func (m *MetricStoreTestSuite) TestClient_CreateAndDeleteMetricStore() {
-	metricStore := LogStore{
+	metricStore := &LogStore{
 		Name:       m.metricStoreName,
 		TTL:        m.ttl,
 		ShardCount: m.shardCnt,
@@ -61,7 +61,7 @@ func (m *MetricStoreTestSuite) TestClient_CreateAndDeleteMetricStore() {
 }
 
 func (m *MetricStoreTestSuite) TestClient_UpdateAndGetMetricStore() {
-	metricStore1 := LogStore{
+	metricStore1 := &LogStore{
 		Name:       m.metricStoreName,
 		TTL:        m.ttl,
 		ShardCount: m.shardCnt,

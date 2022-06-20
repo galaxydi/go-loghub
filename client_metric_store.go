@@ -3,9 +3,9 @@ package sls
 import "time"
 
 // CreateMetricStore .
-func (c *Client) CreateMetricStore(project string, metricStore LogStore) error {
+func (c *Client) CreateMetricStore(project string, metricStore *LogStore) error {
 	metricStore.TelemetryType = "Metrics"
-	err := c.CreateLogStoreV2(project, &metricStore)
+	err := c.CreateLogStoreV2(project, metricStore)
 	if err != nil {
 		return err
 	}
@@ -35,9 +35,9 @@ func (c *Client) CreateMetricStore(project string, metricStore LogStore) error {
 }
 
 // UpdateMetricStore .
-func (c *Client) UpdateMetricStore(project string, metricStore LogStore) error {
+func (c *Client) UpdateMetricStore(project string, metricStore *LogStore) error {
 	metricStore.TelemetryType = "Metrics"
-	err := c.UpdateLogStoreV2(project, &metricStore)
+	err := c.UpdateLogStoreV2(project, metricStore)
 	if err != nil {
 		return err
 	}
