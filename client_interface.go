@@ -94,6 +94,16 @@ type ClientInterface interface {
 	// CheckLogstoreExist check logstore exist or not
 	CheckLogstoreExist(project string, logstore string) (bool, error)
 
+	// #################### MetricStore Operations #####################
+	// CreateMetricStore creates a new metric store in SLS.
+	CreateMetricStore(project string, metricStore *LogStore) error
+	// UpdateMetricStore updates a metric store.
+	UpdateMetricStore(project string, metricStore *LogStore) error
+	// DeleteMetricStore deletes a metric store.
+	DeleteMetricStore(project, name string) error
+	// GetMetricStore return a metric store.
+	GetMetricStore(project, name string) (*LogStore, error)
+
 	// #################### Logtail Operations #####################
 	// ListMachineGroup returns machine group name list and the total number of machine groups.
 	// The offset starts from 0 and the size is the max number of machine groups could be returned.

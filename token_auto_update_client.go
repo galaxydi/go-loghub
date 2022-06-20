@@ -1549,3 +1549,39 @@ func (c *TokenAutoUpdateClient) DeleteExport(project string, name string) (err e
 	}
 	return
 }
+func (c *TokenAutoUpdateClient) CreateMetricStore(project string, metricStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateMetricStore(project, metricStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) UpdateMetricStore(project string, metricStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateMetricStore(project, metricStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) DeleteMetricStore(project, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteMetricStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+func (c *TokenAutoUpdateClient) GetMetricStore(project, name string) (metricStore *LogStore, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		metricStore, err = c.logClient.GetMetricStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
