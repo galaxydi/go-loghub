@@ -49,14 +49,24 @@ func (m *MetricStoreTestSuite) TearDownSuite() {
 }
 
 func (m *MetricStoreTestSuite) TestClient_CreateAndDeleteMetricStore() {
-	ce := m.client.CreateMetricStore(m.projectName, m.metricStoreName, m.ttl, m.shardCnt)
+	metricStore := LogStore{
+		Name:       m.metricStoreName,
+		TTL:        m.ttl,
+		ShardCount: m.shardCnt,
+	}
+	ce := m.client.CreateMetricStore(m.projectName, metricStore)
 	m.Require().Nil(ce)
 	de := m.client.DeleteMetricStore(m.projectName, m.metricStoreName)
 	m.Require().Nil(de)
 }
 
 func (m *MetricStoreTestSuite) TestClient_UpdateAndGetMetricStore() {
-	ce := m.client.CreateMetricStore(m.projectName, m.metricStoreName, m.ttl, m.shardCnt)
+	metricStore1 := LogStore{
+		Name:       m.metricStoreName,
+		TTL:        m.ttl,
+		ShardCount: m.shardCnt,
+	}
+	ce := m.client.CreateMetricStore(m.projectName, metricStore1)
 	m.Require().Nil(ce)
 	metricStore, ge := m.client.GetMetricStore(m.projectName, m.metricStoreName)
 	m.Require().Nil(ge)
@@ -65,7 +75,8 @@ func (m *MetricStoreTestSuite) TestClient_UpdateAndGetMetricStore() {
 	m.Require().Equal(m.shardCnt, metricStore.ShardCount)
 	m.Require().Equal("Metrics", metricStore.TelemetryType)
 
-	ue := m.client.UpdateMetricStore(m.projectName, m.metricStoreName, 15)
+	metricStore1.TTL = 15
+	ue := m.client.UpdateMetricStore(m.projectName, metricStore1)
 	m.Require().Nil(ue)
 	metricStore2, ge2 := m.client.GetMetricStore(m.projectName, m.metricStoreName)
 	m.Require().Nil(ge2)

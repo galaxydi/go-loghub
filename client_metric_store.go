@@ -3,16 +3,9 @@ package sls
 import "time"
 
 // CreateMetricStore .
-func (c *Client) CreateMetricStore(project, name string, ttl, shard int) error {
-	logStore := &LogStore{
-		Name:          name,
-		TTL:           ttl,
-		ShardCount:    shard,
-		TelemetryType: "Metrics",
-		AutoSplit:     true,
-		MaxSplitShard: 64,
-	}
-	err := c.CreateLogStoreV2(project, logStore)
+func (c *Client) CreateMetricStore(project string, metricStore LogStore) error {
+	metricStore.TelemetryType = "Metrics"
+	err := c.CreateLogStoreV2(project, &metricStore)
 	if err != nil {
 		return err
 	}
@@ -21,7 +14,7 @@ func (c *Client) CreateMetricStore(project, name string, ttl, shard int) error {
 	subStore.Name = "prom"
 	subStore.SortedKeyCount = 2
 	subStore.TimeIndex = 2
-	subStore.TTL = ttl
+	subStore.TTL = metricStore.TTL
 	subStore.Keys = append(subStore.Keys, SubStoreKey{
 		Name: "__name__",
 		Type: "text",
@@ -38,21 +31,17 @@ func (c *Client) CreateMetricStore(project, name string, ttl, shard int) error {
 	if !subStore.IsValid() {
 		panic("metric store invalid")
 	}
-	return c.CreateSubStore(project, name, subStore)
+	return c.CreateSubStore(project, metricStore.Name, subStore)
 }
 
 // UpdateMetricStore .
-func (c *Client) UpdateMetricStore(project, name string, ttl int) error {
-	metricStore := &LogStore{
-		Name:          name,
-		TelemetryType: "Metrics",
-		TTL:           ttl,
-	}
-	err := c.UpdateLogStoreV2(project, metricStore)
+func (c *Client) UpdateMetricStore(project string, metricStore LogStore) error {
+	metricStore.TelemetryType = "Metrics"
+	err := c.UpdateLogStoreV2(project, &metricStore)
 	if err != nil {
 		return err
 	}
-	return c.UpdateSubStoreTTL(project, name, ttl)
+	return c.UpdateSubStoreTTL(project, metricStore.Name, metricStore.TTL)
 }
 
 // DeleteMetricStore .
