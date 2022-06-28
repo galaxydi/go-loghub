@@ -305,6 +305,14 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	logstores, err := s.Project.ListLogStore()
 	s.Nil(err)
 	s.True(len(logstores) >= 1)
+
+	// test parameter "mode" of logstore, default mode is "standard"
+	time.Sleep(1 * 1000 * time.Millisecond)
+	logstore, err := s.Project.GetLogStore(logstoreName)
+	s.Nil(err)
+	s.Equal(logstore.Mode, LogStore_Mode_Standard)
+
+	time.Sleep(1 * 1000 * time.Millisecond)
 	configs, configCount, err := s.Project.ListConfig(0, 100)
 	s.Nil(err)
 	s.True(len(configs) >= 0)
@@ -313,6 +321,32 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	s.Nil(err)
 	s.True(len(machineGroups) >= 0)
 	s.Equal(len(machineGroups), machineGroupCount)
+	err = s.Project.DeleteLogStore(logstoreName)
+	s.Nil(err)
+}
+
+func (s *LogstoreTestSuite) TestLogstoreLiteMode() {
+	logstoreName := "github-test"
+	_ = s.Project.DeleteLogStore(logstoreName)
+	// create a "lite" mode logstore
+	lite := &LogStore{
+		Name:          logstoreName,
+		TTL:           14,
+		ShardCount:    2,
+		AutoSplit:     true,
+		MaxSplitShard: 16,
+		Mode:          LogStore_Mode_Lite,
+	}
+	err := s.Project.CreateLogStoreV2(lite)
+	s.Nil(err)
+	time.Sleep(10 * 1000 * time.Millisecond)
+
+	// check if logstore is in "lite" mode
+	liteResp, err := s.Project.GetLogStore(logstoreName)
+	s.Nil(err)
+	s.Equal(liteResp.Mode, LogStore_Mode_Lite)
+
+	// clean
 	err = s.Project.DeleteLogStore(logstoreName)
 	s.Nil(err)
 }
