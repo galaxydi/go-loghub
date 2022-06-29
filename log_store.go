@@ -18,11 +18,6 @@ import (
 // this file is deprecated and no maintenance
 // see client_logstore.go
 
-const (
-	LogStore_Mode_Standard = "standard"
-	LogStore_Mode_Lite     = "lite"
-)
-
 // LogStore defines LogStore struct
 type LogStore struct {
 	Name          string `json:"logstoreName"`

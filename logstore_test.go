@@ -310,7 +310,7 @@ func (s *LogstoreTestSuite) TestLogstore() {
 	time.Sleep(1 * 1000 * time.Millisecond)
 	logstore, err := s.Project.GetLogStore(logstoreName)
 	s.Nil(err)
-	s.Equal(logstore.Mode, LogStore_Mode_Standard)
+	s.Equal(logstore.Mode, "standard")
 
 	time.Sleep(1 * 1000 * time.Millisecond)
 	configs, configCount, err := s.Project.ListConfig(0, 100)
@@ -335,7 +335,7 @@ func (s *LogstoreTestSuite) TestLogstoreLiteMode() {
 		ShardCount:    2,
 		AutoSplit:     true,
 		MaxSplitShard: 16,
-		Mode:          LogStore_Mode_Lite,
+		Mode:          "lite",
 	}
 	err := s.Project.CreateLogStoreV2(lite)
 	s.Nil(err)
@@ -344,7 +344,7 @@ func (s *LogstoreTestSuite) TestLogstoreLiteMode() {
 	// check if logstore is in "lite" mode
 	liteResp, err := s.Project.GetLogStore(logstoreName)
 	s.Nil(err)
-	s.Equal(liteResp.Mode, LogStore_Mode_Lite)
+	s.Equal(liteResp.Mode, "lite")
 
 	// clean
 	err = s.Project.DeleteLogStore(logstoreName)
