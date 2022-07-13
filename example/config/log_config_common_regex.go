@@ -7,7 +7,6 @@ import (
 	"github.com/aliyun/aliyun-log-go-sdk/example/util"
 )
 
-
 func main() {
 	// log config sample
 	testConf := "test-conf5"
@@ -55,9 +54,9 @@ func main() {
 
 }
 
-
 func createConfig(configName string, projectName string, logstore string) (err error) {
 	regexConfig := new(sls.RegexConfigInputDetail)
+	sls.InitRegexConfigInputDetail(regexConfig)
 	regexConfig.DiscardUnmatch = false
 	regexConfig.Key = []string{"logger", "time", "cluster", "hostname", "sr", "app", "workdir", "exe", "corepath", "signature", "backtrace"}
 	regexConfig.Regex = "\\S*\\s+(\\S*)\\s+(\\S*\\s+\\S*)\\s+\\S*\\s+(\\S*)\\s+(\\S*)\\s+(\\S*)\\s+(\\S*)\\s+(\\S*)\\s+(\\S*)\\s+(\\S*)\\s+\\S*\\s+(\\S*)\\s*([^$]+)"
@@ -66,7 +65,6 @@ func createConfig(configName string, projectName string, logstore string) (err e
 	regexConfig.LogPath = "/cloud/log/tianji/TianjiClient#/core_dump_manager"
 	regexConfig.FilePattern = "core_dump_info_data.log*"
 	regexConfig.MaxDepth = 0
-	sls.InitRegexConfigInputDetail(regexConfig)
 	outputDetail := sls.OutputDetail{
 		ProjectName:  projectName,
 		LogStoreName: logstore,
@@ -85,7 +83,7 @@ func createConfig(configName string, projectName string, logstore string) (err e
 	return nil
 }
 
-func updateConfig(configName string)  {
+func updateConfig(configName string) {
 	logtailConfig, _ := util.Client.GetConfig(util.ProjectName, configName)
 	inputDetail, _ := sls.ConvertToRegexConfigInputDetail(logtailConfig.InputDetail)
 	inputDetail.FilePattern = "*.log"
