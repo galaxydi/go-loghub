@@ -576,6 +576,16 @@ func (c *TokenAutoUpdateClient) SplitShard(project, logstore string, shardID int
 	return
 }
 
+func (c *TokenAutoUpdateClient) SplitNumShard(project, logstore string, shardID, shardNum int) (shards []*Shard, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		shards, err = c.logClient.SplitNumShard(project, logstore, shardID, shardNum)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) MergeShards(project, logstore string, shardID int) (shards []*Shard, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		shards, err = c.logClient.MergeShards(project, logstore, shardID)
