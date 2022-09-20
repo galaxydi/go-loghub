@@ -320,4 +320,5 @@ type ClientInterface interface {
 	GetExport(project, name string) (*Export, error)
 	ListExport(project, logstore, name, displayName string, offset, size int) (exports []*Export, total, count int, error error)
 	DeleteExport(project string, name string) error
+	RestartExport(project string, export *Export) error
 }

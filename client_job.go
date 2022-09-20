@@ -544,3 +544,21 @@ func (c *Client) DeleteExport(project string, name string) error {
 	r.Body.Close()
 	return nil
 }
+
+func (c *Client) RestartExport(project string, export *Export) error {
+	body, err := json.Marshal(export)
+	if err != nil {
+		return NewClientError(err)
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(body)),
+		"Content-Type":      "application/json",
+	}
+	uri := fmt.Sprintf("/jobs/%s?action=RESTART", export.Name)
+	r, err := c.request(project, "PUT", uri, h, body)
+	if err != nil {
+		return err
+	}
+	r.Body.Close()
+	return nil
+}
