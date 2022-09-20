@@ -189,6 +189,16 @@ func (i *JobTestSuite) TestExport_CRUD() {
 		i.Equal(OSSCompressionTypeSnappy, getSink.CompressionType)
 		i.Equal(`{"enableTag":true}`, getSink.ContentDetail)
 	}
+	time.Sleep(10 * time.Second)
+	export.DisplayName = "test new display"
+	if err := i.client.RestartExport(i.projectName, export); err != nil {
+		i.FailNowf("restart export failed", fmt.Sprintf("%v", err))
+	}
+	if getExport, err := i.client.GetExport(i.projectName, export.Name); err != nil {
+		i.FailNowf("get export failed", fmt.Sprintf("%v", err))
+	} else {
+		i.Equal("test new display", getExport.DisplayName)
+	}
 	if _, total, count, err := i.client.ListExport(i.projectName, i.logstoreName, "", "", 0, 10); err != nil {
 		i.FailNowf("list export failed", fmt.Sprintf("%v", err))
 	} else {
