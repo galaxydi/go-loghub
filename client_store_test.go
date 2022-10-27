@@ -45,10 +45,11 @@ func (s *LostoreTestSuite) SetupSuite() {
 	require.NotEmpty(s.T(), s.accessKeySecret)
 	_, err := s.client.CreateProject(s.projectName, "ProjectAlreadyExist")
 	require.True(s.T(), err == nil || strings.Contains(err.Error(), ""))
-	time.Sleep(time.Second * 10)
 	err = s.client.CreateLogStore(s.projectName, s.logstoreName, 12, 1, false, 64)
 	require.NoError(s.T(), err)
-	time.Sleep(time.Second * 10)
+	logstore, err := s.client.GetLogStore(s.projectName, s.logstoreName)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), logstore.ProductType, "")
 	err = s.client.CreateIndex(s.projectName, s.logstoreName, Index{
 		Keys: map[string]IndexKey{
 			"col_0": {
@@ -98,14 +99,14 @@ func (s *LostoreTestSuite) TestSplitShardDefault() {
 
 	_, err := s.client.SplitShard(s.projectName, s.logstoreName, id, "ef000000000000000000000000000000")
 	assert.NoError(s.T(), err)
-	time.Sleep(20 * time.Second)
+	time.Sleep(60 * time.Second)
 	num2, id2 := find()
 	assert.True(s.T(), id2 != -1)
 	assert.Equal(s.T(), num2, 2)
 
 	_, err = s.client.SplitNumShard(s.projectName, s.logstoreName, id2, 3)
 	assert.NoError(s.T(), err)
-	time.Sleep(20 * time.Second)
+	time.Sleep(60 * time.Second)
 	num3, id3 := find()
 	assert.True(s.T(), id3 != -1)
 	assert.Equal(s.T(), 4, num3)
