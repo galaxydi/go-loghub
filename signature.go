@@ -53,6 +53,11 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 		contentType = val
 	}
 
+	date, ok := headers["Date"]
+	if !ok {
+		return fmt.Errorf("Can't find 'Date' header")
+	}
+
 	// Calc CanonicalizedSLSHeaders
 	slsHeaders := make(map[string]string, len(headers))
 	for k, v := range headers {
@@ -74,7 +79,7 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 	// Calc CanonicalizedResource
 	u, err := url.Parse(uriWithQuery)
 	if err != nil {
-		return errors.Wrap(err, "parseUri")
+		return err
 	}
 
 	canoResource += u.EscapedPath()

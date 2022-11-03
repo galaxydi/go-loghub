@@ -14,14 +14,14 @@ type SignerV1Suite struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	Endpoint        string
-	v1              Signer
+	signer          Signer
 }
 
 func (s *SignerV1Suite) SetupTest() {
 	s.Endpoint = "cn-hangzhou.log.aliyuncs.com"
 	s.AccessKeyID = "mockAccessKeyID"
 	s.AccessKeySecret = "mockAccessKeySecret"
-	s.v1 = &SignerV1{
+	s.signer = &SignerV1{
 		accessKeyID:     s.AccessKeyID,
 		accessKeySecret: s.AccessKeySecret,
 	}
@@ -37,7 +37,7 @@ func (s *SignerV1Suite) TestSignatureGet() {
 	digest := "Rwm6cTKzoti4HWoe+GKcb6Kv07E="
 	expectedAuthStr := fmt.Sprintf("SLS %v:%v", s.AccessKeyID, digest)
 
-	err := s.v1.Sign("GET", "/logstores", headers, nil)
+	err := s.signer.Sign("GET", "/logstores", headers, nil)
 	if err != nil {
 		assert.Fail(s.T(), err.Error())
 	}
@@ -95,7 +95,7 @@ func (s *SignerV1Suite) TestSignaturePost() {
 	}
 
 	digest := "87xQWqFaOSewqRIma8kPjGYlXHc="
-	err = s.v1.Sign("GET", "/logstores/app_log", h, body)
+	err = s.signer.Sign("GET", "/logstores/app_log", h, body)
 	if err != nil {
 		assert.Fail(s.T(), err.Error())
 	}
