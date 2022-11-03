@@ -41,8 +41,8 @@ func NewSignerV1(accessKeyID, accessKeySecret string) *SignerV1 {
 }
 
 func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []byte) error {
-	var contentMD5, contentType, date, canoHeaders, canoResource, digest string
-	if len(body) > 0 {
+	var contentMD5, contentType, date, canoHeaders, canoResource string
+	if body != nil {
 		contentMD5 = fmt.Sprintf("%X", md5.Sum(body))
 		headers["Content-MD5"] = contentMD5
 	}
@@ -117,7 +117,7 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 	if err != nil {
 		return err
 	}
-	digest = base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	digest := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)
 	headers["Authorization"] = auth
 	return nil
