@@ -41,7 +41,7 @@ func (s *SignerV1Suite) TestSignatureGet() {
 	if err != nil {
 		assert.Fail(s.T(), err.Error())
 	}
-	auth := headers["Authorization"]
+	auth := headers[HTTPHeaderAuthorization]
 	assert.Equal(s.T(), expectedAuthStr, auth)
 }
 
@@ -100,7 +100,7 @@ func (s *SignerV1Suite) TestSignaturePost() {
 		assert.Fail(s.T(), err.Error())
 	}
 	expectedAuthStr := fmt.Sprintf("SLS %v:%v", s.AccessKeyID, digest)
-	auth := h["Authorization"]
+	auth := h[HTTPHeaderAuthorization]
 	assert.Equal(s.T(), expectedAuthStr, auth)
 }
 

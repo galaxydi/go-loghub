@@ -139,37 +139,37 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	body []byte) (*http.Response, error) {
 
 	// The caller should provide 'x-log-bodyrawsize' header
-	if _, ok := headers["x-log-bodyrawsize"]; !ok {
+	if _, ok := headers[HTTPHeaderBodyRawSize]; !ok {
 		return nil, NewClientError(fmt.Errorf("Can't find 'x-log-bodyrawsize' header"))
 	}
 
 	// SLS public request headers
 	baseURL := project.getBaseURL()
-	headers["Host"] = baseURL
-	headers["x-log-apiversion"] = version
+	headers[HTTPHeaderHost] = baseURL
+	headers[HTTPHeaderAPIVersion] = version
 	if len(project.UserAgent) > 0 {
-		headers["User-Agent"] = project.UserAgent
+		headers[HTTPHeaderUserAgent] = project.UserAgent
 	} else {
-		headers["User-Agent"] = DefaultLogUserAgent
+		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
 	}
 
 	// Access with token
 	if project.SecurityToken != "" {
-		headers["x-acs-security-token"] = project.SecurityToken
+		headers[HTTPHeaderAcsSecurityToken] = project.SecurityToken
 	}
 
 	if body != nil {
-		if _, ok := headers["Content-Type"]; !ok {
+		if _, ok := headers[HTTPHeaderContentType]; !ok {
 			return nil, NewClientError(fmt.Errorf("Can't find 'Content-Type' header"))
 		}
 	}
 
 	var signer Signer
 	if project.AuthVersion == AuthV4 {
-		headers[HttpHeaderLogDate] = dateTimeISO8601()
+		headers[HTTPHeaderLogDate] = dateTimeISO8601()
 		signer = NewSignerV4(project.AccessKeyID, project.AccessKeySecret, project.Region)
 	} else {
-		headers["Date"] = nowRFC1123()
+		headers[HTTPHeaderDate] = nowRFC1123()
 		signer = NewSignerV1(project.AccessKeyID, project.AccessKeySecret)
 	}
 	if err := signer.Sign(method, uri, headers, body); err != nil {

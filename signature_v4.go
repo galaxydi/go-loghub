@@ -13,18 +13,13 @@ import (
 )
 
 const (
-	emptyStringSha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	HttpHeaderLogDate = "x-log-date"
+	emptyStringSha256   = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	signerV4ProductName = "sls"
 )
 
 var (
 	ErrSignerV4MissingRegion = errors.New("sign version v4 require a valid region")
 )
-
-var defaultSignedHeaders = map[string]bool{
-	"host":         true,
-	"content-type": true,
-}
 
 // SignerV4 sign version v4, a non-empty region is required
 type SignerV4 struct {
@@ -51,24 +46,24 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 		return err
 	}
 
-	dateTime, ok := headers[HttpHeaderLogDate]
+	dateTime, ok := headers[HTTPHeaderLogDate]
 	if !ok {
-		return fmt.Errorf("can't find '%s' header", HttpHeaderLogDate)
+		return fmt.Errorf("can't find '%s' header", HTTPHeaderLogDate)
 	}
 	date := dateTime[:8]
 
 	// If content-type value is empty string, server will ignore it.
 	// So we add a default value here.
-	if contentType, ok := headers["Content-Type"]; ok && len(contentType) == 0 {
-		headers["Content-Type"] = "application/json"
+	if contentType, ok := headers[HTTPHeaderContentType]; ok && len(contentType) == 0 {
+		headers[HTTPHeaderContentType] = "application/json"
 	}
 
 	// Host should not contain schema here.
-	if host, ok := headers["Host"]; ok {
+	if host, ok := headers[HTTPHeaderHost]; ok {
 		if strings.HasPrefix(host, "http://") {
-			headers["Host"] = host[len("http://"):]
+			headers[HTTPHeaderHost] = host[len("http://"):]
 		} else if strings.HasPrefix(host, "https://") {
-			headers["Host"] = host[len("https://"):]
+			headers[HTTPHeaderHost] = host[len("https://"):]
 		}
 	}
 
@@ -79,8 +74,8 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 	} else {
 		sha256Payload = emptyStringSha256
 	}
-	headers["x-log-content-sha256"] = sha256Payload
-	headers["Content-Length"] = strconv.Itoa(contentLength)
+	headers[HTTPHeaderLogContentSha256] = sha256Payload
+	headers[HTTPHeaderContentLength] = strconv.Itoa(contentLength)
 
 	// Canonical header & signedHeaderStr
 	canonHeaders := s.buildCanonicalHeader(headers)
@@ -101,8 +96,7 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 		return err
 	}
 	signature := fmt.Sprintf("%x", hash)
-	auth := s.buildAuthorization(s.accessKeyID, signature, scope)
-	headers["Authorization"] = auth
+	headers[HTTPHeaderAuthorization] = s.buildAuthorization(s.accessKeyID, signature, scope)
 	return nil
 }
 
@@ -130,8 +124,9 @@ func (s *SignerV4) buildCanonicalHeader(headers map[string]string) map[string]st
 	canonicalHeaders := make(map[string]string)
 	for k, v := range headers {
 		key := strings.ToLower(k)
-		_, ok := defaultSignedHeaders[key]
-		if ok || strings.HasPrefix(key, "x-log-") || strings.HasPrefix(key, "x-acs-") {
+		if strings.HasPrefix(key, "x-log-") || strings.HasPrefix(key, "x-acs-") {
+			canonicalHeaders[key] = v
+		} else if strings.EqualFold(key, HTTPHeaderHost) || strings.EqualFold(key, HTTPHeaderContentType) {
 			canonicalHeaders[key] = v
 		}
 	}
@@ -205,7 +200,7 @@ func (s *SignerV4) urlEncode(uri string, ignoreSlash bool) string {
 }
 
 func (s *SignerV4) buildScope(date, region string) string {
-	return date + "/" + region + "/sls/aliyun_v4_request"
+	return date + "/" + region + "/" + signerV4ProductName + "/aliyun_v4_request"
 }
 
 func (s *SignerV4) buildSignMessage(canonReq, dateTime, scope string) string {
@@ -224,19 +219,19 @@ func (s *SignerV4) hmacSha256(message, key []byte) ([]byte, error) {
 func (s *SignerV4) buildSignKey(accessKeySecret, region, date string) ([]byte, error) {
 	signDate, err := s.hmacSha256([]byte(date), []byte("aliyun_v4"+accessKeySecret))
 	if err != nil {
-		return nil, errors.Wrap(err, "signDate")
+		return nil, err
 	}
 	signRegion, err := s.hmacSha256([]byte(region), signDate)
 	if err != nil {
-		return nil, errors.Wrap(err, "signRegion")
+		return nil, err
 	}
-	signService, err := s.hmacSha256([]byte("sls"), signRegion)
+	signService, err := s.hmacSha256([]byte(signerV4ProductName), signRegion)
 	if err != nil {
-		return nil, errors.Wrap(err, "signProductName")
+		return nil, err
 	}
 	signAll, err := s.hmacSha256([]byte("aliyun_v4_request"), signService)
 	if err != nil {
-		return nil, errors.Wrap(err, "signTerminator")
+		return nil, err
 	}
 	return signAll, nil
 }

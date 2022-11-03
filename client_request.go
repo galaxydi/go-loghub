@@ -18,7 +18,7 @@ import (
 // @note if error is nil, you must call http.Response.Body.Close() to finalize reader
 func (c *Client) request(project, method, uri string, headers map[string]string, body []byte) (*http.Response, error) {
 	// The caller should provide 'x-log-bodyrawsize' header
-	if _, ok := headers["x-log-bodyrawsize"]; !ok {
+	if _, ok := headers[HTTPHeaderBodyRawSize]; !ok {
 		return nil, fmt.Errorf("Can't find 'x-log-bodyrawsize' header")
 	}
 
@@ -40,13 +40,13 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	} else {
 		hostStr = project + "." + endpoint
 	}
-	headers["Host"] = hostStr
-	headers["x-log-apiversion"] = version
+	headers[HTTPHeaderHost] = hostStr
+	headers[HTTPHeaderAPIVersion] = version
 
 	if len(c.UserAgent) > 0 {
-		headers["User-Agent"] = c.UserAgent
+		headers[HTTPHeaderUserAgent] = c.UserAgent
 	} else {
-		headers["User-Agent"] = DefaultLogUserAgent
+		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
 	}
 
 	c.accessKeyLock.RLock()
@@ -59,20 +59,20 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 
 	// Access with token
 	if stsToken != "" {
-		headers["x-acs-security-token"] = stsToken
+		headers[HTTPHeaderAcsSecurityToken] = stsToken
 	}
 
 	if body != nil {
-		if _, ok := headers["Content-Type"]; !ok {
+		if _, ok := headers[HTTPHeaderContentType]; !ok {
 			return nil, fmt.Errorf("Can't find 'Content-Type' header")
 		}
 	}
 	var signer Signer
 	if authVersion == AuthV4 {
-		headers[HttpHeaderLogDate] = dateTimeISO8601()
+		headers[HTTPHeaderLogDate] = dateTimeISO8601()
 		signer = NewSignerV4(accessKeyID, accessKeySecret, region)
 	} else {
-		headers["Date"] = nowRFC1123()
+		headers[HTTPHeaderDate] = nowRFC1123()
 		signer = NewSignerV1(accessKeyID, accessKeySecret)
 	}
 	if err := signer.Sign(method, uri, headers, body); err != nil {

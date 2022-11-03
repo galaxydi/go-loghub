@@ -55,7 +55,7 @@ func (s *SignerV4Suite) SetupTest() {
 	}
 	s.dateTime = "20220808T032330Z"
 	// Set dateTime for debugging
-	s.headers[HttpHeaderLogDate] = s.dateTime
+	s.headers[HTTPHeaderLogDate] = s.dateTime
 	s.signer = &SignerV4{
 		accessKeyID:     s.mockAKID,
 		accessKeySecret: s.mockAKSec,
@@ -65,7 +65,7 @@ func (s *SignerV4Suite) SetupTest() {
 
 func (s *SignerV4Suite) TestSignV4Case1() {
 	assert.Nil(s.T(), s.signer.Sign(s.method, toUriWithQuery(s.uri, s.urlParams), s.headers, []byte(s.body)))
-	auth := s.headers["Authorization"]
+	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
 		"Signature=348d28cb4aa259a5302105b52d7d0ecde7ab415b3c0eb3a452f2a2fd38468991"
@@ -81,10 +81,10 @@ func (s *SignerV4Suite) TestSignV4Case2() {
 		region:          s.region,
 	}
 	s.headers = make(map[string]string)
-	s.headers[HttpHeaderLogDate] = s.dateTime
+	s.headers[HTTPHeaderLogDate] = s.dateTime
 
 	assert.Nil(s.T(), s.signer.Sign(s.method, s.uri, s.headers, []byte(s.body)))
-	auth := s.headers["Authorization"]
+	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-shanghai/sls/aliyun_v4_request," +
 		"Signature=8a10a5e723cb2e75964816de660b2c16a58af8bc0261f7f0722d832468c76ce8"
@@ -95,7 +95,7 @@ func (s *SignerV4Suite) TestSignV4Case2() {
 func (s *SignerV4Suite) TestSignV4Case3() {
 	s.body = ""
 	assert.Nil(s.T(), s.signer.Sign(s.method, toUriWithQuery(s.uri, s.urlParams), s.headers, []byte(s.body)))
-	auth := s.headers["Authorization"]
+	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
 		"Signature=17277e433834a91c193f2dd6f237fc9b33c653f13f4c87e9e73a5f7fcabc6631"
@@ -107,7 +107,7 @@ func (s *SignerV4Suite) TestSignV4Case4() {
 	s.body = ""
 	s.method = "GET"
 	assert.Nil(s.T(), s.signer.Sign(s.method, toUriWithQuery(s.uri, s.urlParams), s.headers, []byte(s.body)))
-	auth := s.headers["Authorization"]
+	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
 		"Signature=ef98c6596c88b80d12366ec42f4fab6d82037d961d84f2e8c52ab10908406470"
@@ -120,7 +120,7 @@ func (s *SignerV4Suite) TestSignV4Case5() {
 	s.urlParams["abs-ij*asd/vc"] = "a~js+d ada"
 	s.urlParams["a abAas123/vc"] = "a~jdad a2ADFs+d ada"
 	assert.Nil(s.T(), s.signer.Sign(s.method, toUriWithQuery(s.uri, s.urlParams), s.headers, []byte(s.body)))
-	auth := s.headers["Authorization"]
+	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
 		"Signature=d79c9358725537e03e3e0ff6d375853f36e2a7f853a2960053a498eefbbb42f5"
@@ -140,8 +140,9 @@ func (s *SignerV4Suite) TestSignV1Case1() {
 	expAuth := fmt.Sprintf("SLS %s:%s", mockAKID, expSign)
 
 	v1 := SignerV1{accessKeyID: mockAKID, accessKeySecret: mockAKSec}
-	v1.Sign("GET", "/logstores", headers, nil)
-	auth := headers["Authorization"]
+	err := v1.Sign("GET", "/logstores", headers, nil)
+	assert.Nil(s.T(), err)
+	auth := headers[HTTPHeaderAuthorization]
 	assert.Equal(s.T(), expAuth, auth)
 }
 
@@ -153,7 +154,6 @@ func (s *SignerV4Suite) TestSignV1Case2() {
 		110, 116, 101, 110, 116, 26, 0, 34, 14, 49,
 		48, 46, 50, 51, 48, 46, 50, 48, 49, 46, 49, 49, 55}
 	md5Sum := fmt.Sprintf("%X", md5.Sum(body))
-	fmt.Println(len(body))
 	headers := map[string]string{
 		"x-log-apiversion":      "0.6.0",
 		"x-log-signaturemethod": "hmac-sha1",
@@ -171,8 +171,9 @@ func (s *SignerV4Suite) TestSignV1Case2() {
 		accessKeyID:     mockAKID,
 		accessKeySecret: mockAKSec,
 	}
-	v1.Sign("GET", "/logstores/app_log", headers, body)
-	auth := headers["Authorization"]
+	err := v1.Sign("GET", "/logstores/app_log", headers, body)
+	assert.Nil(s.T(), err)
+	auth := headers[HTTPHeaderAuthorization]
 	assert.Equal(s.T(), expAuth, auth)
 }
 

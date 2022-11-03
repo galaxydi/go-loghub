@@ -12,6 +12,22 @@ import (
 	"time"
 )
 
+const (
+	HTTPHeaderAuthorization    = "Authorization"
+	HTTPHeaderContentMD5       = "Content-MD5"
+	HTTPHeaderContentType      = "Content-Type"
+	HTTPHeaderContentLength    = "Content-Length"
+	HTTPHeaderDate             = "Date"
+	HTTPHeaderHost             = "Host"
+	HTTPHeaderUserAgent        = "User-Agent"
+	HTTPHeaderAcsSecurityToken = "x-acs-security-token"
+	HTTPHeaderAPIVersion       = "x-log-apiversion"
+	HTTPHeaderLogDate          = "x-log-date"
+	HTTPHeaderLogContentSha256 = "x-log-content-sha256"
+	HTTPHeaderSignatureMethod  = "x-log-signaturemethod"
+	HTTPHeaderBodyRawSize      = "x-log-bodyrawsize"
+)
+
 type Signer interface {
 	// Sign modifies @param headers only, adds signature and other http headers
 	// that log services authorization requires.
@@ -44,18 +60,18 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 	var contentMD5, contentType, date, canoHeaders, canoResource string
 	if body != nil {
 		contentMD5 = fmt.Sprintf("%X", md5.Sum(body))
-		headers["Content-MD5"] = contentMD5
+		headers[HTTPHeaderContentMD5] = contentMD5
 	}
 
-	if val, ok := headers["Content-Type"]; ok {
+	if val, ok := headers[HTTPHeaderContentType]; ok {
 		contentType = val
 	}
 
-	date, ok := headers["Date"]
+	date, ok := headers[HTTPHeaderDate]
 	if !ok {
 		return fmt.Errorf("Can't find 'Date' header")
 	}
-	headers["x-log-signaturemethod"] = signatureMethod
+	headers[HTTPHeaderSignatureMethod] = signatureMethod
 	var slsHeaderKeys sort.StringSlice
 
 	// Calc CanonicalizedSLSHeaders
@@ -119,6 +135,6 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 	}
 	digest := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)
-	headers["Authorization"] = auth
+	headers[HTTPHeaderAuthorization] = auth
 	return nil
 }
