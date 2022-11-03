@@ -55,7 +55,7 @@ func (s *SignerV4Suite) SetupTest() {
 	}
 	s.dateTime = "20220808T032330Z"
 	// Set dateTime for debugging
-	s.headers["x-log-date"] = s.dateTime
+	s.headers[HttpHeaderLogDate] = s.dateTime
 	s.signer = &SignerV4{
 		accessKeyID:     s.mockAKID,
 		accessKeySecret: s.mockAKSec,
@@ -81,7 +81,7 @@ func (s *SignerV4Suite) TestSignV4Case2() {
 		region:          s.region,
 	}
 	s.headers = make(map[string]string)
-	s.headers["x-log-date"] = s.dateTime
+	s.headers[HttpHeaderLogDate] = s.dateTime
 
 	assert.Nil(s.T(), s.signer.Sign(s.method, s.uri, s.headers, []byte(s.body)))
 	auth := s.headers["Authorization"]

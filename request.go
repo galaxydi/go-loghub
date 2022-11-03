@@ -10,10 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
-
 	"github.com/cenkalti/backoff"
+	"github.com/go-kit/kit/log/level"
 	"golang.org/x/net/context"
 )
 
@@ -149,7 +147,6 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	baseURL := project.getBaseURL()
 	headers["Host"] = baseURL
 	headers["x-log-apiversion"] = version
-	headers["x-log-signaturemethod"] = signatureMethod
 	if len(project.UserAgent) > 0 {
 		headers["User-Agent"] = project.UserAgent
 	} else {
@@ -163,7 +160,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 
 	if body != nil {
 		if _, ok := headers["Content-Type"]; !ok {
-			return nil, NewClientError(fmt.Errorf("can't find 'Content-Type' header"))
+			return nil, NewClientError(fmt.Errorf("Can't find 'Content-Type' header"))
 		}
 	}
 
@@ -176,7 +173,7 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		signer = NewSignerV1(project.AccessKeyID, project.AccessKeySecret)
 	}
 	if err := signer.Sign(method, uri, headers, body); err != nil {
-		return nil, errors.Wrap(err, "sign")
+		return nil, err
 	}
 	// Initialize http request
 	reader := bytes.NewReader(body)

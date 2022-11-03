@@ -41,14 +41,14 @@ func NewSignerV4(accessKeyID, accessKeySecret, region string) *SignerV4 {
 	}
 }
 
-func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []byte) error {
 	if s.region == "" {
 		return ErrSignerV4MissingRegion
 	}
 
-	uri, urlParams, err := s.parseUri(uriWithQuery)
+	uri, urlParams, err := s.parseUri(uri)
 	if err != nil {
-		return errors.Wrap(err, "parseUri")
+		return err
 	}
 
 	dateTime, ok := headers[HttpHeaderLogDate]
@@ -94,31 +94,22 @@ func (s *SignerV4) Sign(method, uriWithQuery string, headers map[string]string, 
 	msg := s.buildSignMessage(canonReq, dateTime, scope)
 	key, err := s.buildSignKey(s.accessKeySecret, s.region, date)
 	if err != nil {
-		return errors.Wrap(err, "buildSignKey")
+		return err
 	}
 	hash, err := s.hmacSha256([]byte(msg), key)
 	if err != nil {
-		return errors.Wrap(err, "hmac-sha256")
+		return err
 	}
 	signature := fmt.Sprintf("%x", hash)
 	auth := s.buildAuthorization(s.accessKeyID, signature, scope)
 	headers["Authorization"] = auth
-
-	// For debugging
-	// fmt.Println("sha256Payload: ", sha256Payload)
-	// fmt.Println("dateTime: ", dateTime)
-	// fmt.Println("canonReq: ", canonReq)
-	// fmt.Println("signMessage: ", msg)
-	// fmt.Printf("signKey: %x\n", key)
-	// fmt.Println("signature: ", signature)
-	// fmt.Println("authorization: ", auth)
 	return nil
 }
 
 func (s *SignerV4) parseUri(uriWithQuery string) (string, map[string]string, error) {
 	u, err := url.Parse(uriWithQuery)
 	if err != nil {
-		return "", nil, errors.Wrap(err, "parse uriWithQuery")
+		return "", nil, err
 	}
 	urlParams := make(map[string]string)
 	for k, vals := range u.Query() {
@@ -129,10 +120,6 @@ func (s *SignerV4) parseUri(uriWithQuery string) (string, map[string]string, err
 		}
 	}
 	return u.Path, urlParams, nil
-}
-
-func dateISO8601() string {
-	return time.Now().In(gmtLoc).Format("20060102")
 }
 
 func dateTimeISO8601() string {

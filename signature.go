@@ -41,7 +41,7 @@ func NewSignerV1(accessKeyID, accessKeySecret string) *SignerV1 {
 	}
 }
 
-func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []byte) error {
 	var contentMD5, contentType, date, canoHeaders, canoResource, digest string
 	var slsHeaderKeys sort.StringSlice
 	if len(body) > 0 {
@@ -57,6 +57,7 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 	if !ok {
 		return fmt.Errorf("Can't find 'Date' header")
 	}
+	headers["x-log-signaturemethod"] = signatureMethod
 
 	// Calc CanonicalizedSLSHeaders
 	slsHeaders := make(map[string]string, len(headers))
@@ -77,7 +78,7 @@ func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, 
 	}
 
 	// Calc CanonicalizedResource
-	u, err := url.Parse(uriWithQuery)
+	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}

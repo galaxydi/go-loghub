@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/pkg/errors"
 )
 
 // request sends a request to alibaba cloud Log Service.
@@ -43,7 +42,6 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 	headers["Host"] = hostStr
 	headers["x-log-apiversion"] = version
-	headers["x-log-signaturemethod"] = signatureMethod
 
 	if len(c.UserAgent) > 0 {
 		headers["User-Agent"] = c.UserAgent
@@ -78,7 +76,7 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		signer = NewSignerV1(accessKeyID, accessKeySecret)
 	}
 	if err := signer.Sign(method, uri, headers, body); err != nil {
-		return nil, errors.Wrap(err, "sign")
+		return nil, err
 	}
 
 	// Initialize http request
