@@ -2,42 +2,55 @@ package sls
 
 import (
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
+	"github.com/pkg/errors"
 	"net/url"
 	"sort"
 	"strings"
 	"time"
 )
 
+type Signer interface {
+	// Sign modifies @param headers only, adds signature and other http headers
+	// that log services authorization requires.
+	Sign(method, uriWithQuery string, headers map[string]string, body []byte) error
+}
+
 // GMT location
 var gmtLoc = time.FixedZone("GMT", 0)
 
 // NowRFC1123 returns now time in RFC1123 format with GMT timezone,
-// eg. "Mon, 02 Jan 2006 15:04:05 GMT".
+// eg, "Mon, 02 Jan 2006 15:04:05 GMT".
 func nowRFC1123() string {
 	return time.Now().In(gmtLoc).Format(time.RFC1123)
 }
 
-// signature calculates a request's signature digest.
-func signature(accessKeySecret, method, uri string,
-	headers map[string]string) (digest string, err error) {
-	var contentMD5, contentType, date, canoHeaders, canoResource string
-	var slsHeaderKeys sort.StringSlice
+// SignerV1 version v1
+type SignerV1 struct {
+	accessKeyID     string
+	accessKeySecret string
+}
 
-	if val, ok := headers["Content-MD5"]; ok {
-		contentMD5 = val
+func NewSignerV1(accessKeyID, accessKeySecret string) *SignerV1 {
+	return &SignerV1{
+		accessKeyID:     accessKeyID,
+		accessKeySecret: accessKeySecret,
+	}
+}
+
+func (s *SignerV1) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+	var contentMD5, contentType, date, canoHeaders, canoResource, digest string
+	var slsHeaderKeys sort.StringSlice
+	if len(body) > 0 {
+		contentMD5 = fmt.Sprintf("%X", md5.Sum(body))
+		headers["Content-MD5"] = contentMD5
 	}
 
 	if val, ok := headers["Content-Type"]; ok {
 		contentType = val
-	}
-
-	date, ok := headers["Date"]
-	if !ok {
-		err = fmt.Errorf("Can't find 'Date' header")
-		return
 	}
 
 	// Calc CanonicalizedSLSHeaders
@@ -59,9 +72,9 @@ func signature(accessKeySecret, method, uri string,
 	}
 
 	// Calc CanonicalizedResource
-	u, err := url.Parse(uri)
+	u, err := url.Parse(uriWithQuery)
 	if err != nil {
-		return
+		return errors.Wrap(err, "parseUri")
 	}
 
 	canoResource += u.EscapedPath()
@@ -93,12 +106,16 @@ func signature(accessKeySecret, method, uri string,
 		canoHeaders + "\n" +
 		canoResource
 
+	fmt.Println(signStr)
+
 	// Signature = base64(hmac-sha1(UTF8-Encoding-Of(SignString)，AccessKeySecret))
-	mac := hmac.New(sha1.New, []byte(accessKeySecret))
+	mac := hmac.New(sha1.New, []byte(s.accessKeySecret))
 	_, err = mac.Write([]byte(signStr))
 	if err != nil {
-		return
+		return errors.Wrap(err, "hmac-sha1(signStr)")
 	}
 	digest = base64.StdEncoding.EncodeToString(mac.Sum(nil))
-	return
+	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)
+	headers["Authorization"] = auth
+	return nil
 }

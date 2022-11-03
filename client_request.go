@@ -3,7 +3,6 @@ package sls
 // request sends a request to SLS.
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 
@@ -13,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 )
 
 // request sends a request to alibaba cloud Log Service.
@@ -42,7 +42,6 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		hostStr = project + "." + endpoint
 	}
 	headers["Host"] = hostStr
-	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
 
@@ -56,6 +55,8 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	stsToken := c.SecurityToken
 	accessKeyID := c.AccessKeyID
 	accessKeySecret := c.AccessKeySecret
+	region := c.Region
+	authVersion := c.AuthVersion
 	c.accessKeyLock.RUnlock()
 
 	// Access with token
@@ -64,21 +65,21 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	}
 
 	if body != nil {
-		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
-		headers["Content-MD5"] = bodyMD5
 		if _, ok := headers["Content-Type"]; !ok {
 			return nil, fmt.Errorf("Can't find 'Content-Type' header")
 		}
 	}
-
-	// Calc Authorization
-	// Authorization = "SLS <AccessKeyId>:<Signature>"
-	digest, err := signature(accessKeySecret, method, uri, headers)
-	if err != nil {
-		return nil, err
+	var signer Signer
+	if authVersion == AuthV4 {
+		headers[HttpHeaderLogDate] = dateTimeISO8601()
+		signer = NewSignerV4(accessKeyID, accessKeySecret, region)
+	} else {
+		headers["Date"] = nowRFC1123()
+		signer = NewSignerV1(accessKeyID, accessKeySecret)
 	}
-	auth := fmt.Sprintf("SLS %v:%v", accessKeyID, digest)
-	headers["Authorization"] = auth
+	if err := signer.Sign(method, uri, headers, body); err != nil {
+		return nil, errors.Wrap(err, "sign")
+	}
 
 	// Initialize http request
 	reader := bytes.NewReader(body)

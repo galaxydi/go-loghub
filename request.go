@@ -2,7 +2,6 @@ package sls
 
 import (
 	"bytes"
-	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/log/level"
+	"github.com/pkg/errors"
 
 	"github.com/cenkalti/backoff"
 	"golang.org/x/net/context"
@@ -146,15 +146,8 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	// SLS public request headers
-	// var hostStr string
-	// if len(project.Name) == 0 {
-	// 	hostStr = project.Endpoint
-	// } else {
-	// 	hostStr = project.Name + "." + project.Endpoint
-	// }
 	baseURL := project.getBaseURL()
 	headers["Host"] = baseURL
-	headers["Date"] = nowRFC1123()
 	headers["x-log-apiversion"] = version
 	headers["x-log-signaturemethod"] = signatureMethod
 	if len(project.UserAgent) > 0 {
@@ -169,22 +162,22 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 	}
 
 	if body != nil {
-		bodyMD5 := fmt.Sprintf("%X", md5.Sum(body))
-		headers["Content-MD5"] = bodyMD5
 		if _, ok := headers["Content-Type"]; !ok {
-			return nil, NewClientError(fmt.Errorf("Can't find 'Content-Type' header"))
+			return nil, NewClientError(fmt.Errorf("can't find 'Content-Type' header"))
 		}
 	}
 
-	// Calc Authorization
-	// Authorization = "SLS <AccessKeyId>:<Signature>"
-	digest, err := signature(project.AccessKeySecret, method, uri, headers)
-	if err != nil {
-		return nil, NewClientError(err)
+	var signer Signer
+	if project.AuthVersion == AuthV4 {
+		headers[HttpHeaderLogDate] = dateTimeISO8601()
+		signer = NewSignerV4(project.AccessKeyID, project.AccessKeySecret, project.Region)
+	} else {
+		headers["Date"] = nowRFC1123()
+		signer = NewSignerV1(project.AccessKeyID, project.AccessKeySecret)
 	}
-	auth := fmt.Sprintf("SLS %v:%v", project.AccessKeyID, digest)
-	headers["Authorization"] = auth
-
+	if err := signer.Sign(method, uri, headers, body); err != nil {
+		return nil, errors.Wrap(err, "sign")
+	}
 	// Initialize http request
 	reader := bytes.NewReader(body)
 
