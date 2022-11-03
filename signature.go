@@ -6,7 +6,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	"github.com/pkg/errors"
 	"net/url"
 	"sort"
 	"strings"
@@ -43,7 +42,6 @@ func NewSignerV1(accessKeyID, accessKeySecret string) *SignerV1 {
 
 func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []byte) error {
 	var contentMD5, contentType, date, canoHeaders, canoResource, digest string
-	var slsHeaderKeys sort.StringSlice
 	if len(body) > 0 {
 		contentMD5 = fmt.Sprintf("%X", md5.Sum(body))
 		headers["Content-MD5"] = contentMD5
@@ -58,6 +56,7 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 		return fmt.Errorf("Can't find 'Date' header")
 	}
 	headers["x-log-signaturemethod"] = signatureMethod
+	var slsHeaderKeys sort.StringSlice
 
 	// Calc CanonicalizedSLSHeaders
 	slsHeaders := make(map[string]string, len(headers))
@@ -112,13 +111,11 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 		canoHeaders + "\n" +
 		canoResource
 
-	fmt.Println(signStr)
-
 	// Signature = base64(hmac-sha1(UTF8-Encoding-Of(SignString)，AccessKeySecret))
 	mac := hmac.New(sha1.New, []byte(s.accessKeySecret))
 	_, err = mac.Write([]byte(signStr))
 	if err != nil {
-		return errors.Wrap(err, "hmac-sha1(signStr)")
+		return err
 	}
 	digest = base64.StdEncoding.EncodeToString(mac.Sum(nil))
 	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)

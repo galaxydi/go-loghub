@@ -127,15 +127,15 @@ func dateTimeISO8601() string {
 }
 
 func (s *SignerV4) buildCanonicalHeader(headers map[string]string) map[string]string {
-	res := make(map[string]string)
+	canonicalHeaders := make(map[string]string)
 	for k, v := range headers {
-		lower := strings.ToLower(k)
-		_, ok := defaultSignedHeaders[lower]
-		if ok || strings.HasPrefix(lower, "x-log-") || strings.HasPrefix(lower, "x-acs-") {
-			res[lower] = v
+		key := strings.ToLower(k)
+		_, ok := defaultSignedHeaders[key]
+		if ok || strings.HasPrefix(key, "x-log-") || strings.HasPrefix(key, "x-acs-") {
+			canonicalHeaders[key] = v
 		}
 	}
-	return res
+	return canonicalHeaders
 }
 
 func (s *SignerV4) buildSignedHeaderStr(canonicalHeaders map[string]string) string {
