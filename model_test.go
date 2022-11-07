@@ -9,6 +9,7 @@ import (
 )
 
 func TestIndex_MarshalJSON(t *testing.T) {
+
 	type fields struct {
 		Keys                   map[string]IndexKey
 		Line                   *IndexLine
@@ -39,7 +40,7 @@ func TestIndex_MarshalJSON(t *testing.T) {
 				Ttl:        2,
 				MaxTextLen: 3,
 			},
-			want: []byte(`{"log_reduce":false,"max_text_len":3,"ttl":2}`),
+			want: []byte(`{"ttl":2,"max_text_len":3,"log_reduce":false}`),
 		},
 		{
 			name: "white & black",
@@ -48,7 +49,7 @@ func TestIndex_MarshalJSON(t *testing.T) {
 				LogReduceBlackListDict: []string{"key2"},
 				LogReduce:              true,
 			},
-			want: []byte(`{"log_reduce":true,"log_reduce_black_list":["key2"],"log_reduce_white_list":["key1"]}`),
+			want: []byte(`{"log_reduce":true,"log_reduce_white_list":["key1"],"log_reduce_black_list":["key2"]}`),
 		},
 	}
 	for _, tt := range tests {
@@ -67,4 +68,5 @@ func TestIndex_MarshalJSON(t *testing.T) {
 			assert.Equalf(t, tt.want, got, "MarshalJSON()")
 		})
 	}
+
 }

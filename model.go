@@ -133,30 +133,6 @@ type Index struct {
 	LogReduceBlackListDict []string            `json:"log_reduce_black_list,omitempty"`
 }
 
-func (u *Index) MarshalJSON() ([]byte, error) {
-	rst := make(map[string]interface{})
-	rst["log_reduce"] = u.LogReduce
-	if len(u.Keys) > 0 {
-		rst["keys"] = u.Keys
-	}
-	if u.Line != nil {
-		rst["line"] = u.Line
-	}
-	if u.Ttl > 0 {
-		rst["ttl"] = u.Ttl
-	}
-	if u.MaxTextLen > 0 {
-		rst["max_text_len"] = u.MaxTextLen
-	}
-	if len(u.LogReduceWhiteListDict) > 0 {
-		rst["log_reduce_white_list"] = u.LogReduceWhiteListDict
-	}
-	if len(u.LogReduceBlackListDict) > 0 {
-		rst["log_reduce_black_list"] = u.LogReduceBlackListDict
-	}
-	return json.Marshal(rst)
-}
-
 // CreateDefaultIndex return a full text index config
 func CreateDefaultIndex() *Index {
 	return &Index{
