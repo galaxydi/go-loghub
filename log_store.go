@@ -582,6 +582,7 @@ func (s *LogStore) getLogs(req *GetLogRequest) (*http.Response, []byte, *GetLogs
 		Count:    count,
 		Contents: contents,
 		HasSQL:   hasSQL,
+		Header:   r.Header,
 	}, nil
 }
 
