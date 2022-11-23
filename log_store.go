@@ -636,22 +636,12 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	return s.GetLogsV2(&req)
 }
 
-func (s *LogStore) getToCompleted(f func() (bool, error), retryCount int64) {
+func (s *LogStore) getToCompleted(f func() (bool, error)) {
 	interval := 100 * time.Millisecond
-	if retryCount > 20 {
-		retryCount = 20
-	}
-	if retryCount < 0 {
-		retryCount = 0
-	}
-	retryCount++
-	isTimeout := false
-	go func() {
-		<-time.After(5 * time.Minute)
-		isTimeout = true
-	}()
+	retryCount := MaxCompletedRetryCount
 	isCompleted := false
-	for retryCount > 0 && !isTimeout {
+	timeoutTime := time.Now().Add(MaxCompletedRetryLatency)
+	for retryCount > 0 && timeoutTime.After(time.Now()) {
 		var err error
 		isCompleted, err = f()
 		if err != nil || isCompleted {
@@ -671,7 +661,7 @@ func (s *LogStore) getToCompleted(f func() (bool, error), retryCount int64) {
 
 // GetLogsToCompleted query logs with [from, to) time range to completed
 func (s *LogStore) GetLogsToCompleted(topic string, from int64, to int64, queryExp string,
-	maxLineNum int64, offset int64, reverse bool, retryCount int64) (*GetLogsResponse, error) {
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
 	var res *GetLogsResponse
 	var err error
 	f := func() (bool, error) {
@@ -681,12 +671,27 @@ func (s *LogStore) GetLogsToCompleted(topic string, from int64, to int64, queryE
 		}
 		return false, err
 	}
-	s.getToCompleted(f, retryCount)
+	s.getToCompleted(f)
+	return res, err
+}
+
+// GetLogsToCompletedV2 query logs with [from, to) time range to completed
+func (s *LogStore) GetLogsToCompletedV2(req *GetLogRequest) (*GetLogsResponse, error) {
+	var res *GetLogsResponse
+	var err error
+	f := func() (bool, error) {
+		res, err = s.GetLogsV2(req)
+		if err == nil {
+			return res.IsComplete(), nil
+		}
+		return false, err
+	}
+	s.getToCompleted(f)
 	return res, err
 }
 
 // GetHistogramsToCompleted query logs with [from, to) time range to completed
-func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, queryExp string, retryCount int64) (*GetHistogramsResponse, error) {
+func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error) {
 	var res *GetHistogramsResponse
 	var err error
 	f := func() (bool, error) {
@@ -696,7 +701,7 @@ func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, 
 		}
 		return false, err
 	}
-	s.getToCompleted(f, retryCount)
+	s.getToCompleted(f)
 	return res, err
 }
 
