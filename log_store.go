@@ -3,6 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"io/ioutil"
 	"net/http"
@@ -633,6 +634,70 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	req.Offset = offset
 	req.Reverse = reverse
 	return s.GetLogsV2(&req)
+}
+
+func (s *LogStore) getToCompleted(f func() (bool, error), retryCount int64) {
+	interval := 100 * time.Millisecond
+	if retryCount > 20 {
+		retryCount = 20
+	}
+	if retryCount < 0 {
+		retryCount = 0
+	}
+	retryCount++
+	isTimeout := false
+	go func() {
+		<-time.After(5 * time.Minute)
+		isTimeout = true
+	}()
+	isCompleted := false
+	for retryCount > 0 && !isTimeout {
+		var err error
+		isCompleted, err = f()
+		if err != nil || isCompleted {
+			return
+		}
+		time.Sleep(interval)
+		retryCount--
+		if interval < 10*time.Second {
+			interval = interval * 2
+		}
+		if interval > 10*time.Second {
+			interval = 10 * time.Second
+		}
+	}
+	return
+}
+
+// GetLogsToCompleted query logs with [from, to) time range to completed
+func (s *LogStore) GetLogsToCompleted(topic string, from int64, to int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool, retryCount int64) (*GetLogsResponse, error) {
+	var res *GetLogsResponse
+	var err error
+	f := func() (bool, error) {
+		res, err = s.GetLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
+		if err == nil {
+			return res.IsComplete(), nil
+		}
+		return false, err
+	}
+	s.getToCompleted(f, retryCount)
+	return res, err
+}
+
+// GetHistogramsToCompleted query logs with [from, to) time range to completed
+func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, queryExp string, retryCount int64) (*GetHistogramsResponse, error) {
+	var res *GetHistogramsResponse
+	var err error
+	f := func() (bool, error) {
+		res, err = s.GetHistograms(topic, from, to, queryExp)
+		if err == nil {
+			return res.IsComplete(), nil
+		}
+		return false, err
+	}
+	s.getToCompleted(f, retryCount)
+	return res, err
 }
 
 // GetLogsV2 query logs with [from, to) time range
