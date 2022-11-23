@@ -20,6 +20,10 @@ var RetryOnServerErrorEnabled = true
 
 var GlobalDebugLevel = 0
 
+var MaxCompletedRetryCount = 20
+
+var MaxCompletedRetryLatency = 5 * time.Minute
+
 // compress type
 const (
 	Compress_LZ4  = iota // 0
