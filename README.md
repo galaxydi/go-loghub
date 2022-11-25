@@ -198,7 +198,7 @@ totalLogCount := 0
 ```go
 attribute := sls.MachinGroupAttribute{
 }
-machineList := []string{"mac-user-defined-id-value"}
+machineList := []string{"mac-user-defined-id-value_XX"}
 var machineGroup = &sls.MachineGroup{
    Name:          groupName,
    MachineIDType: "userdefined",
