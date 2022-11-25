@@ -182,10 +182,7 @@ func deleteMachineGroup(groupName string) (err error) {
 }
 
 func createMachineGroup(groupName string) (err error) {
-	attribute := sls.MachinGroupAttribute{
-		ExternalName: "",
-		TopicName:    "",
-	}
+	attribute := sls.MachinGroupAttribute{}
 	machineList := []string{"mac-user-defined-id-value"}
 	var machineGroup = &sls.MachineGroup{
 		Name:          groupName,
