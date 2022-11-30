@@ -68,7 +68,7 @@ func (s *SignerV4Suite) TestSignV4Case1() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=348d28cb4aa259a5302105b52d7d0ecde7ab415b3c0eb3a452f2a2fd38468991"
+		"Signature=bcdc405707a79dd61b1407a31613e36cbec25d3bbeecf7101add56aacadbdf1e"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -98,7 +98,7 @@ func (s *SignerV4Suite) TestSignV4Case3() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=17277e433834a91c193f2dd6f237fc9b33c653f13f4c87e9e73a5f7fcabc6631"
+		"Signature=b657145686c93047f9c71444e1f2d4bed5ed02f6f24a996ef5067676221de732"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -110,7 +110,7 @@ func (s *SignerV4Suite) TestSignV4Case4() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=ef98c6596c88b80d12366ec42f4fab6d82037d961d84f2e8c52ab10908406470"
+		"Signature=5fb4e9302126de99c05643f8f7469eb6c35b7851a04c495dd90840a741451f1b"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -123,7 +123,7 @@ func (s *SignerV4Suite) TestSignV4Case5() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=d79c9358725537e03e3e0ff6d375853f36e2a7f853a2960053a498eefbbb42f5"
+		"Signature=6e3bae51420ade037431836e0b9791a4b750982376fa7e056585af7dcd10eae1"
 	assert.Equal(s.T(), exp, auth)
 }
 

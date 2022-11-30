@@ -12,7 +12,6 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 		SecurityToken:   securityToken,
-		Region:          parseRegionFromEndpoint(endpoint),
 	}
 }
 

@@ -15,10 +15,11 @@ import (
 const (
 	emptyStringSha256   = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
 	signerV4ProductName = "sls"
+	ISO8601             = "20060102T150405Z"
 )
 
 var (
-	ErrSignerV4MissingRegion = errors.New("sign version v4 require a valid region")
+	errSignerV4MissingRegion = errors.New("sign version v4 require a valid region")
 )
 
 // SignerV4 sign version v4, a non-empty region is required
@@ -36,9 +37,16 @@ func NewSignerV4(accessKeyID, accessKeySecret, region string) *SignerV4 {
 	}
 }
 
+func (s *SignerV4) isSignedHeader(key string) bool {
+	return strings.HasPrefix(key, "x-log-") ||
+		strings.HasPrefix(key, "x-acs-") ||
+		strings.EqualFold(key, HTTPHeaderHost) ||
+		strings.EqualFold(key, HTTPHeaderContentType)
+}
+
 func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []byte) error {
 	if s.region == "" {
-		return ErrSignerV4MissingRegion
+		return errSignerV4MissingRegion
 	}
 
 	uri, urlParams, err := s.parseUri(uri)
@@ -77,27 +85,53 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 	headers[HTTPHeaderLogContentSha256] = sha256Payload
 	headers[HTTPHeaderContentLength] = strconv.Itoa(contentLength)
 
-	// Canonical header & signedHeaderStr
-	canonHeaders := s.buildCanonicalHeader(headers)
-	signedHeaderStr := s.buildSignedHeaderStr(canonHeaders)
+	// Canonical headers
+	signedHeadersStr, canonicalHeaderStr := s.buildCanonicalHeaders(headers)
 
 	// CanonicalRequest
-	canonReq := s.buildCanonicalRequest(method, uri, signedHeaderStr, sha256Payload, urlParams, canonHeaders)
+	canonReq := s.buildCanonicalRequest(method, uri, sha256Payload, canonicalHeaderStr, signedHeadersStr, urlParams)
 	scope := s.buildScope(date, s.region)
 
 	// SignKey + signMessage => signature
-	msg := s.buildSignMessage(canonReq, dateTime, scope)
+	strToSign := s.buildSignMessage(canonReq, dateTime, scope)
 	key, err := s.buildSignKey(s.accessKeySecret, s.region, date)
 	if err != nil {
 		return err
 	}
-	hash, err := s.hmacSha256([]byte(msg), key)
+	hash, err := s.hmacSha256([]byte(strToSign), key)
 	if err != nil {
 		return err
 	}
 	signature := fmt.Sprintf("%x", hash)
 	headers[HTTPHeaderAuthorization] = s.buildAuthorization(s.accessKeyID, signature, scope)
 	return nil
+}
+
+func (s *SignerV4) buildCanonicalHeaders(headers map[string]string) (string, string) {
+	var headerKeys []string
+	signed := make(map[string]string)
+	for k, v := range headers {
+		key := strings.ToLower(k)
+		if s.isSignedHeader(key) {
+			signed[k] = v
+			headerKeys = append(headerKeys, k)
+		}
+	}
+	sort.Strings(headerKeys)
+	var canonicalHeaders strings.Builder
+	var signedHeaders strings.Builder
+	n := len(headerKeys)
+	for i := 0; i < n; i++ {
+		canonicalHeaders.WriteString(headerKeys[i])
+		canonicalHeaders.WriteRune(':')
+		canonicalHeaders.WriteString(signed[headerKeys[i]])
+		canonicalHeaders.WriteRune('\n')
+		if i > 0 {
+			signedHeaders.WriteRune(';')
+		}
+		signedHeaders.WriteString(headerKeys[i])
+	}
+	return signedHeaders.String(), canonicalHeaders.String()
 }
 
 func (s *SignerV4) parseUri(uriWithQuery string) (string, map[string]string, error) {
@@ -117,76 +151,45 @@ func (s *SignerV4) parseUri(uriWithQuery string) (string, map[string]string, err
 }
 
 func dateTimeISO8601() string {
-	return time.Now().In(gmtLoc).Format("20060102T150405Z")
+	return time.Now().In(gmtLoc).Format(ISO8601)
 }
 
-func (s *SignerV4) buildCanonicalHeader(headers map[string]string) map[string]string {
-	canonicalHeaders := make(map[string]string)
-	for k, v := range headers {
-		key := strings.ToLower(k)
-		if strings.HasPrefix(key, "x-log-") || strings.HasPrefix(key, "x-acs-") {
-			canonicalHeaders[key] = v
-		} else if strings.EqualFold(key, HTTPHeaderHost) || strings.EqualFold(key, HTTPHeaderContentType) {
-			canonicalHeaders[key] = v
-		}
-	}
-	return canonicalHeaders
-}
-
-func (s *SignerV4) buildSignedHeaderStr(canonicalHeaders map[string]string) string {
-	res, sep := "", ""
-	s.forEachSorted(canonicalHeaders, func(k, v string) {
-		res += sep + k
-		sep = ";"
-	})
-	return res
-}
-
-// Iterate over m in sorted order, and apply func f
-func (s *SignerV4) forEachSorted(m map[string]string, f func(k, v string)) {
-	var ss sort.StringSlice
-	for k := range m {
-		ss = append(ss, k)
-	}
-	ss.Sort()
-	for _, k := range ss {
-		f(k, m[k])
-	}
-}
-
-func (s *SignerV4) buildCanonicalRequest(method, uri, signedHeaderStr, sha256Payload string, urlParams, canonicalHeaders map[string]string) string {
-	res := ""
-
-	res += method + "\n"
-	res += s.urlEncode(uri, true) + "\n"
+func (s *SignerV4) buildCanonicalRequest(method, uri, sha256Payload, canonicalHeaders, signedHeaders string, urlParams map[string]string) string {
+	builder := strings.Builder{}
+	builder.WriteString(method)
+	builder.WriteRune('\n')
+	builder.WriteString(s.urlEncode(uri, true))
+	builder.WriteRune('\n')
 
 	// Url params
 	canonParams := make(map[string]string)
+	var queryKeys []string
 	for k, v := range urlParams {
-		ck := s.urlEncode(strings.TrimSpace(k), false)
-		cv := s.urlEncode(strings.TrimSpace(v), false)
-		canonParams[ck] = cv
+		key := s.urlEncode(k, false)
+		value := s.urlEncode(v, false)
+		canonParams[key] = value
+		queryKeys = append(queryKeys, key)
 	}
-
-	sep := ""
-	s.forEachSorted(canonParams, func(k, v string) {
-		res += sep + k
-		sep = "&"
-		if len(v) != 0 {
-			res += "=" + v
+	sort.Strings(queryKeys)
+	n := len(queryKeys)
+	for i := 0; i < n; i++ {
+		if i > 0 {
+			builder.WriteRune('&')
 		}
-	})
-	res += "\n"
-
-	// Canonical headers
-	s.forEachSorted(canonicalHeaders, func(k, v string) {
-		res += k + ":" + strings.TrimSpace(v) + "\n"
-	})
-	res += "\n"
-
-	res += signedHeaderStr + "\n"
-	res += sha256Payload
-	return res
+		builder.WriteString(queryKeys[i])
+		v := canonParams[queryKeys[i]]
+		if len(v) != 0 {
+			builder.WriteRune('=')
+			builder.WriteString(v)
+		}
+	}
+	builder.WriteRune('\n')
+	builder.WriteString(canonicalHeaders)
+	builder.WriteRune('\n')
+	builder.WriteString(signedHeaders)
+	builder.WriteRune('\n')
+	builder.WriteString(sha256Payload)
+	return builder.String()
 }
 
 func (s *SignerV4) urlEncode(uri string, ignoreSlash bool) string {
@@ -211,7 +214,7 @@ func (s *SignerV4) hmacSha256(message, key []byte) ([]byte, error) {
 	hmacHasher := hmac.New(sha256.New, key)
 	_, err := hmacHasher.Write(message)
 	if err != nil {
-		return nil, errors.Wrap(err, "hmac-sha256")
+		return nil, err
 	}
 	return hmacHasher.Sum(nil), nil
 }
@@ -237,6 +240,5 @@ func (s *SignerV4) buildSignKey(accessKeySecret, region, date string) ([]byte, e
 }
 
 func (s *SignerV4) buildAuthorization(accessKeyID, signature, scope string) string {
-	return fmt.Sprintf("SLS4-HMAC-SHA256 Credential=%s/%s,Signature=%s",
-		accessKeyID, scope, signature)
+	return fmt.Sprintf("SLS4-HMAC-SHA256 Credential=%s/%s,Signature=%s", accessKeyID, scope, signature)
 }
