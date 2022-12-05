@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
-	"regexp"
 	"strconv"
 	"sync"
 	"time"
@@ -361,14 +360,4 @@ func (c *Client) DeleteProject(name string) error {
 // Close the client
 func (c *Client) Close() error {
 	return nil
-}
-
-func parseRegionFromEndpoint(endpoint string) string {
-	exp := regexp.MustCompile(
-		`^(?:https?:\/\/)?([a-zA-Z0-9]+(?:-[a-zA-Z0-9]+)+?)(?:-intranet|-share)?\..*`)
-	matches := exp.FindStringSubmatch(endpoint)
-	if len(matches) != 2 {
-		return ""
-	}
-	return matches[1]
 }
