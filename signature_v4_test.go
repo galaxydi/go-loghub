@@ -68,7 +68,7 @@ func (s *SignerV4Suite) TestSignV4Case1() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=bcdc405707a79dd61b1407a31613e36cbec25d3bbeecf7101add56aacadbdf1e"
+		"Signature=a98f5632e93836e63839cd836a54055f480020a9364ca944e2d34f2eb9bf1bed"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -98,7 +98,7 @@ func (s *SignerV4Suite) TestSignV4Case3() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=b657145686c93047f9c71444e1f2d4bed5ed02f6f24a996ef5067676221de732"
+		"Signature=5a66d8f8051983e0e9d08e0f960ef9252ef971eead5bb5c7acec8617a2eb2701"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -110,7 +110,7 @@ func (s *SignerV4Suite) TestSignV4Case4() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=5fb4e9302126de99c05643f8f7469eb6c35b7851a04c495dd90840a741451f1b"
+		"Signature=d92741852500791d662a8d469ff61627c0559ecd86c3f59b7bf6772b6c62666a"
 	assert.Equal(s.T(), exp, auth)
 }
 
@@ -123,8 +123,19 @@ func (s *SignerV4Suite) TestSignV4Case5() {
 	auth := s.headers[HTTPHeaderAuthorization]
 	exp := "SLS4-HMAC-SHA256 " +
 		"Credential=acsddda21dsd/20220808/cn-hangzhou/sls/aliyun_v4_request," +
-		"Signature=6e3bae51420ade037431836e0b9791a4b750982376fa7e056585af7dcd10eae1"
+		"Signature=2c204068e961a8813a6bcf7ac422f7fa6e9bf9a5da493e0165dfe100854d18ff"
 	assert.Equal(s.T(), exp, auth)
+}
+
+func (s *SignerV4Suite) TestSignV4Case6() {
+	mockAKID := "mockAccessKeyID"
+	mockAKSec := "mockAccessKeySecret"
+	signer := SignerV4{accessKeyID: mockAKID, accessKeySecret: mockAKSec, region: "cn-hangzhou"}
+	encoded := signer.percentEncode("123abc!@#$%^&*()-=_+ ~|\\/")
+	assert.Equal(s.T(), "123abc%21%40%23%24%25%5E%26%2A%28%29-%3D_%2B%20~%7C%5C%2F", encoded)
+
+	encoded = signer.percentEncode("!@#$%^&*()=-+ ~./_[()]%20你好\000\u0111❤😓")
+	assert.Equal(s.T(), "%21%40%23%24%25%5E%26%2A%28%29%3D-%2B%20~.%2F_%5B%28%29%5D%2520%E4%BD%A0%E5%A5%BD%00%C4%91%E2%9D%A4%F0%9F%98%93", encoded)
 }
 
 func (s *SignerV4Suite) TestSignV1Case1() {

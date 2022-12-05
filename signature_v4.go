@@ -3,6 +3,7 @@ package sls
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"github.com/pkg/errors"
 	"net/url"
@@ -102,7 +103,7 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 	if err != nil {
 		return err
 	}
-	signature := fmt.Sprintf("%x", hash)
+	signature := hex.EncodeToString(hash)
 	headers[HTTPHeaderAuthorization] = s.buildAuthorization(s.accessKeyID, signature, scope)
 	return nil
 }
@@ -113,8 +114,8 @@ func (s *SignerV4) buildCanonicalHeaders(headers map[string]string) (string, str
 	for k, v := range headers {
 		key := strings.ToLower(k)
 		if s.isSignedHeader(key) {
-			signed[k] = v
-			headerKeys = append(headerKeys, k)
+			signed[key] = v
+			headerKeys = append(headerKeys, key)
 		}
 	}
 	sort.Strings(headerKeys)
@@ -158,17 +159,15 @@ func (s *SignerV4) buildCanonicalRequest(method, uri, sha256Payload, canonicalHe
 	builder := strings.Builder{}
 	builder.WriteString(method)
 	builder.WriteRune('\n')
-	builder.WriteString(s.urlEncode(uri, true))
+	builder.WriteString(uri)
 	builder.WriteRune('\n')
 
 	// Url params
 	canonParams := make(map[string]string)
 	var queryKeys []string
 	for k, v := range urlParams {
-		key := s.urlEncode(k, false)
-		value := s.urlEncode(v, false)
-		canonParams[key] = value
-		queryKeys = append(queryKeys, key)
+		canonParams[k] = s.percentEncode(v)
+		queryKeys = append(queryKeys, k)
 	}
 	sort.Strings(queryKeys)
 	n := len(queryKeys)
@@ -192,13 +191,9 @@ func (s *SignerV4) buildCanonicalRequest(method, uri, sha256Payload, canonicalHe
 	return builder.String()
 }
 
-func (s *SignerV4) urlEncode(uri string, ignoreSlash bool) string {
+func (s *SignerV4) percentEncode(uri string) string {
 	u := url.QueryEscape(uri)
 	u = strings.ReplaceAll(u, "+", "%20")
-	u = strings.ReplaceAll(u, "*", "%2A")
-	if ignoreSlash {
-		u = strings.ReplaceAll(u, "%2F", "/")
-	}
 	return u
 }
 
