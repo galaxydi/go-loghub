@@ -14,9 +14,12 @@ import (
 )
 
 const (
-	emptyStringSha256   = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	signerV4ProductName = "sls"
-	ISO8601             = "20060102T150405Z"
+	emptyStringSha256                = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	signerV4ProductName              = "sls"
+	ISO8601                          = "20060102T150405Z"
+	authorizationV4SigningSaltFigure = "aliyun_v4_request"
+	authorizationAlgorithmV4         = "SLS4-HMAC-SHA256"
+	authorizationV4SecretKeyPrefix   = "aliyun_v4"
 )
 
 var (
@@ -95,7 +98,7 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 
 	// SignKey + signMessage => signature
 	strToSign := s.buildSignMessage(canonReq, dateTime, scope)
-	key, err := s.buildSignKey(s.accessKeySecret, s.region, date)
+	key, err := s.buildSigningKey(s.accessKeySecret, s.region, date)
 	if err != nil {
 		return err
 	}
@@ -198,11 +201,27 @@ func (s *SignerV4) percentEncode(uri string) string {
 }
 
 func (s *SignerV4) buildScope(date, region string) string {
-	return date + "/" + region + "/" + signerV4ProductName + "/aliyun_v4_request"
+	var builder strings.Builder
+	builder.WriteString(date)
+	builder.WriteRune('/')
+	builder.WriteString(region)
+	builder.WriteRune('/')
+	builder.WriteString(signerV4ProductName)
+	builder.WriteRune('/')
+	builder.WriteString(authorizationV4SigningSaltFigure)
+	return builder.String()
 }
 
 func (s *SignerV4) buildSignMessage(canonReq, dateTime, scope string) string {
-	return "SLS4-HMAC-SHA256" + "\n" + dateTime + "\n" + scope + "\n" + fmt.Sprintf("%x", sha256.Sum256([]byte(canonReq)))
+	var builder strings.Builder
+	builder.WriteString(authorizationAlgorithmV4)
+	builder.WriteRune('\n')
+	builder.WriteString(dateTime)
+	builder.WriteRune('\n')
+	builder.WriteString(scope)
+	builder.WriteRune('\n')
+	builder.WriteString(fmt.Sprintf("%x", sha256.Sum256([]byte(canonReq))))
+	return builder.String()
 }
 
 func (s *SignerV4) hmacSha256(message, key []byte) ([]byte, error) {
@@ -214,8 +233,8 @@ func (s *SignerV4) hmacSha256(message, key []byte) ([]byte, error) {
 	return hmacHasher.Sum(nil), nil
 }
 
-func (s *SignerV4) buildSignKey(accessKeySecret, region, date string) ([]byte, error) {
-	signDate, err := s.hmacSha256([]byte(date), []byte("aliyun_v4"+accessKeySecret))
+func (s *SignerV4) buildSigningKey(accessKeySecret, region, date string) ([]byte, error) {
+	signDate, err := s.hmacSha256([]byte(date), []byte(authorizationV4SecretKeyPrefix+accessKeySecret))
 	if err != nil {
 		return nil, err
 	}
@@ -227,7 +246,7 @@ func (s *SignerV4) buildSignKey(accessKeySecret, region, date string) ([]byte, e
 	if err != nil {
 		return nil, err
 	}
-	signAll, err := s.hmacSha256([]byte("aliyun_v4_request"), signService)
+	signAll, err := s.hmacSha256([]byte(authorizationV4SigningSaltFigure), signService)
 	if err != nil {
 		return nil, err
 	}
