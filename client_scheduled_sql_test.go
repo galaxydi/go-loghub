@@ -27,7 +27,7 @@ type ScheduledSQLTestSuite struct {
 	client             *Client
 }
 
-func (s *ScheduledSQLTestSuite) SetupTest() {
+func (s *ScheduledSQLTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
@@ -45,7 +45,7 @@ func (s *ScheduledSQLTestSuite) SetupTest() {
 	s.setUp()
 }
 
-func (s *ScheduledSQLTestSuite) TearDownTest() {
+func (s *ScheduledSQLTestSuite) TearDownSuite() {
 	err := s.client.DeleteProject(s.projectName)
 	s.Require().Nil(err)
 }

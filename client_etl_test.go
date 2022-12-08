@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -23,11 +24,11 @@ type ETLJobTestV2Suite struct {
 	client             *Client
 }
 
-func (s *ETLJobTestV2Suite) SetupTest() {
+func (s *ETLJobTestV2Suite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
-	s.targetLogstoreName = os.Getenv("LOG_TEST_TARGET_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-etl-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
+	s.targetLogstoreName = fmt.Sprintf("target-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client = &Client{
@@ -35,6 +36,15 @@ func (s *ETLJobTestV2Suite) SetupTest() {
 		AccessKeySecret: s.accessKeySecret,
 		Endpoint:        s.endpoint,
 	}
+	s.setUp()
+}
+
+func (s *ETLJobTestV2Suite) TearDownSuite() {
+	err := s.client.DeleteLogStore(s.projectName, s.logstoreName)
+	s.Require().Nil(err)
+	err = s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
+	time.Sleep(time.Second * 10)
 }
 
 func (s *ETLJobTestV2Suite) createETLJobV2(etlName string) error {
@@ -187,4 +197,15 @@ func (s *ETLJobTestV2Suite) TestClient_RestartETLJobV2() {
 
 	err = s.client.DeleteETL(s.projectName, etlName)
 	s.Require().Nil(err)
+}
+
+func (s *ETLJobTestV2Suite) setUp() {
+	_, ce := s.client.CreateProject(s.projectName, "test etl job")
+	s.Require().Nil(ce)
+	time.Sleep(time.Second * 10)
+	cle := s.client.CreateLogStore(s.projectName, s.logstoreName, 3, 2, true, 4)
+	s.Require().Nil(cle)
+	cle2 := s.client.CreateLogStore(s.projectName, s.targetLogstoreName, 3, 2, true, 4)
+	s.Require().Nil(cle2)
+	time.Sleep(time.Second * 60)
 }

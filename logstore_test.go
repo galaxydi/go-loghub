@@ -23,54 +23,49 @@ type LogstoreTestSuite struct {
 	endpoint        string
 	projectName     string
 	logstoreName    string
-	logShipperRole  string
 	accessKeyID     string
 	accessKeySecret string
 	Project         *LogProject
 	Logstore        *LogStore
+	client          ClientInterface
+	arn             string
+	cmkKeyId        string
+	cmkEndpoint     string
 }
 
-func (s *LogstoreTestSuite) SetupTest() {
+func (s *LogstoreTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-logstore-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
-	s.logShipperRole = os.Getenv("LOG_TEST_SHIPPER_ROLE")
+	s.arn = os.Getenv("LOG_TEST_ROLE_ARN")
+	s.cmkKeyId = os.Getenv("LOG_TEST_CMK_ID")
+	s.cmkEndpoint = os.Getenv("LOG_TEST_CMK_ENDPOINT")
+
 	slsProject, err := NewLogProject(s.projectName, s.endpoint, s.accessKeyID, s.accessKeySecret)
 	s.Nil(err)
 	s.NotNil(slsProject)
 	s.Project = slsProject
-	slsLogstore := createLogStore(s)
-	s.NotNil(slsLogstore)
-	s.Logstore = slsLogstore
-}
+	s.Logstore = s.getLogstore()
 
-func createLogStore(s *LogstoreTestSuite) *LogStore {
-	store, err := NewLogStore(s.logstoreName, s.Project)
+	s.client = CreateNormalInterface(s.endpoint, s.accessKeyID, s.accessKeySecret, "")
+	_, err = s.client.CreateProject(s.projectName, "")
 	s.Nil(err)
-	store.EncryptConf = &EncryptConf{
-		Enable:      true,
-		EncryptType: "m4",
-		UserCmkInfo: &EncryptUserCmkConf{
-			CmkKeyId: "your_cmk_id",
-			Arn:      "your_ram_role_arn",
-			RegionId: "your_region_id",
-		},
-	}
-	return store
+	time.Sleep(10 * time.Second)
+	logStore := s.getLogstore()
+	err = s.Project.CreateLogStoreV2(logStore)
+	s.Nil(err)
+	time.Sleep(60 * time.Second)
 }
 
-func (s *LogstoreTestSuite) TestCreateLogStoreWithNewRequestBody() {
-	client := CreateNormalInterface(s.endpoint, s.accessKeyID, s.accessKeySecret, "")
-	exist, ce := client.CheckProjectExist(s.projectName)
-	s.Nil(ce)
-	if !exist {
-		_, cpe := client.CreateProject(s.projectName, "go sdk test")
-		s.Nil(cpe)
-	}
-	defer client.DeleteProject(s.projectName)
-	logStore := &LogStore{
+func (s *LogstoreTestSuite) TearDownSuite() {
+	err := s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
+}
+
+func (s *LogstoreTestSuite) getLogstore() *LogStore {
+	return &LogStore{
 		Name:          s.logstoreName,
 		TTL:           7,
 		ShardCount:    2,
@@ -78,10 +73,21 @@ func (s *LogstoreTestSuite) TestCreateLogStoreWithNewRequestBody() {
 		AutoSplit:     true,
 		MaxSplitShard: 16,
 		AppendMeta:    false,
+		project:       s.Project,
+		EncryptConf: &EncryptConf{
+			Enable:      true,
+			EncryptType: "m4",
+			UserCmkInfo: &EncryptUserCmkConf{
+				CmkKeyId: s.cmkKeyId,
+				Arn:      s.arn,
+				RegionId: s.cmkEndpoint,
+			},
+		},
 	}
-	err := s.Project.CreateLogStoreV2(logStore)
-	s.Nil(err)
-	time.Sleep(time.Second * 10)
+}
+
+func (s *LogstoreTestSuite) TestCreateLogStoreWithNewRequestBody() {
+
 	store, err := s.Project.GetLogStore(s.logstoreName)
 	s.Nil(err)
 	s.Equal(s.logstoreName, store.Name)
@@ -98,10 +104,10 @@ func (s *LogstoreTestSuite) TestCheckLogStore() {
 	store, err := s.Project.GetLogStore(s.logstoreName)
 	s.Nil(err)
 	s.Equal(true, store.EncryptConf.Enable)
-	s.Equal("m4", store.EncryptConf.Enable)
-	s.Equal("your_cmk_id", store.EncryptConf.UserCmkInfo.CmkKeyId)
-	s.Equal("your_ram_role_arn", store.EncryptConf.UserCmkInfo.Arn)
-	s.Equal("your_region_id", store.EncryptConf.UserCmkInfo.RegionId)
+	s.Equal("m4", store.EncryptConf.EncryptType)
+	s.Equal(s.cmkKeyId, store.EncryptConf.UserCmkInfo.CmkKeyId)
+	s.Equal(s.arn, store.EncryptConf.UserCmkInfo.Arn)
+	s.Equal(s.cmkEndpoint, store.EncryptConf.UserCmkInfo.RegionId)
 }
 
 func (s *LogstoreTestSuite) TestCheckLogstoreExist() {
@@ -142,7 +148,7 @@ func (s *LogstoreTestSuite) TestProjectNotExist() {
 	s.Require().True(ok)
 	s.Require().Equal(e.Code, "ProjectNotExist")
 	s.Require().Equal(e.HTTPCode, int32(404))
-	s.Require().Equal(e.Message, fmt.Sprintf("The Project does not exist : %s", projectName))
+	s.Require().Equal(e.Message, fmt.Sprintf("The Project does not exist: %s", projectName))
 }
 
 func (s *LogstoreTestSuite) TestLogStoreNotExist() {
@@ -160,7 +166,7 @@ func (s *LogstoreTestSuite) TestLogStoreNotExist() {
 }
 
 func (s *LogstoreTestSuite) TestAccessIDNotExist() {
-	accessID := "no-exist-key"
+	accessID := "noExistKey"
 	slsProject, err := NewLogProject(s.projectName, s.endpoint, accessID, s.accessKeySecret)
 	s.Nil(err)
 	slsLogstore, err := NewLogStore(s.logstoreName, slsProject)
@@ -253,7 +259,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	fmt.Print(err)
 
 	beginTime := uint32(time.Now().Unix())
-	time.Sleep(10 * 1000 * time.Millisecond)
+	time.Sleep(60 * time.Second)
 	c := &LogContent{
 		Key:   proto.String("error code"),
 		Value: proto.String("InternalServerError"),
@@ -277,7 +283,7 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 	putErr := s.Logstore.PutLogs(lg)
 	s.Nil(putErr)
 
-	time.Sleep(5 * 1000 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 	endTime := uint32(time.Now().Unix())
 
 	hResp, hErr := s.Logstore.GetHistograms("", int64(beginTime), int64(endTime), "InternalServerError")
@@ -295,24 +301,24 @@ func (s *LogstoreTestSuite) TestGetLogs() {
 func (s *LogstoreTestSuite) TestLogstore() {
 	logstoreName := "github-test"
 	err := s.Project.DeleteLogStore(logstoreName)
-	time.Sleep(5 * 1000 * time.Millisecond)
+	time.Sleep(5 * time.Second)
 	err = s.Project.CreateLogStore(logstoreName, 14, 2, true, 16)
 	s.Nil(err)
-	time.Sleep(10 * 1000 * time.Millisecond)
+	time.Sleep(10 * time.Second)
 	err = s.Project.UpdateLogStore(logstoreName, 7, 2)
 	s.Nil(err)
-	time.Sleep(1 * 1000 * time.Millisecond)
+	time.Sleep(1 * time.Second)
 	logstores, err := s.Project.ListLogStore()
 	s.Nil(err)
 	s.True(len(logstores) >= 1)
 
 	// test parameter "mode" of logstore, default mode is "standard"
-	time.Sleep(1 * 1000 * time.Millisecond)
+	time.Sleep(time.Second)
 	logstore, err := s.Project.GetLogStore(logstoreName)
 	s.Nil(err)
 	s.Equal(logstore.Mode, "standard")
 
-	time.Sleep(1 * 1000 * time.Millisecond)
+	time.Sleep(time.Second)
 	configs, configCount, err := s.Project.ListConfig(0, 100)
 	s.Nil(err)
 	s.True(len(configs) >= 0)
@@ -339,7 +345,7 @@ func (s *LogstoreTestSuite) TestLogstoreLiteMode() {
 	}
 	err := s.Project.CreateLogStoreV2(lite)
 	s.Nil(err)
-	time.Sleep(10 * 1000 * time.Millisecond)
+	time.Sleep(10 * time.Second)
 
 	// check if logstore is in "lite" mode
 	liteResp, err := s.Project.GetLogStore(logstoreName)
@@ -545,12 +551,12 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 
 	storage := ShipperStorage{
 		Format: "json",
-		Detail: OssStorageJsonDetail{EnableTag: true},
+		Detail: map[string]interface{}{"enableTag": true},
 	}
 	ossShipperConfig := &OSSShipperConfig{
 		OssBucket:      "test_bucket",
 		OssPrefix:      "testPrefix",
-		RoleArn:        s.logShipperRole,
+		RoleArn:        s.arn,
 		BufferInterval: 300,
 		BufferSize:     100,
 		CompressType:   "none",
@@ -622,6 +628,5 @@ func (s *LogstoreTestSuite) TestLogShipper() {
 	_, err = s.Logstore.GetShipper(ossShipperName)
 	assert.NotNil(err)
 	assert.IsType(new(Error), err)
-	assert.Equal(int32(400), err.(*Error).HTTPCode)
-
+	assert.Equal(int32(404), err.(*Error).HTTPCode)
 }
