@@ -146,6 +146,16 @@ func (c *TokenAutoUpdateClient) SetHTTPClient(client *http.Client) {
 	c.logClient.SetHTTPClient(client)
 }
 
+// SetAuthVersion set auth version that the client used
+func (c *TokenAutoUpdateClient) SetAuthVersion(version AuthVersionType) {
+	c.logClient.SetAuthVersion(version)
+}
+
+// SetRegion set a region, must be set if using signature version v4
+func (c *TokenAutoUpdateClient) SetRegion(region string) {
+	c.logClient.SetRegion(region)
+}
+
 func (c *TokenAutoUpdateClient) Close() error {
 	c.closeFlag = true
 	return nil

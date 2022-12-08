@@ -3,37 +3,50 @@ package sls
 import (
 	"crypto/md5"
 	"fmt"
-	"testing"
-
 	"github.com/gogo/protobuf/proto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
+	"testing"
 )
 
-var project = &LogProject{
-	Name:            "test-signature",
-	Endpoint:        "cn-hangzhou.log.aliyuncs.com",
-	AccessKeyID:     "mockAccessKeyID",
-	AccessKeySecret: "mockAccessKeySecret",
+type SignerV1Suite struct {
+	suite.Suite
+	AccessKeyID     string
+	AccessKeySecret string
+	Endpoint        string
+
+	signer Signer
 }
 
-func TestSignatureGet(t *testing.T) {
-	h := map[string]string{
+func (s *SignerV1Suite) SetupTest() {
+	s.Endpoint = "cn-hangzhou.log.aliyuncs.com"
+	s.AccessKeyID = "mockAccessKeyID"
+	s.AccessKeySecret = "mockAccessKeySecret"
+	s.signer = &SignerV1{
+		accessKeyID:     s.AccessKeyID,
+		accessKeySecret: s.AccessKeySecret,
+	}
+}
+
+func (s *SignerV1Suite) TestSignatureGet() {
+	headers := map[string]string{
 		"x-log-apiversion":      "0.6.0",
 		"x-log-signaturemethod": "hmac-sha1",
 		"x-log-bodyrawsize":     "0",
 		"Date":                  "Mon, 3 Jan 2010 08:33:47 GMT",
 	}
 	digest := "Rwm6cTKzoti4HWoe+GKcb6Kv07E="
-	s, err := signature(project.AccessKeySecret, "GET", "/logstores", h)
+	expectedAuthStr := fmt.Sprintf("SLS %v:%v", s.AccessKeyID, digest)
+
+	err := s.signer.Sign("GET", "/logstores", headers, nil)
 	if err != nil {
-		t.Fatal(err)
+		assert.Fail(s.T(), err.Error())
 	}
-	if s != digest {
-		t.Errorf("Bad digest:%v, expected:%v", s, digest)
-	}
+	auth := headers[HTTPHeaderAuthorization]
+	assert.Equal(s.T(), expectedAuthStr, auth)
 }
 
-func TestSignaturePost(t *testing.T) {
-
+func (s *SignerV1Suite) TestSignaturePost() {
 	/*
 	   topic=""
 	   time=1405409656
@@ -64,13 +77,13 @@ func TestSignaturePost(t *testing.T) {
 	}
 	body, err := proto.Marshal(lgGrpLst)
 	if err != nil {
-		t.Fatal(err)
+		assert.Fail(s.T(), err.Error())
 	}
-	md5Sum := fmt.Sprintf("%X", md5.Sum([]byte(body)))
+	md5Sum := fmt.Sprintf("%X", md5.Sum(body))
 	newLgGrpLst := &LogGroupList{}
 	err = proto.Unmarshal(body, newLgGrpLst)
 	if err != nil {
-		t.Fatal(err)
+		assert.Fail(s.T(), err.Error())
 	}
 	h := map[string]string{
 		"x-log-apiversion":      "0.6.0",
@@ -83,11 +96,15 @@ func TestSignaturePost(t *testing.T) {
 	}
 
 	digest := "87xQWqFaOSewqRIma8kPjGYlXHc="
-	s, err := signature(project.AccessKeySecret, "GET", "/logstores/app_log", h)
+	err = s.signer.Sign("GET", "/logstores/app_log", h, body)
 	if err != nil {
-		t.Fatal(err)
+		assert.Fail(s.T(), err.Error())
 	}
-	if s != digest {
-		t.Errorf("Bad digest:%v, expected:%v", s, digest)
-	}
+	expectedAuthStr := fmt.Sprintf("SLS %v:%v", s.AccessKeyID, digest)
+	auth := h[HTTPHeaderAuthorization]
+	assert.Equal(s.T(), expectedAuthStr, auth)
+}
+
+func TestSignerV1Suite(t *testing.T) {
+	suite.Run(t, new(SignerV1Suite))
 }

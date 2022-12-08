@@ -48,6 +48,10 @@ type ClientInterface interface {
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)
+	// SetRegion Set region for signature v4
+	SetRegion(region string)
+	// SetAuthVersion Set signature version
+	SetAuthVersion(version AuthVersionType)
 	// Close the client
 	Close() error
 
