@@ -101,7 +101,8 @@ type Client struct {
 	HTTPClient      *http.Client
 	Region          string
 	AuthVersion     AuthVersionType //  v1 or v4 signature,default is v1
-	accessKeyLock   sync.RWMutex
+
+	accessKeyLock sync.RWMutex
 }
 
 func convert(c *Client, projName string) *LogProject {

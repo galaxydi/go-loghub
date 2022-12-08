@@ -14,7 +14,8 @@ type SignerV1Suite struct {
 	AccessKeyID     string
 	AccessKeySecret string
 	Endpoint        string
-	signer          Signer
+
+	signer Signer
 }
 
 func (s *SignerV1Suite) SetupTest() {

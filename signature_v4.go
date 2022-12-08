@@ -63,13 +63,6 @@ func (s *SignerV4) Sign(method, uri string, headers map[string]string, body []by
 		return fmt.Errorf("can't find '%s' header", HTTPHeaderLogDate)
 	}
 	date := dateTime[:8]
-
-	// If content-type value is empty string, server will ignore it.
-	// So we add a default value here.
-	if contentType, ok := headers[HTTPHeaderContentType]; ok && len(contentType) == 0 {
-		headers[HTTPHeaderContentType] = "application/json"
-	}
-
 	// Host should not contain schema here.
 	if host, ok := headers[HTTPHeaderHost]; ok {
 		if strings.HasPrefix(host, "http://") {

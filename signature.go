@@ -134,7 +134,7 @@ func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []by
 		return err
 	}
 	digest := base64.StdEncoding.EncodeToString(mac.Sum(nil))
-	auth := fmt.Sprintf("SLS %v:%v", s.accessKeyID, digest)
+	auth := fmt.Sprintf("SLS %s:%s", s.accessKeyID, digest)
 	headers[HTTPHeaderAuthorization] = auth
 	return nil
 }
