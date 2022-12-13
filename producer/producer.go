@@ -113,14 +113,13 @@ func (producer *Producer) HashSendLogWithCallBack(project, logstore, shardHash, 
 	if err != nil {
 		return err
 	}
-	var newShardHash string
 	if producer.producerConfig.AdjustShargHash {
-		newShardHash, err = AdjustHash(shardHash, producer.buckets)
+		shardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
 		}
 	}
-	return producer.logAccumulator.addLogToProducerBatch(project, logstore, newShardHash, topic, source, log, callback)
+	return producer.logAccumulator.addLogToProducerBatch(project, logstore, shardHash, topic, source, log, callback)
 }
 
 func (producer *Producer) HashSendLogListWithCallBack(project, logstore, shardHash, topic, source string, logList []*sls.Log, callback CallBack) (err error) {
@@ -129,14 +128,13 @@ func (producer *Producer) HashSendLogListWithCallBack(project, logstore, shardHa
 	if err != nil {
 		return err
 	}
-	var newShardHash string
 	if producer.producerConfig.AdjustShargHash {
-		newShardHash, err = AdjustHash(shardHash, producer.buckets)
+		shardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
 		}
 	}
-	return producer.logAccumulator.addLogToProducerBatch(project, logstore, newShardHash, topic, source, logList, callback)
+	return producer.logAccumulator.addLogToProducerBatch(project, logstore, shardHash, topic, source, logList, callback)
 }
 
 func (producer *Producer) SendLog(project, logstore, topic, source string, log *sls.Log) error {
@@ -162,14 +160,13 @@ func (producer *Producer) HashSendLog(project, logstore, shardHash, topic, sourc
 	if err != nil {
 		return err
 	}
-	var newShardHash string
 	if producer.producerConfig.AdjustShargHash {
-		newShardHash, err = AdjustHash(shardHash, producer.buckets)
+		shardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
 		}
 	}
-	return producer.logAccumulator.addLogToProducerBatch(project, logstore, newShardHash, topic, source, log, nil)
+	return producer.logAccumulator.addLogToProducerBatch(project, logstore, shardHash, topic, source, log, nil)
 }
 
 func (producer *Producer) HashSendLogList(project, logstore, shardHash, topic, source string, logList []*sls.Log) (err error) {
@@ -177,14 +174,13 @@ func (producer *Producer) HashSendLogList(project, logstore, shardHash, topic, s
 	if err != nil {
 		return err
 	}
-	var newShardHash string
 	if producer.producerConfig.AdjustShargHash {
-		newShardHash, err = AdjustHash(shardHash, producer.buckets)
+		shardHash, err = AdjustHash(shardHash, producer.buckets)
 		if err != nil {
 			return err
 		}
 	}
-	return producer.logAccumulator.addLogToProducerBatch(project, logstore, newShardHash, topic, source, logList, nil)
+	return producer.logAccumulator.addLogToProducerBatch(project, logstore, shardHash, topic, source, logList, nil)
 
 }
 
