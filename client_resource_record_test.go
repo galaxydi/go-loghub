@@ -1,8 +1,10 @@
 package sls
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -14,8 +16,6 @@ func TestResourceRecord(t *testing.T) {
 type ResourceRecordTestSuite struct {
 	suite.Suite
 	endpoint        string
-	projectName     string
-	logstoreName    string
 	accessKeyID     string
 	accessKeySecret string
 	client          Client
@@ -25,15 +25,13 @@ type ResourceRecordTestSuite struct {
 }
 
 func (s *ResourceRecordTestSuite) SetupSuite() {
-	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.endpoint = "cn-heyuan.log.aliyuncs.com"
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID
 	s.client.AccessKeySecret = s.accessKeySecret
 	s.client.Endpoint = s.endpoint
-	s.resourceName = "user.test_resource_1"
+	s.resourceName = fmt.Sprintf("user.test_resource_%d", time.Now().Unix())
 	s.recordId = "test_record_1"
 	s.tagName = "test record"
 

@@ -1,6 +1,7 @@
 package sls
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -30,8 +31,8 @@ type LostoreTestSuite struct {
 
 func (s *LostoreTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-client-store-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID

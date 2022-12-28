@@ -1,8 +1,10 @@
 package sls
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -16,24 +18,37 @@ type ProjectTestSuite struct {
 	endpoint        string
 	accessKeyID     string
 	accessKeySecret string
+	projectName     string
 	client          Client
 }
 
-func (s *ProjectTestSuite) SetupTest() {
+func (s *ProjectTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
+	s.projectName = fmt.Sprintf("test-go-project-%d", time.Now().Unix())
+
 	s.client = Client{
 		Endpoint:        s.endpoint,
 		AccessKeyID:     s.accessKeyID,
 		AccessKeySecret: s.accessKeySecret,
 		SecurityToken:   "",
 	}
+	ok, err := s.client.CheckProjectExist(s.projectName)
+	if err == nil && !ok {
+		_, err = s.client.CreateProject(s.projectName, "")
+		s.Nil(err)
+		time.Sleep(10 * time.Second)
+	}
+}
+
+func (s *ProjectTestSuite) TearDownSuite() {
+	err := s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
 }
 
 func (s *ProjectTestSuite) TestCheckProjectExist() {
-	projectName := os.Getenv("LOG_TEST_PROJECT")
-	exist, err := s.client.CheckProjectExist(projectName)
+	exist, err := s.client.CheckProjectExist(s.projectName)
 	s.Nil(err)
 	s.True(exist)
 }
@@ -79,7 +94,6 @@ func (s *ProjectTestSuite) TestParseEndpoint() {
 }
 
 func (s *ProjectTestSuite) TestUpdateProject() {
-	projectName := os.Getenv("LOG_TEST_PROJECT")
-	_, err := s.client.UpdateProject(projectName, "aliyun log go sdk test.")
+	_, err := s.client.UpdateProject(s.projectName, "aliyun log go sdk test.")
 	s.Nil(err)
 }

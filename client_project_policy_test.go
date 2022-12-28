@@ -1,8 +1,10 @@
 package sls
 
 import (
+	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -24,12 +26,14 @@ type ProjectPolicyTestSuite struct {
 
 func (s *ProjectPolicyTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
+	s.projectName = fmt.Sprintf("test-go-project-policy-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID
 	s.client.AccessKeySecret = s.accessKeySecret
 	s.client.Endpoint = s.endpoint
+	_, err := s.client.CreateProject(s.projectName, "")
+	s.Nil(err)
 	s.policy = `
 {
   "Statement": [
@@ -59,6 +63,8 @@ func (s *ProjectPolicyTestSuite) SetupSuite() {
 }
 
 func (s *ProjectPolicyTestSuite) TearDownSuite() {
+	err := s.client.DeleteProject(s.projectName)
+	s.Nil(err)
 }
 
 func (s *ProjectPolicyTestSuite) TestClient_CURDProjectPolicy() {

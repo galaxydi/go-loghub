@@ -15,8 +15,6 @@ func TestUser(t *testing.T) {
 type UserTestSuite struct {
 	suite.Suite
 	endpoint        string
-	projectName     string
-	logstoreName    string
 	accessKeyID     string
 	accessKeySecret string
 	client          Client
@@ -26,9 +24,7 @@ type UserTestSuite struct {
 }
 
 func (s *UserTestSuite) SetupSuite() {
-	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.endpoint = "cn-heyuan.log.aliyuncs.com"
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID

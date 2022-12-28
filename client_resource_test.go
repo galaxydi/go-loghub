@@ -1,10 +1,11 @@
 package sls
 
 import (
+	"fmt"
+	"github.com/stretchr/testify/suite"
 	"os"
 	"testing"
-
-	"github.com/stretchr/testify/suite"
+	"time"
 )
 
 func TestResource(t *testing.T) {
@@ -14,8 +15,6 @@ func TestResource(t *testing.T) {
 type ResourceTestSuite struct {
 	suite.Suite
 	endpoint        string
-	projectName     string
-	logstoreName    string
 	accessKeyID     string
 	accessKeySecret string
 	client          Client
@@ -23,31 +22,29 @@ type ResourceTestSuite struct {
 }
 
 func (s *ResourceTestSuite) SetupSuite() {
-	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.endpoint = "cn-heyuan.log.aliyuncs.com"
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID
 	s.client.AccessKeySecret = s.accessKeySecret
 	s.client.Endpoint = s.endpoint
-	s.resourceName = "user.test_resource_1"
+	s.resourceName = fmt.Sprintf("user.test_resource_%d", time.Now().Unix())
 }
 
-func (s *ResourceTestSuite) TearDownSuite() {
+func (s *ResourceTestSuite) TearDownTest() {
 }
 
 func (s *ResourceTestSuite) createResource() error {
 	rs := &ResourceSchema{
 		Schema: []*ResourceSchemaItem{
-			&ResourceSchemaItem{
+			{
 				Column:   "col1",
 				Desc:     "col1 desc",
 				ExtInfo:  map[string]string{},
 				Required: true,
 				Type:     "string",
 			},
-			&ResourceSchemaItem{
+			{
 				Column:   "col2",
 				Desc:     "col2 desc",
 				ExtInfo:  "optional",

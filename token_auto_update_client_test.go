@@ -35,16 +35,11 @@ func (s *TolenAutoUpdateClientTestSuite) updateSTSToken() (accessKeyID, accessKe
 }
 
 func (s *TolenAutoUpdateClientTestSuite) SetupSuite() {
-
-}
-
-func (s *TolenAutoUpdateClientTestSuite) SetupTest() {
-	fmt.Printf("TolenAutoUpdateClientTestSuite set up test\n")
 	var err error
 	s.shutdown = make(chan struct{})
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-token-update-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 
@@ -53,11 +48,16 @@ func (s *TolenAutoUpdateClientTestSuite) SetupTest() {
 	s.tokenUpdateCount = 0
 	s.client, err = CreateTokenAutoUpdateClient(s.endpoint, s.updateSTSToken, s.shutdown)
 	s.Nil(err)
+	_, err = s.client.CreateProject(s.projectName, "")
+	s.Require().Nil(err)
+	time.Sleep(5 * time.Second)
 }
 
-func (s *TolenAutoUpdateClientTestSuite) TearDownTest() {
+func (s *TolenAutoUpdateClientTestSuite) TearDownSuite() {
 	fmt.Printf("TolenAutoUpdateClientTestSuite tear down test\n")
 	close(s.shutdown)
+	err := s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
 }
 
 func (s *TolenAutoUpdateClientTestSuite) TestNormal() {

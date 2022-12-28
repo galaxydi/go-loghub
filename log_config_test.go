@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 )
@@ -46,8 +47,8 @@ func makeSureLogstoreExist(c *Client, project, logstore string) error {
 
 func (s *ConfigTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-log-config-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID
@@ -82,8 +83,8 @@ func (s *ConfigTestSuite) SetupSuite() {
 }
 
 func (s *ConfigTestSuite) TearDownSuite() {
-	//err := s.client.DeleteMachineGroup(s.projectName, s.machineGroupName)
-	//s.Nil(err)
+	err := s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
 }
 
 func (s *ConfigTestSuite) TestListConfig() {

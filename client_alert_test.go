@@ -26,10 +26,10 @@ type AlertTestSuite struct {
 	client          *Client
 }
 
-func (s *AlertTestSuite) SetupTest() {
+func (s *AlertTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	s.projectName = os.Getenv("LOG_TEST_PROJECT")
-	s.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	s.projectName = fmt.Sprintf("test-go-alert-%d", time.Now().Unix())
+	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	slsProject, err := NewLogProject(s.projectName, s.endpoint, s.accessKeyID, s.accessKeySecret)
@@ -43,6 +43,12 @@ func (s *AlertTestSuite) SetupTest() {
 		AccessKeySecret: s.accessKeySecret,
 		Endpoint:        s.endpoint,
 	}
+	s.setUp()
+}
+
+func (s *AlertTestSuite) TearDownSuite() {
+	err := s.client.DeleteProject(s.projectName)
+	s.Require().Nil(err)
 }
 
 func (s *AlertTestSuite) createAlert() error {
@@ -191,9 +197,8 @@ func (s *AlertTestSuite) createAlert2() error {
 					},
 				},
 				&SeverityConfiguration{
-					Severity: Report,
-					EvalCondition: ConditionConfiguration{
-					},
+					Severity:      Report,
+					EvalCondition: ConditionConfiguration{},
 				},
 			},
 			PolicyConfiguration: PolicyConfiguration{
@@ -368,4 +373,30 @@ func (s *AlertTestSuite) TestClient_ListAlert2() {
 	s.Require().Equal(s.alertName, alert.Name, "list alert failed")
 	err = s.client.DeleteAlert(s.projectName, s.alertName)
 	s.Require().Nil(err)
+}
+
+func (s *AlertTestSuite) setUp() {
+	_, ce := s.client.CreateProject(s.projectName, "test alert")
+	s.Require().Nil(ce)
+	time.Sleep(time.Second * 60)
+	cle := s.client.CreateLogStore(s.projectName, s.logstoreName, 3, 2, true, 4)
+	s.Require().Nil(cle)
+	cie := s.client.CreateIndex(s.projectName, s.logstoreName, Index{
+		Keys: map[string]IndexKey{
+			"col_0": {
+				Token:         []string{" "},
+				DocValue:      true,
+				CaseSensitive: false,
+				Type:          "long",
+			},
+			"col_1": {
+				Token:         []string{",", ":", " "},
+				DocValue:      true,
+				CaseSensitive: false,
+				Type:          "text",
+			},
+		},
+	})
+	s.Require().Nil(cie)
+	time.Sleep(time.Second * 60)
 }

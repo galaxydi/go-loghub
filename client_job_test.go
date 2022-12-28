@@ -25,8 +25,8 @@ type JobTestSuite struct {
 
 func (i *JobTestSuite) SetupSuite() {
 	i.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
-	i.projectName = os.Getenv("LOG_TEST_PROJECT")
-	i.logstoreName = os.Getenv("LOG_TEST_LOGSTORE")
+	i.projectName = fmt.Sprintf("test-go-job-%d", time.Now().Unix())
+	i.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
 	i.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	i.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	i.client.AccessKeyID = i.accessKeyID
@@ -43,8 +43,10 @@ func (i *JobTestSuite) SetupSuite() {
 }
 
 func (i *JobTestSuite) TearDownSuite() {
-	i.client.DeleteLogStore(i.projectName, i.logstoreName)
-	i.client.DeleteProject(i.projectName)
+	err := i.client.DeleteLogStore(i.projectName, i.logstoreName)
+	i.Require().Nil(err)
+	err = i.client.DeleteProject(i.projectName)
+	i.Require().Nil(err)
 }
 
 func (i *JobTestSuite) TestIngestionOSS_CRUD() {
@@ -68,7 +70,7 @@ func (i *JobTestSuite) TestIngestionOSS_CRUD() {
 		i.Equal("5m", getIngestion.Schedule.Interval)
 		i.Equal(true, getIngestion.Schedule.RunImmediately)
 		i.Equal("+0800", getIngestion.Schedule.TimeZone)
-		i.Equal("test-logstore", getIngestion.IngestionConfiguration.LogStore)
+		i.Equal(i.logstoreName, getIngestion.IngestionConfiguration.LogStore)
 		source := &AliyunOSSSource{}
 		if sourceBytes, err := json.Marshal(getIngestion.IngestionConfiguration.DataSource); err != nil {
 			i.FailNowf("marshal datasource failed", fmt.Sprintf("%v", err))
@@ -226,7 +228,7 @@ func getOssExport(logstore string) *Export {
 		},
 		ExportConfiguration: &ExportConfiguration{
 			FromTime:   timeUnix - 3600,
-			ToTime:     timeUnix,
+			ToTime:     timeUnix - 1800,
 			LogStore:   logstore,
 			Parameters: map[string]string{"a": "b"},
 			RoleArn:    "test-roleArn",
