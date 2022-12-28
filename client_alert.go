@@ -550,7 +550,7 @@ func (c *Client) ListAlert(project, alertName, dashboard string, offset, size in
 	return listAlert.Results, listAlert.Total, listAlert.Count, err
 }
 
-func (c *Client) InnerAlertPub(project string, alertResult []byte) error {
+func (c *Client) PublishAlertEvent(project string, alertResult []byte) error {
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(alertResult)),
 		"Content-Type":      "application/json",

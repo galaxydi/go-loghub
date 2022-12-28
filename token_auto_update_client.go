@@ -1756,10 +1756,10 @@ func (c *TokenAutoUpdateClient) GetProjectPolicy(project string) (policy string,
 	return
 }
 
-func (c *TokenAutoUpdateClient) InnerAlertPub(project string, alertResult []byte) error {
+func (c *TokenAutoUpdateClient) PublishAlertEvent(project string, alertResult []byte) error {
 	var err error = nil
 	for i := 0; i < c.maxTryTimes; i++ {
-		err = c.logClient.InnerAlertPub(project, alertResult)
+		err = c.logClient.PublishAlertEvent(project, alertResult)
 		if err == nil {
 			break
 		}
