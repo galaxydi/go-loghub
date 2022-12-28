@@ -348,4 +348,7 @@ type ClientInterface interface {
 	DeleteProjectPolicy(project string) error
 	// GetProjectPolicy return project's policy.
 	GetProjectPolicy(project string) (string, error)
+
+	// #################### AlertPub Msg  #####################
+	PublishAlertEvent(project string, alertResult []byte) error
 }
