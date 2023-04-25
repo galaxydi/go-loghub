@@ -19,6 +19,7 @@ type ConfigTestSuite struct {
 	endpoint         string
 	projectName      string
 	logstoreName     string
+	compressType     string
 	accessKeyID      string
 	accessKeySecret  string
 	client           Client
@@ -49,6 +50,7 @@ func (s *ConfigTestSuite) SetupSuite() {
 	s.endpoint = os.Getenv("LOG_TEST_ENDPOINT")
 	s.projectName = fmt.Sprintf("test-go-log-config-%d", time.Now().Unix())
 	s.logstoreName = fmt.Sprintf("logstore-%d", time.Now().Unix())
+	s.compressType = "lz4"
 	s.accessKeyID = os.Getenv("LOG_TEST_ACCESS_KEY_ID")
 	s.accessKeySecret = os.Getenv("LOG_TEST_ACCESS_KEY_SECRET")
 	s.client.AccessKeyID = s.accessKeyID
@@ -107,6 +109,7 @@ func (s *ConfigTestSuite) TestNormalFileConfig() {
 		OutputDetail: OutputDetail{
 			ProjectName:  s.projectName,
 			LogStoreName: s.logstoreName,
+			CompressType: s.compressType,
 		},
 	}
 	regexConfig.Key = []string{"content"}
@@ -129,6 +132,7 @@ func (s *ConfigTestSuite) TestNormalFileConfig() {
 	s.Equal(destConfig.InputType, InputTypeFile)
 	s.Equal(destConfig.OutputDetail.ProjectName, s.projectName)
 	s.Equal(destConfig.OutputDetail.LogStoreName, s.logstoreName)
+	s.Equal(destConfig.OutputDetail.CompressType, s.compressType)
 	s.Equal(destConfig.OutputType, OutputTypeLogService)
 	regexConfigDest, ok := ConvertToRegexConfigInputDetail(destConfig.InputDetail)
 	s.True(ok)
