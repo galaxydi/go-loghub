@@ -28,6 +28,7 @@ git clone git@github.com:aliyun/aliyun-log-go-sdk.git
 ```
 
 ## 原理剖析及快速入门
+
 参考教程: [ALiyun LOG Go Consumer Library 快速入门及原理剖析](https://developer.aliyun.com/article/693820)
 
 ## 使用步骤
@@ -101,8 +102,8 @@ consumerWorker.Start()
 4.**关闭消费者**
 
 ```
-ch:=make(chan os.Signal) //将os信号值作为信道
-signal.Notify(ch, os.Kill, os.Interrupt)
+ch := make(chan os.Signal, 1) //将os信号值作为信道
+signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 consumerWorker.Start() 
 if _, ok := <-ch; ok { // 当获取到os停止信号以后，例如ctrl+c触发的os信号，会调用消费者退出方法进行退出。
     consumerWorker.StopAndWait() 

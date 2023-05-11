@@ -28,7 +28,6 @@ type ShardConsumerWorker struct {
 
 	statusLock   sync.RWMutex
 	taskLock     sync.RWMutex
-	shutDownLock sync.RWMutex
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -83,7 +82,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			var err error
 			retryTimes := 3
 			for i := 0; i < retryTimes; i++ {
-				err = consumer.consumerCheckPointTracker.SaveCheckPoint(true)
+				err = consumer.consumerCheckPointTracker.flushCheckPoint()
 				if err == nil {
 					break
 				}
@@ -158,11 +157,12 @@ func (consumer *ShardConsumerWorker) shouldFetch() bool {
 }
 
 func (consumer *ShardConsumerWorker) saveCheckPointIfNeeded() {
-	if !consumer.client.option.AutoCommitDisabled {
+	if consumer.client.option.AutoCommitDisabled {
 		return
 	}
 	if time.Since(consumer.lastCheckpointSaveTime) > time.Millisecond*time.Duration(consumer.client.option.AutoCommitIntervalInMS) {
-		consumer.consumerCheckPointTracker.SaveCheckPoint(true)
+		consumer.consumerCheckPointTracker.flushCheckPoint()
+		consumer.lastCheckpointSaveTime = time.Now()
 	}
 }
 

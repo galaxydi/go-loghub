@@ -28,9 +28,9 @@ func main() {
 		CursorPosition: consumerLibrary.END_CURSOR,
 	}
 
-	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
-	ch := make(chan os.Signal)
-	signal.Notify(ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
+	consumerWorker := consumerLibrary.InitConsumerWorkerWithCheckpointTracker(option, process)
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, syscall.SIGINT, syscall.SIGTERM)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
 		level.Info(consumerWorker.Logger).Log("msg", "get stop signal, start to stop consumer worker", "consumer worker name", option.ConsumerName)
@@ -40,7 +40,8 @@ func main() {
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,
 // otherwise you will report errors.
-func process(shardId int, logGroupList *sls.LogGroupList) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracer) string {
 	fmt.Println(shardId, logGroupList)
+	checkpointTracker.SaveCheckPoint(false)
 	return ""
 }

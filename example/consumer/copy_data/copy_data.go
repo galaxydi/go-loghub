@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"syscall"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	consumerLibrary "github.com/aliyun/aliyun-log-go-sdk/consumer"
@@ -46,9 +47,9 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
+	consumerWorker := consumerLibrary.InitConsumerWorkerWithCheckpointTracker(option, process)
 	ch := make(chan os.Signal)
-	signal.Notify(ch, os.Kill, os.Interrupt)
+	signal.Notify(ch, syscall.SIGTERM, syscall.SIGINT)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
 		level.Info(consumerWorker.Logger).Log("msg", "get stop signal, start to stop consumer worker", "consumer worker name", option.ConsumerName)
@@ -56,7 +57,7 @@ func main() {
 	}
 }
 
-func process(shardId int, logGroupList *sls.LogGroupList) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracer) string {
 	for _, logGroup := range logGroupList.LogGroups {
 		err := client.PutLogs(option.Project, "copy-logstore", logGroup)
 		if err != nil {
@@ -64,5 +65,6 @@ func process(shardId int, logGroupList *sls.LogGroupList) string {
 		}
 	}
 	fmt.Printf("shardId %v processing works sucess\n", shardId)
+	checkpointTracker.SaveCheckPoint(false)
 	return ""
 }

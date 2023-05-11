@@ -2,13 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/aliyun/aliyun-log-go-sdk"
-	"github.com/aliyun/aliyun-log-go-sdk/consumer"
-	"github.com/go-kit/kit/log/level"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	consumerLibrary "github.com/aliyun/aliyun-log-go-sdk/consumer"
+	"github.com/go-kit/kit/log/level"
 )
 
 // README :
@@ -18,7 +19,6 @@ import (
 //      当启动该消费组，拉取数据后，在process消费函数里面进行判断, 如果shard 不在全局变量
 // shardMap 里面，就重置消费位点为当前时间的cursor, 从当前时间进行消费，不在消费存量数据。
 // Note: 使用该demo时，消费组必须是之前创建过并存在的。
-
 
 func main() {
 	option := consumerLibrary.LogHubConfig{
@@ -34,12 +34,12 @@ func main() {
 		CursorPosition: consumerLibrary.BEGIN_CURSOR,
 	}
 	err := UpdateConsumerGroupCheckPoint(option)
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
-	consumerWorker := consumerLibrary.InitConsumerWorker(option, process)
-	ch := make(chan os.Signal)
+	consumerWorker := consumerLibrary.InitConsumerWorkerWithCheckpointTracker(option, process)
+	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGUSR1, syscall.SIGUSR2)
 	consumerWorker.Start()
 	if _, ok := <-ch; ok {
@@ -50,31 +50,35 @@ func main() {
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,
 // otherwise you will report errors.
-func process(shardId int, logGroupList *sls.LogGroupList) string {
-	// 这里填入自己的消费逻辑
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracer) string {
+	// 这里填入自己的消费处理逻辑 和 cpt保存逻辑
 	fmt.Println(logGroupList)
 	return ""
 }
 
-func updateCheckpoint(config consumerLibrary.LogHubConfig,client sls.Client,shardId int) error  {
+func updateCheckpoint(config consumerLibrary.LogHubConfig, client *sls.Client, shardId int) error {
 	from := fmt.Sprintf("%d", time.Now().Unix())
-	cursor, err := client.GetCursor(config.Project,config.Logstore, shardId, from)
+	cursor, err := client.GetCursor(config.Project, config.Logstore, shardId, from)
 	if err != nil {
 		fmt.Println(err)
 	}
-	return client.UpdateCheckpoint(config.Project,config.Logstore,config.ConsumerGroupName,"",shardId, cursor,true)
+	return client.UpdateCheckpoint(config.Project, config.Logstore, config.ConsumerGroupName, "", shardId, cursor, true)
 
 }
 
 func UpdateConsumerGroupCheckPoint(config consumerLibrary.LogHubConfig) error {
-	client := sls.Client{Endpoint:config.Endpoint, AccessKeyID:config.AccessKeyID, AccessKeySecret:config.AccessKeySecret}
-	shards, err := client.ListShards(config.Project,config.Logstore)
+	client := &sls.Client{
+		Endpoint: config.Endpoint, 
+		AccessKeyID: config.AccessKeyID, 
+		AccessKeySecret: config.AccessKeySecret,
+	}
+	shards, err := client.ListShards(config.Project, config.Logstore)
 	if err != nil {
 		return err
-	}else {
-		for _,v := range shards {
+	} else {
+		for _, v := range shards {
 			err = updateCheckpoint(config, client, v.ShardID)
-			if err != nil{
+			if err != nil {
 				return err
 			}
 		}
