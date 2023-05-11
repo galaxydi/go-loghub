@@ -34,6 +34,9 @@ type LogHubConfig struct {
 	// 	deleted.)
 	//:param LogCompass: Compress determines if the rotated log files should be compressed using gzip.
 	//:param HTTPClient: custom http client for sending data to sls
+	//:param AutoCommitDisabled: whether to disable commit checkpoint automatically, default is false, means auto commit checkpoint
+	//	  Note that if you set autocommit to false, you must use InitConsumerWorkerWithCheckpointTracker instead of InitConsumerWorker
+	//:param AutoCommitIntervalInSec: default auto commit interval, default is 30
 
 	Endpoint                  string
 	AccessKeyID               string
@@ -56,6 +59,8 @@ type LogHubConfig struct {
 	LogCompass                bool
 	HTTPClient                *http.Client
 	SecurityToken             string
+	AutoCommitDisabled        bool
+	AutoCommitIntervalInMS    int64
 }
 
 const (

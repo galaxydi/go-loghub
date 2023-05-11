@@ -1,61 +1,104 @@
 package consumerLibrary
 
 import (
+	"strings"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"time"
 )
 
-type ConsumerCheckPointTracker struct {
-	client                            *ConsumerClient
-	defaultFlushCheckPointIntervalSec int64
-	tempCheckPoint                    string
-	lastPersistentCheckPoint          string
-	trackerShardId                    int
-	lastCheckTime                     int64
-	logger                            log.Logger
+type CheckPointTracer interface {
+	// GetCheckPoint get lastest saved check point
+	GetCheckPoint() string
+	// GetCurrentCursor get current fetched data cursor
+	GetCurrentCheckPoint() string
+	// SaveCheckPoint, save checkpoint
+	SaveCheckPoint(force bool) error
 }
 
-func initConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient, logger log.Logger) *ConsumerCheckPointTracker {
-	checkpointTracker := &ConsumerCheckPointTracker{
-		defaultFlushCheckPointIntervalSec: 60,
-		client:                            consumerClient,
-		trackerShardId:                    shardId,
-		logger:                            logger,
+type DefaultCheckPointTracker struct {
+	client            *ConsumerClient
+	heartBeat         *ConsumerHeartBeat
+	nextCheckPoint    string // cursor for already pulled data
+	currentCheckPoint string // cursor for data processed, but may not be saved to server
+	pendingCheckPoint string // pending cursor to saved
+	savedCheckPoint   string // already saved
+	shardId           int
+	logger            log.Logger
+}
+
+func initConsumerCheckpointTracker(shardId int, consumerClient *ConsumerClient, consumerHeatBeat *ConsumerHeartBeat, logger log.Logger) *DefaultCheckPointTracker {
+	checkpointTracker := &DefaultCheckPointTracker{
+		client:    consumerClient,
+		heartBeat: consumerHeatBeat,
+		shardId:   shardId,
+		logger:    logger,
 	}
 	return checkpointTracker
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) setMemoryCheckPoint(cursor string) {
-	checkPointTracker.tempCheckPoint = cursor
+func (tracker *DefaultCheckPointTracker) initCheckPoint(cursor string) {
+	tracker.savedCheckPoint = cursor
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) setPersistentCheckPoint(cursor string) {
-	checkPointTracker.lastPersistentCheckPoint = cursor
-}
-
-func (checkPointTracker *ConsumerCheckPointTracker) flushCheckPoint() error {
-	if checkPointTracker.tempCheckPoint != "" && checkPointTracker.tempCheckPoint != checkPointTracker.lastPersistentCheckPoint {
-		if err := checkPointTracker.client.updateCheckPoint(checkPointTracker.trackerShardId, checkPointTracker.tempCheckPoint, true); err != nil {
-			return err
-		}
-
-		checkPointTracker.lastPersistentCheckPoint = checkPointTracker.tempCheckPoint
+func (tracker *DefaultCheckPointTracker) SaveCheckPoint(force bool) error {
+	tracker.pendingCheckPoint = tracker.nextCheckPoint
+	if force {
+		return tracker.flushCheckPoint()
 	}
+
 	return nil
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) flushCheck() {
-	currentTime := time.Now().Unix()
-	if currentTime > checkPointTracker.lastCheckTime+checkPointTracker.defaultFlushCheckPointIntervalSec {
-		if err := checkPointTracker.flushCheckPoint(); err != nil {
-			level.Warn(checkPointTracker.logger).Log("msg", "update checkpoint get error", "error", err)
-		} else {
-			checkPointTracker.lastCheckTime = currentTime
-		}
-	}
+func (tracker *DefaultCheckPointTracker) GetCheckPoint() string {
+	return tracker.savedCheckPoint
 }
 
-func (checkPointTracker *ConsumerCheckPointTracker) getCheckPoint() string {
-	return checkPointTracker.tempCheckPoint
+func (tracker *DefaultCheckPointTracker) GetCurrentCheckPoint() string {
+	return tracker.currentCheckPoint
+}
+
+func (tracker *DefaultCheckPointTracker) setCurrentCheckPoint(cursor string) {
+	tracker.currentCheckPoint = cursor
+}
+
+func (tracker *DefaultCheckPointTracker) setNextCheckPoint(cursor string) {
+	tracker.nextCheckPoint = cursor
+}
+
+func (tracker *DefaultCheckPointTracker) flushCheckPoint() error {
+	if tracker.pendingCheckPoint == "" || tracker.pendingCheckPoint == tracker.savedCheckPoint {
+		return nil
+	}
+	for i := 0; ; i++ {
+		err := tracker.client.updateCheckPoint(tracker.shardId, tracker.pendingCheckPoint, true)
+		if err == nil {
+			break
+		}
+		slsErr, ok := err.(*sls.Error)
+		if ok {
+			if strings.EqualFold(slsErr.Code, "ConsumerNotExsit") || strings.EqualFold(slsErr.Code, "ConsumerNotMatch") {
+				tracker.heartBeat.removeHeartShard(tracker.shardId)
+				level.Warn(tracker.logger).Log("msg", "consumer has been removed or shard has been reassigned", "shard", tracker.shardId, "err", slsErr)
+				break
+			} else if strings.EqualFold(slsErr.Code, "ShardNotExsit") {
+				tracker.heartBeat.removeHeartShard(tracker.shardId)
+				level.Warn(tracker.logger).Log("msg", "shard does not exist", "shard", tracker.shardId)
+				break
+			}
+		}
+		if i >= 2 {
+			level.Error(tracker.logger).Log(
+				"msg", "failed to save checkpoint",
+				"consumer", tracker.client.option.ConsumerName,
+				"shard", tracker.shardId,
+				"checkpoint", tracker.pendingCheckPoint,
+			)
+			return err
+		}
+	}
+
+	tracker.savedCheckPoint = tracker.pendingCheckPoint
+	return nil
 }
