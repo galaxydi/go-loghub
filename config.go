@@ -21,6 +21,7 @@ const (
 	RequestIDHeader = "x-log-requestid"
 
 	GetLogsQueryInfo = "X-Log-Query-Info"
+	BodyRawSize      = "X-Log-Bodyrawsize"
 	HasSQLHeader     = "x-log-has-sql"
 	ETLVersion       = 2
 	ETLType          = "ETL"

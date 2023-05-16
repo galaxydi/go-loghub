@@ -799,6 +799,16 @@ func (c *TokenAutoUpdateClient) GetLogsV2(project, logstore string, req *GetLogR
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetLogsV3(project, logstore string, req *GetLogRequest) (r *GetLogsV3Response, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogsV3(project, logstore, req)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogsToCompletedV2(project, logstore string, req *GetLogRequest) (r *GetLogsResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		r, err = c.logClient.GetLogsToCompletedV2(project, logstore, req)
