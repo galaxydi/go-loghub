@@ -10,14 +10,14 @@ import (
 
 // GetLogRequest for GetLogsV2
 type GetLogRequest struct {
-	From     int64  // unix time, eg time.Now().Unix() - 900
-	To       int64  // unix time, eg time.Now().Unix()
-	Topic    string // @note topic is not used anymore, use __topic__ : xxx in query instead
-	Lines    int64  // max 100; offset, lines and reverse is ignored when use SQL in query
-	Offset   int64
-	Reverse  bool
-	Query    string
-	PowerSQL bool
+	From     int64  `json:"from"`  // unix time, eg time.Now().Unix() - 900
+	To       int64  `json:"to"`    // unix time, eg time.Now().Unix()
+	Topic    string `json:"topic"` // @note topic is not used anymore, use __topic__ : xxx in query instead
+	Lines    int64  `json:"lines"` // max 100; offset, lines and reverse is ignored when use SQL in query
+	Offset   int64  `json:"offset"`
+	Reverse  bool   `json:"reverse"`
+	Query    string `json:"query"`
+	PowerSQL bool   `json:"powerSql"`
 }
 
 func (glr *GetLogRequest) ToURLParams() url.Values {
@@ -60,6 +60,25 @@ type GetLogsResponse struct {
 	Contents string              `json:"contents"`
 	HasSQL   bool                `json:"hasSQL"`
 	Header   http.Header         `json:"header"`
+}
+
+type GetLogsV3ResponseMeta struct {
+	Progress           string  `json:"progress"`
+	AggQuery           string  `json:"aggQuery"`
+	WhereQuery         string  `json:"whereQuery"`
+	HasSQL             bool    `json:"hasSQL"`
+	ProcessedRows      int64   `json:"processedRows"`
+	ElapsedMillisecond int64   `json:"elapsedMillisecond"`
+	CpuSec             float64 `json:"cpuSec"`
+	CpuCores           float64 `json:"cpuCores"`
+	Limited            int64   `json:"limited"`
+	Count              int64   `json:"count"`
+}
+
+// GetLogsV3Response defines response from GetLogs call
+type GetLogsV3Response struct {
+	Meta GetLogsV3ResponseMeta `json:"meta"`
+	Logs []map[string]string   `json:"data"`
 }
 
 // GetLogLinesResponse defines response from GetLogLines call
