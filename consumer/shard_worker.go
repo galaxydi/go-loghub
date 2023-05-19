@@ -12,7 +12,7 @@ import (
 type ShardConsumerWorker struct {
 	client                    *ConsumerClient
 	consumerCheckPointTracker *DefaultCheckPointTracker
-	consumerShutDownFlag      bool
+	shutdownFlag              bool
 	lastFetchLogGroupList     *sls.LogGroupList
 	nextFetchCursor           string
 	lastFetchGroupCount       int
@@ -20,14 +20,15 @@ type ShardConsumerWorker struct {
 	consumerStatus            string
 	process                   func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracer) string
 	shardId                   int
-	isCurrentDone             bool
-	logger                    log.Logger
+	// TODO: refine to channel
+	isCurrentDone bool
+	logger        log.Logger
 	// unix time
 	lastCheckpointSaveTime time.Time
 	rollBackCheckpoint     string
 
-	statusLock   sync.RWMutex
-	taskLock     sync.RWMutex
+	taskLock   sync.RWMutex
+	statusLock sync.RWMutex
 }
 
 func (consumer *ShardConsumerWorker) setConsumerStatus(status string) {
@@ -44,7 +45,7 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 
 func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consumerHeartBeat *ConsumerHeartBeat, do func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracer) string, logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
-		consumerShutDownFlag:      false,
+		shutdownFlag:              false,
 		process:                   do,
 		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient, consumerHeartBeat, logger),
 		client:                    consumerClient,
@@ -59,86 +60,78 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consum
 }
 
 func (consumer *ShardConsumerWorker) consume() {
-	if consumer.consumerShutDownFlag {
+	if !consumer.isTaskDone() {
+		return
+	}
+
+	// start a new task
+	// initial task / fetch data task / processing task / shutdown task
+	consumer.setTaskDoneFlag(false)
+	switch consumer.getConsumerStatus() {
+	case INITIALIZING:
 		go func() {
-			defer consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
-			// if processing, we can wait it to switch status, otherwise we save checkpoint straightly
-			if consumer.getConsumerStatus() == CONSUME_PROCESSING {
-				level.Info(consumer.logger).Log("msg", "Consumption is in progress, sleep to wait for consumption to be completed")
-				shutdownWaitTimes := 10
-				// OPTIMIZE
-				// now just sleep, won't wait until the end
-				for i := 0; i < shutdownWaitTimes; i++ {
-					time.Sleep(time.Millisecond * 10)
-					if consumer.getConsumerStatus() != CONSUME_PROCESSING {
-						break
-					}
-					if i == shutdownWaitTimes {
-						level.Warn(consumer.logger).Log("msg", "wait many times, but last process may be not over yes", "retryTimes", shutdownWaitTimes)
-					}
-				}
-			}
-
-			var err error
-			retryTimes := 3
-			for i := 0; i < retryTimes; i++ {
-				err = consumer.consumerCheckPointTracker.flushCheckPoint()
-				if err == nil {
-					break
-				}
-			}
+			cursor, err := consumer.consumerInitializeTask()
 			if err == nil {
-				level.Info(consumer.logger).Log("msg", "shardworker are shut down complete", "shardWorkerId", consumer.shardId)
-			} else {
-				level.Warn(consumer.logger).Log("msg", "failed after retry", "retryTimes", retryTimes, "err", err)
+				consumer.nextFetchCursor = cursor
 			}
+			consumer.updateStatus(err == nil)
 		}()
-	} else {
-		consumer.setTaskDoneFlag(false)
-		if consumer.getConsumerStatus() == INITIALIZING {
-			go func() {
-				defer consumer.setTaskDoneFlag(true)
+	case PULLING:
+		go func() {
+			if !consumer.shouldFetch() {
+				level.Debug(consumer.logger).Log("msg", "Pull Log Current Limitation and Re-Pull Log")
+				consumer.updateStatus(false)
+			}
+			err := consumer.nextFetchTask()
+			consumer.updateStatus(err == nil && consumer.lastFetchGroupCount > 0)
+		}()
+	case PROCESSING:
+		go func() {
+			rollBackCheckpoint := consumer.consumerProcessTask()
+			if rollBackCheckpoint != "" {
+				consumer.nextFetchCursor = rollBackCheckpoint
+				level.Info(consumer.logger).Log(
+					"msg", "Checkpoints set for users have been reset",
+					"shardId", consumer.shardId,
+					"rollBackCheckpoint", rollBackCheckpoint,
+				)
+			}
+			consumer.updateStatus(true)
+		}()
+	case SHUTTING_DOWN:
+		go func() {
+			err := consumer.consumerCheckPointTracker.flushCheckPoint()
+			if err == nil {
+				level.Info(consumer.logger).Log("msg", "shard worker status shutdown_complete", "shardWorkerId", consumer.shardId)
+			} else {
+				level.Warn(consumer.logger).Log("msg", "failed to flush checkpoint when shutdown", "err", err)
+			}
 
-				cursor, err := consumer.consumerInitializeTask()
-				if err != nil {
-					consumer.setConsumerStatus(INITIALIZING)
-				} else {
-					consumer.nextFetchCursor = cursor
-					consumer.setConsumerStatus(INITIALIZING_DONE)
-				}
-			}()
-		} else if consumer.getConsumerStatus() == INITIALIZING_DONE || consumer.getConsumerStatus() == CONSUME_PROCESSING_DONE {
-			consumer.setConsumerStatus(PULL_PROCESSING)
-			go func() {
-				defer consumer.setTaskDoneFlag(true)
-				if !consumer.shouldFetch() {
-					level.Debug(consumer.logger).Log("msg", "Pull Log Current Limitation and Re-Pull Log")
-					consumer.setConsumerStatus(INITIALIZING_DONE)
-				}
+			consumer.updateStatus(err == nil)
+		}()
+	default:
+		consumer.setTaskDoneFlag(true)
+	}
+}
 
-				if err := consumer.nextFetchTask(); err != nil {
-					consumer.setConsumerStatus(INITIALIZING_DONE)
-				} else {
-					consumer.setConsumerStatus(PULL_PROCESSING_DONE)
-				}
-			}()
-		} else if consumer.getConsumerStatus() == PULL_PROCESSING_DONE {
-			consumer.setConsumerStatus(CONSUME_PROCESSING)
-			go func() {
-				defer consumer.setTaskDoneFlag(true)
-				defer consumer.setConsumerStatus(CONSUME_PROCESSING_DONE)
-				rollBackCheckpoint := consumer.consumerProcessTask()
-				if rollBackCheckpoint != "" {
-					consumer.nextFetchCursor = rollBackCheckpoint
-					level.Info(consumer.logger).Log(
-						"msg", "Checkpoints set for users have been reset",
-						"shardId", consumer.shardId,
-						"rollBackCheckpoint", rollBackCheckpoint,
-					)
-				}
-			}()
+func (consumer *ShardConsumerWorker) updateStatus(success bool) {
+	status := consumer.getConsumerStatus()
+	if (status == SHUTTING_DOWN) {
+		if success {
+			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
+		}
+	} else if consumer.shutdownFlag {
+		consumer.setConsumerStatus(SHUTTING_DOWN)
+	} else if success {
+		switch status {
+		case INITIALIZING, PULLING:
+			consumer.setConsumerStatus(PROCESSING)
+		case PROCESSING:
+			consumer.setConsumerStatus(PULLING)
 		}
 	}
+
+	consumer.setTaskDoneFlag(true)
 }
 
 func (consumer *ShardConsumerWorker) shouldFetch() bool {
@@ -167,7 +160,7 @@ func (consumer *ShardConsumerWorker) saveCheckPointIfNeeded() {
 }
 
 func (consumer *ShardConsumerWorker) consumerShutDown() {
-	consumer.consumerShutDownFlag = true
+	consumer.shutdownFlag = true
 	if !consumer.isShutDownComplete() {
 		consumer.consume()
 	}

@@ -92,11 +92,7 @@ func (consumerWorker *ConsumerWorker) run() {
 				break
 			}
 			shardConsumer := consumerWorker.getShardConsumer(shard)
-			if shardConsumer.isTaskDone() {
-				shardConsumer.consume()
-			} else {
-				continue
-			}
+			shardConsumer.consume()
 		}
 		consumerWorker.cleanShardConsumer(heldShards)
 		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag.Load())
@@ -116,7 +112,7 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 				consumer := value.(*ShardConsumerWorker)
 				if !consumer.isShutDownComplete() {
 					consumer.consumerShutDown()
-				} else if consumer.isShutDownComplete() {
+				} else {
 					consumerWorker.shardConsumer.Delete(key)
 				}
 				return true
