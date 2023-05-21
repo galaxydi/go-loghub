@@ -8,7 +8,7 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-type CheckPointTracer interface {
+type CheckPointTracker interface {
 	// GetCheckPoint get lastest saved check point
 	GetCheckPoint() string
 	// GetCurrentCursor get current fetched data cursor

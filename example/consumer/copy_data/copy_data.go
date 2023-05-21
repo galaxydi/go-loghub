@@ -57,7 +57,7 @@ func main() {
 	}
 }
 
-func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracer) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) string {
 	for _, logGroup := range logGroupList.LogGroups {
 		err := client.PutLogs(option.Project, "copy-logstore", logGroup)
 		if err != nil {

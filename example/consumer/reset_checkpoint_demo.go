@@ -50,7 +50,7 @@ func main() {
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,
 // otherwise you will report errors.
-func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracer) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) string {
 	// 这里填入自己的消费处理逻辑 和 cpt保存逻辑
 	fmt.Println(logGroupList)
 	return ""
@@ -68,8 +68,8 @@ func updateCheckpoint(config consumerLibrary.LogHubConfig, client *sls.Client, s
 
 func UpdateConsumerGroupCheckPoint(config consumerLibrary.LogHubConfig) error {
 	client := &sls.Client{
-		Endpoint: config.Endpoint, 
-		AccessKeyID: config.AccessKeyID, 
+		Endpoint:        config.Endpoint,
+		AccessKeyID:     config.AccessKeyID,
 		AccessKeySecret: config.AccessKeySecret,
 	}
 	shards, err := client.ListShards(config.Project, config.Logstore)

@@ -17,7 +17,7 @@ type ConsumerWorker struct {
 	client             *ConsumerClient
 	workerShutDownFlag *atomic.Bool
 	shardConsumer      sync.Map // map[int]*ShardConsumerWorker
-	do                 func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracer) string
+	do                 func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracker) string
 	waitGroup          sync.WaitGroup
 	Logger             log.Logger
 }
@@ -31,7 +31,7 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 	}
 	return InitConsumerWorkerWithCheckpointTracker(
 		option,
-		func(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracer) string {
+		func(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) string {
 			cursor := do(shardId, logGroupList)
 			// keep the original logic
 			// if cursor is not empty, we don't save,
@@ -45,7 +45,7 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 
 // InitConsumerWorkerWithCheckpointTracker
 // please note that you need to save after the process is successful，
-func InitConsumerWorkerWithCheckpointTracker(option LogHubConfig, do func(int, *sls.LogGroupList, CheckPointTracer) string) *ConsumerWorker {
+func InitConsumerWorkerWithCheckpointTracker(option LogHubConfig, do func(int, *sls.LogGroupList, CheckPointTracker) string) *ConsumerWorker {
 	logger := logConfig(option)
 	consumerClient := initConsumerClient(option, logger)
 	consumerHeatBeat := initConsumerHeatBeat(consumerClient, logger)

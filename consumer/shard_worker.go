@@ -18,7 +18,7 @@ type ShardConsumerWorker struct {
 	lastFetchGroupCount       int
 	lastFetchTime             time.Time
 	consumerStatus            string
-	process                   func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracer) string
+	process                   func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracker) string
 	shardId                   int
 	// TODO: refine to channel
 	isCurrentDone bool
@@ -43,7 +43,7 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 	return consumer.consumerStatus
 }
 
-func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consumerHeartBeat *ConsumerHeartBeat, do func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracer) string, logger log.Logger) *ShardConsumerWorker {
+func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consumerHeartBeat *ConsumerHeartBeat, do func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracker) string, logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
 		shutdownFlag:              false,
 		process:                   do,
@@ -81,6 +81,7 @@ func (consumer *ShardConsumerWorker) consume() {
 			if !consumer.shouldFetch() {
 				level.Debug(consumer.logger).Log("msg", "Pull Log Current Limitation and Re-Pull Log")
 				consumer.updateStatus(false)
+				return
 			}
 			err := consumer.nextFetchTask()
 			consumer.updateStatus(err == nil && consumer.lastFetchGroupCount > 0)
@@ -116,7 +117,7 @@ func (consumer *ShardConsumerWorker) consume() {
 
 func (consumer *ShardConsumerWorker) updateStatus(success bool) {
 	status := consumer.getConsumerStatus()
-	if (status == SHUTTING_DOWN) {
+	if status == SHUTTING_DOWN {
 		if success {
 			consumer.setConsumerStatus(SHUTDOWN_COMPLETE)
 		}
