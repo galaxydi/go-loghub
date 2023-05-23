@@ -2,6 +2,7 @@ package consumerLibrary
 
 import (
 	"strings"
+	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log"
@@ -97,6 +98,7 @@ func (tracker *DefaultCheckPointTracker) flushCheckPoint() error {
 			)
 			return err
 		}
+		time.Sleep(100 * time.Millisecond)
 	}
 
 	tracker.savedCheckPoint = tracker.pendingCheckPoint
