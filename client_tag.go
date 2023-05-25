@@ -50,11 +50,29 @@ func NewProjectTags(project string, tags []ResourceTag) *ResourceTags {
 	}
 }
 
-// NewProjectUnTags create a project tags
+// NewProjectUnTags delete a project tags
 func NewProjectUnTags(project string, tags []string) *ResourceUnTags {
 	return &ResourceUnTags{
 		ResourceType: "project",
 		ResourceID:   []string{project},
+		Tags:         tags,
+	}
+}
+
+// NewResourceTags create tags for resource of certain type
+func NewResourceTags(resourceType string, resourceId string, tags []ResourceTag) *ResourceTags {
+	return &ResourceTags{
+		ResourceType: resourceType,
+		ResourceID:   []string{resourceId},
+		Tags:         tags,
+	}
+}
+
+// NewResourceUnTags delete tags for resource of certain type
+func NewResourceUnTags(resourceType string, resourceId string, tags []string) *ResourceUnTags {
+	return &ResourceUnTags{
+		ResourceType: resourceType,
+		ResourceID:   []string{resourceId},
 		Tags:         tags,
 	}
 }
@@ -141,4 +159,9 @@ func (c *Client) ListTagResources(project string,
 		err = NewClientError(err)
 	}
 	return listTagResp.TagResource, listTagResp.NextToken, err
+}
+
+// GenResourceId generate the resource id to tag (not used for project)
+func GenResourceId(project string, subResourceId string) string {
+	return project + "#" + subResourceId
 }
