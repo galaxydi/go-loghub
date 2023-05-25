@@ -88,7 +88,7 @@ func (consumer *ShardConsumerWorker) consumerProcessTask() string {
 		}
 	}()
 	if consumer.lastFetchLogGroupList != nil {
-		consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+		consumer.rollBackCheckpoint = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
 		consumer.saveCheckPointIfNeeded()
 		consumer.lastFetchLogGroupList = nil
 	}
@@ -104,7 +104,7 @@ func (consumer *ShardConsumerWorker) consumerRetryProcessTask() bool {
 			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", string(stackBuf))
 		}
 	}()
-	consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+	consumer.rollBackCheckpoint = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
 	consumer.saveCheckPointIfNeeded()
 	return true
 }

@@ -18,7 +18,7 @@ type ShardConsumerWorker struct {
 	lastFetchGroupCount       int
 	lastFetchTime             time.Time
 	consumerStatus            string
-	process                   func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracker) string
+	processor                 Processor
 	shardId                   int
 	// TODO: refine to channel
 	isCurrentDone bool
@@ -43,10 +43,10 @@ func (consumer *ShardConsumerWorker) getConsumerStatus() string {
 	return consumer.consumerStatus
 }
 
-func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consumerHeartBeat *ConsumerHeartBeat, do func(shard int, logGroup *sls.LogGroupList, checkpointTracker CheckPointTracker) string, logger log.Logger) *ShardConsumerWorker {
+func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consumerHeartBeat *ConsumerHeartBeat, processor Processor, logger log.Logger) *ShardConsumerWorker {
 	shardConsumeWorker := &ShardConsumerWorker{
 		shutdownFlag:              false,
-		process:                   do,
+		processor:                 processor,
 		consumerCheckPointTracker: initConsumerCheckpointTracker(shardId, consumerClient, consumerHeartBeat, logger),
 		client:                    consumerClient,
 		consumerStatus:            INITIALIZING,
@@ -101,7 +101,14 @@ func (consumer *ShardConsumerWorker) consume() {
 		}()
 	case SHUTTING_DOWN:
 		go func() {
-			err := consumer.consumerCheckPointTracker.flushCheckPoint()
+			err := consumer.processor.Shutdown(consumer.consumerCheckPointTracker)
+			if err != nil {
+				level.Error(consumer.logger).Log("msg", "failed to call processor shutdown", "err", err)
+				consumer.updateStatus(false)
+				return
+			}
+
+			err = consumer.consumerCheckPointTracker.flushCheckPoint()
 			if err == nil {
 				level.Info(consumer.logger).Log("msg", "shard worker status shutdown_complete", "shardWorkerId", consumer.shardId)
 			} else {
