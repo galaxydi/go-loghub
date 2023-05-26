@@ -57,14 +57,16 @@ func main() {
 	}
 }
 
-func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) (string, error) {
 	for _, logGroup := range logGroupList.LogGroups {
 		err := client.PutLogs(option.Project, "copy-logstore", logGroup)
 		if err != nil {
 			fmt.Println(err)
+			// may lead to partial success
+			return "", err
 		}
 	}
 	fmt.Printf("shardId %v processing works sucess\n", shardId)
 	checkpointTracker.SaveCheckPoint(false)
-	return ""
+	return "", nil
 }

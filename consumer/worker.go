@@ -31,21 +31,21 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 	}
 	return InitConsumerWorkerWithProcessor(
 		option,
-		ProcessFunc(func(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) string {
+		ProcessFunc(func(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) (string, error) {
 			cursor := do(shardId, logGroupList)
 			// keep the original logic
 			// if cursor is not empty, we don't save,
 			if cursor == "" {
 				checkpointTracker.SaveCheckPoint(false)
 			}
-			return cursor
+			return cursor, nil
 		}),
 	)
 }
 
 // InitConsumerWorkerWithCheckpointTracker
 // please note that you need to save after the process is successful，
-func InitConsumerWorkerWithCheckpointTracker(option LogHubConfig, do func(int, *sls.LogGroupList, CheckPointTracker) string) *ConsumerWorker {
+func InitConsumerWorkerWithCheckpointTracker(option LogHubConfig, do func(int, *sls.LogGroupList, CheckPointTracker) (string, error)) *ConsumerWorker {
 	return InitConsumerWorkerWithProcessor(option, ProcessFunc(do))
 }
 

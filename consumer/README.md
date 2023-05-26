@@ -66,12 +66,10 @@ LogHubConfig是提供给用户的配置类，用于配置消费策略，您可�
 2.**覆写消费逻辑**
 
 ```
-func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) string {
-    for _, logGroup := range logGroupList.LogGroups {
-        err := client.PutLogs(option.Project, "copy-logstore", logGroup)
-        if err != nil {
-            fmt.Println(err)
-        }
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) (string, error) {
+    err := dosomething()
+    if err != nil {
+        return "", nil
     }
     fmt.Println("shardId %v processing works success", shardId)
     // 标记给CheckPointTracker process已成功，保存存档点，
@@ -80,18 +78,30 @@ func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker Chec
     // 推荐大多数场景下使用false即可
     checkpointTracker.SaveCheckPoint(false); // 代表process成功保存存档点，但并不直接写入服务器，等待一定的interval后写入
     // 不需要重置检查点情况下，请返回空字符串，如需要重置检查点，请返回需要重置的检查点游标。
-    // 如果需要重置检查点的情况下，可以返回checkpointTracker.GetCurrentCheckPoint, current checkpoint即尚未process的这批数据开始的检查点
-    return ""
+    // 如果需要重置检查点的情况下，比如可以返回checkpointTracker.GetCurrentCheckPoint, current checkpoint即尚未process的这批数据开始的检查点
+    // 如果已经返回error的话，无需重置到current checkpoint，代码会继续process这批数据，一般来说返回空即可
+    return "", nil
 }
 ```
 
 在实际消费当中，您只需要根据自己的需要重新覆写消费函数process即可，上图只是一个简单的demo,将consumer获取到的日志进行了打印处理，注意，该函数参数和返回值不可改变，否则会导致消费失败。
+另外的，如果你在process时有特别的需求，比如process暂存，实际异步操作，这里可以实现自己的Processor接口，除了Process函数，可以实现Shutdown函数对异步操作等进行优雅退出。
+但是，请注意，checkpoint tracker是线程不安全的，它仅可负责本次process的checkpoint保存，请不要保存起来这个实例异步进行save！
+```
+type Processor interface {
+	Process(int, *sls.LogGroupList, CheckPointTracker) string
+	Shutdown(CheckPointTracker) error
+}
+
+```
 
 3.**创建消费者并开始消费**
 
 ```
 // option是LogHubConfig的实例
 consumerWorker := consumerLibrary.InitConsumerWorkerWithCheckpointTracker(option, process)
+// 如果实现了自己的processor，可以使用下面的语句
+// consumerWroer := consumerLibrary.InitConsumerWorkerWithProcessor(option, myProcessor)
 // 调用Start方法开始消费
 consumerWorker.Start()
 ```

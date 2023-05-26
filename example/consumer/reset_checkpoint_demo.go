@@ -50,10 +50,10 @@ func main() {
 
 // Fill in your consumption logic here, and be careful not to change the parameters of the function and the return value,
 // otherwise you will report errors.
-func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) string {
+func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker consumerLibrary.CheckPointTracker) (string, error) {
 	// 这里填入自己的消费处理逻辑 和 cpt保存逻辑
 	fmt.Println(logGroupList)
-	return ""
+	return "", nil
 }
 
 func updateCheckpoint(config consumerLibrary.LogHubConfig, client *sls.Client, shardId int) error {

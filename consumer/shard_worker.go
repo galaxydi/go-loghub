@@ -25,7 +25,6 @@ type ShardConsumerWorker struct {
 	logger        log.Logger
 	// unix time
 	lastCheckpointSaveTime time.Time
-	rollBackCheckpoint     string
 
 	taskLock   sync.RWMutex
 	statusLock sync.RWMutex
@@ -54,7 +53,6 @@ func initShardConsumerWorker(shardId int, consumerClient *ConsumerClient, consum
 		lastFetchTime:             time.Now(),
 		isCurrentDone:             true,
 		logger:                    logger,
-		rollBackCheckpoint:        "",
 	}
 	return shardConsumeWorker
 }
@@ -88,7 +86,7 @@ func (consumer *ShardConsumerWorker) consume() {
 		}()
 	case PROCESSING:
 		go func() {
-			rollBackCheckpoint := consumer.consumerProcessTask()
+			rollBackCheckpoint, err := consumer.consumerProcessTask()
 			if rollBackCheckpoint != "" {
 				consumer.nextFetchCursor = rollBackCheckpoint
 				level.Info(consumer.logger).Log(
@@ -97,7 +95,7 @@ func (consumer *ShardConsumerWorker) consume() {
 					"rollBackCheckpoint", rollBackCheckpoint,
 				)
 			}
-			consumer.updateStatus(true)
+			consumer.updateStatus(err == nil)
 		}()
 	case SHUTTING_DOWN:
 		go func() {
@@ -132,9 +130,9 @@ func (consumer *ShardConsumerWorker) updateStatus(success bool) {
 		consumer.setConsumerStatus(SHUTTING_DOWN)
 	} else if success {
 		switch status {
-		case INITIALIZING, PULLING:
+		case PULLING:
 			consumer.setConsumerStatus(PROCESSING)
-		case PROCESSING:
+		case INITIALIZING,PROCESSING:
 			consumer.setConsumerStatus(PULLING)
 		}
 	}

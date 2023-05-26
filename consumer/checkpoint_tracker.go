@@ -21,7 +21,7 @@ type CheckPointTracker interface {
 type DefaultCheckPointTracker struct {
 	client            *ConsumerClient
 	heartBeat         *ConsumerHeartBeat
-	nextCheckPoint    string // cursor for already pulled data
+	nextCursor    string // cursor for already pulled data
 	currentCheckPoint string // cursor for data processed, but may not be saved to server
 	pendingCheckPoint string // pending cursor to saved
 	savedCheckPoint   string // already saved
@@ -44,7 +44,7 @@ func (tracker *DefaultCheckPointTracker) initCheckPoint(cursor string) {
 }
 
 func (tracker *DefaultCheckPointTracker) SaveCheckPoint(force bool) error {
-	tracker.pendingCheckPoint = tracker.nextCheckPoint
+	tracker.pendingCheckPoint = tracker.nextCursor
 	if force {
 		return tracker.flushCheckPoint()
 	}
@@ -64,8 +64,8 @@ func (tracker *DefaultCheckPointTracker) setCurrentCheckPoint(cursor string) {
 	tracker.currentCheckPoint = cursor
 }
 
-func (tracker *DefaultCheckPointTracker) setNextCheckPoint(cursor string) {
-	tracker.nextCheckPoint = cursor
+func (tracker *DefaultCheckPointTracker) setNextCursor(cursor string) {
+	tracker.nextCursor = cursor
 }
 
 func (tracker *DefaultCheckPointTracker) flushCheckPoint() error {

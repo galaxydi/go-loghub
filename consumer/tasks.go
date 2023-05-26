@@ -48,7 +48,7 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 func (consumer *ShardConsumerWorker) nextFetchTask() error {
 	// update last fetch time, for control fetch frequency
 	consumer.lastFetchTime = time.Now()
-	
+
 	logGroup, nextCursor, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
 	if err != nil {
 		return err
@@ -58,10 +58,10 @@ func (consumer *ShardConsumerWorker) nextFetchTask() error {
 	consumer.lastFetchLogGroupList = logGroup
 	consumer.nextFetchCursor = nextCursor
 	consumer.lastFetchGroupCount = GetLogGroupCount(consumer.lastFetchLogGroupList)
-	consumer.consumerCheckPointTracker.setNextCheckPoint(consumer.nextFetchCursor)
+	consumer.consumerCheckPointTracker.setNextCursor(consumer.nextFetchCursor)
 	level.Debug(consumer.logger).Log(
 		"shardId", consumer.shardId,
-		"fetch log count", GetLogCount(consumer.lastFetchLogGroupList),
+		"fetch log count", consumer.lastFetchGroupCount,
 	)
 	if consumer.lastFetchGroupCount == 0 {
 		consumer.lastFetchLogGroupList = nil
@@ -72,39 +72,24 @@ func (consumer *ShardConsumerWorker) nextFetchTask() error {
 	return nil
 }
 
-func (consumer *ShardConsumerWorker) consumerProcessTask() string {
+func (consumer *ShardConsumerWorker) consumerProcessTask() (rollBackCheckpoint string, err error) {
 	// If the user's consumption function reports a panic error, it will be captured and retry until sucessed.
 	defer func() {
 		if r := recover(); r != nil {
 			stackBuf := make([]byte, 1<<16)
-			runtime.Stack(stackBuf, false)
-			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", string(stackBuf))
-			for {
-				if consumer.consumerRetryProcessTask() {
-					break
-				}
-				time.Sleep(time.Second * 2)
-			}
+			n := runtime.Stack(stackBuf, false)
+			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", stackBuf[:n])
+			err = fmt.Errorf("get a panic when process: %v", r)
 		}
 	}()
 	if consumer.lastFetchLogGroupList != nil {
-		consumer.rollBackCheckpoint = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+		rollBackCheckpoint, err = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+		if err != nil {
+			return
+		}
 		consumer.saveCheckPointIfNeeded()
 		consumer.lastFetchLogGroupList = nil
 	}
-	return consumer.rollBackCheckpoint
-}
 
-func (consumer *ShardConsumerWorker) consumerRetryProcessTask() bool {
-	level.Info(consumer.logger).Log("msg", "Start retrying the process function")
-	defer func() {
-		if r := recover(); r != nil {
-			stackBuf := make([]byte, 1<<16)
-			runtime.Stack(stackBuf, false)
-			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", string(stackBuf))
-		}
-	}()
-	consumer.rollBackCheckpoint = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
-	consumer.saveCheckPointIfNeeded()
-	return true
+	return
 }

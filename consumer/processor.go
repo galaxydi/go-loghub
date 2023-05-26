@@ -3,13 +3,13 @@ package consumerLibrary
 import sls "github.com/aliyun/aliyun-log-go-sdk"
 
 type Processor interface {
-	Process(int, *sls.LogGroupList, CheckPointTracker) string
+	Process(int, *sls.LogGroupList, CheckPointTracker) (string, error)
 	Shutdown(CheckPointTracker) error
 }
 
-type ProcessFunc func(int, *sls.LogGroupList, CheckPointTracker) string
+type ProcessFunc func(int, *sls.LogGroupList, CheckPointTracker) (string, error)
 
-func (processor ProcessFunc) Process(shard int, lgList *sls.LogGroupList, checkpointTracker CheckPointTracker) string {
+func (processor ProcessFunc) Process(shard int, lgList *sls.LogGroupList, checkpointTracker CheckPointTracker) (string, error) {
 	return processor(shard, lgList, checkpointTracker)
 }
 
