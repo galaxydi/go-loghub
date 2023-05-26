@@ -87,6 +87,9 @@ func (consumer *ShardConsumerWorker) consume() {
 	case PROCESSING:
 		go func() {
 			rollBackCheckpoint, err := consumer.consumerProcessTask()
+			if err != nil {
+				level.Warn(consumer.logger).Log("messge", "process failed", "err", err)
+			}
 			if rollBackCheckpoint != "" {
 				consumer.nextFetchCursor = rollBackCheckpoint
 				level.Info(consumer.logger).Log(
