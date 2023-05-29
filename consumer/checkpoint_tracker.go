@@ -13,7 +13,7 @@ type CheckPointTracker interface {
 	// GetCheckPoint get lastest saved check point
 	GetCheckPoint() string
 	// GetCurrentCursor get current fetched data cursor
-	GetCurrentCheckPoint() string
+	GetCurrentCursor() string
 	// SaveCheckPoint, save checkpoint
 	SaveCheckPoint(force bool) error
 }
@@ -21,8 +21,8 @@ type CheckPointTracker interface {
 type DefaultCheckPointTracker struct {
 	client            *ConsumerClient
 	heartBeat         *ConsumerHeartBeat
-	nextCursor    string // cursor for already pulled data
-	currentCheckPoint string // cursor for data processed, but may not be saved to server
+	nextCursor        string // cursor for already pulled data
+	currentCursor     string // cursor for data processed, but may not be saved to server
 	pendingCheckPoint string // pending cursor to saved
 	savedCheckPoint   string // already saved
 	shardId           int
@@ -56,12 +56,12 @@ func (tracker *DefaultCheckPointTracker) GetCheckPoint() string {
 	return tracker.savedCheckPoint
 }
 
-func (tracker *DefaultCheckPointTracker) GetCurrentCheckPoint() string {
-	return tracker.currentCheckPoint
+func (tracker *DefaultCheckPointTracker) GetCurrentCursor() string {
+	return tracker.currentCursor
 }
 
 func (tracker *DefaultCheckPointTracker) setCurrentCheckPoint(cursor string) {
-	tracker.currentCheckPoint = cursor
+	tracker.currentCursor = cursor
 }
 
 func (tracker *DefaultCheckPointTracker) setNextCursor(cursor string) {

@@ -78,7 +78,7 @@ func process(shardId int, logGroupList *sls.LogGroupList, checkpointTracker Chec
     // 推荐大多数场景下使用false即可
     checkpointTracker.SaveCheckPoint(false); // 代表process成功保存存档点，但并不直接写入服务器，等待一定的interval后写入
     // 不需要重置检查点情况下，请返回空字符串，如需要重置检查点，请返回需要重置的检查点游标。
-    // 如果需要重置检查点的情况下，比如可以返回checkpointTracker.GetCurrentCheckPoint, current checkpoint即尚未process的这批数据开始的检查点
+    // 如果需要重置检查点的情况下，比如可以返回checkpointTracker.GetCurrentCursor, current checkpoint即尚未process的这批数据开始的检查点
     // 如果已经返回error的话，无需重置到current checkpoint，代码会继续process这批数据，一般来说返回空即可
     return "", nil
 }

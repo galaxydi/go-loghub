@@ -84,10 +84,10 @@ func (consumer *ShardConsumerWorker) consumerProcessTask() (rollBackCheckpoint s
 	}()
 	if consumer.lastFetchLogGroupList != nil {
 		rollBackCheckpoint, err = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+		consumer.saveCheckPointIfNeeded()
 		if err != nil {
 			return
 		}
-		consumer.saveCheckPointIfNeeded()
 		consumer.lastFetchLogGroupList = nil
 	}
 
