@@ -27,6 +27,9 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.MaxFetchLogGroupCount == 0 {
 		option.MaxFetchLogGroupCount = 1000
 	}
+	if option.AutoCommitIntervalInMS == 0 {
+		option.AutoCommitIntervalInMS = 60 * 1000
+	}
 	client := &sls.Client{
 		Endpoint:        option.Endpoint,
 		AccessKeyID:     option.AccessKeyID,

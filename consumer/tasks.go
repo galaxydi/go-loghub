@@ -6,17 +6,17 @@ import (
 	"runtime"
 	"time"
 
-	sls "github.com/aliyun/aliyun-log-go-sdk"
 	"github.com/go-kit/kit/log/level"
 )
 
 func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
+	// read checkpoint firstly
 	checkpoint, err := consumer.client.getCheckPoint(consumer.shardId)
 	if err != nil {
-		return checkpoint, err
+		return "", err
 	}
 	if checkpoint != "" && err == nil {
-		consumer.consumerCheckPointTracker.setPersistentCheckPoint(checkpoint)
+		consumer.consumerCheckPointTracker.initCheckPoint(checkpoint)
 		return checkpoint, nil
 	}
 
@@ -38,53 +38,58 @@ func (consumer *ShardConsumerWorker) consumerInitializeTask() (string, error) {
 		cursor, err := consumer.client.getCursor(consumer.shardId, fmt.Sprintf("%v", consumer.client.option.CursorStartTime))
 		if err != nil {
 			level.Warn(consumer.logger).Log("msg", "get specialCursor error", "shard", consumer.shardId, "error", err)
-
 		}
 		return cursor, err
 	}
-	level.Info(consumer.logger).Log("msg", "CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
+	level.Warn(consumer.logger).Log("msg", "CursorPosition setting error, please reset with BEGIN_CURSOR or END_CURSOR or SPECIAL_TIMER_CURSOR")
 	return "", errors.New("CursorPositionError")
 }
 
-func (consumer *ShardConsumerWorker) consumerFetchTask() (*sls.LogGroupList, string, error) {
-	logGroup, next_cursor, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
-	return logGroup, next_cursor, err
+func (consumer *ShardConsumerWorker) nextFetchTask() error {
+	// update last fetch time, for control fetch frequency
+	consumer.lastFetchTime = time.Now()
+
+	logGroup, nextCursor, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
+	if err != nil {
+		return err
+	}
+	// set cursors user to decide whether to save according to the execution of `process`
+	consumer.consumerCheckPointTracker.setCurrentCheckPoint(consumer.nextFetchCursor)
+	consumer.lastFetchLogGroupList = logGroup
+	consumer.nextFetchCursor = nextCursor
+	consumer.lastFetchGroupCount = GetLogGroupCount(consumer.lastFetchLogGroupList)
+	consumer.consumerCheckPointTracker.setNextCursor(consumer.nextFetchCursor)
+	level.Debug(consumer.logger).Log(
+		"shardId", consumer.shardId,
+		"fetch log count", consumer.lastFetchGroupCount,
+	)
+	if consumer.lastFetchGroupCount == 0 {
+		consumer.lastFetchLogGroupList = nil
+		// may no new data can be pulled, no process func can trigger checkpoint saving
+		consumer.saveCheckPointIfNeeded()
+	}
+
+	return nil
 }
 
-func (consumer *ShardConsumerWorker) consumerProcessTask() string {
+func (consumer *ShardConsumerWorker) consumerProcessTask() (rollBackCheckpoint string, err error) {
 	// If the user's consumption function reports a panic error, it will be captured and retry until sucessed.
 	defer func() {
 		if r := recover(); r != nil {
 			stackBuf := make([]byte, 1<<16)
-			runtime.Stack(stackBuf, false)
-			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", string(stackBuf))
-			for {
-				if consumer.consumerRetryProcessTask() {
-					break
-				} else {
-					time.Sleep(time.Second * 2)
-				}
-			}
+			n := runtime.Stack(stackBuf, false)
+			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", stackBuf[:n])
+			err = fmt.Errorf("get a panic when process: %v", r)
 		}
 	}()
 	if consumer.lastFetchLogGroupList != nil {
-		consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
-		consumer.consumerCheckPointTracker.flushCheck()
-	}
-	return consumer.rollBackCheckpoint
-}
-
-func (consumer *ShardConsumerWorker) consumerRetryProcessTask() bool {
-	level.Info(consumer.logger).Log("msg", "Start retrying the process function")
-	defer func() {
-		if r := recover(); r != nil {
-			stackBuf := make([]byte, 1<<16)
-			runtime.Stack(stackBuf, false)
-			level.Error(consumer.logger).Log("msg", "get panic in your process function", "error", r, "stack", string(stackBuf))
+		rollBackCheckpoint, err = consumer.processor.Process(consumer.shardId, consumer.lastFetchLogGroupList, consumer.consumerCheckPointTracker)
+		consumer.saveCheckPointIfNeeded()
+		if err != nil {
+			return
 		}
-	}()
-	consumer.rollBackCheckpoint = consumer.process(consumer.shardId, consumer.lastFetchLogGroupList)
-	consumer.consumerCheckPointTracker.flushCheck()
-	return true
+		consumer.lastFetchLogGroupList = nil
+	}
 
+	return
 }

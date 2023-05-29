@@ -10,19 +10,18 @@ import (
 	"go.uber.org/atomic"
 )
 
-var shardLock sync.RWMutex
-
-type ConsumerHeatBeat struct {
+type ConsumerHeartBeat struct {
 	client                   *ConsumerClient
 	shutDownFlag             *atomic.Bool
 	heldShards               []int
 	heartShards              []int
 	logger                   log.Logger
 	lastHeartBeatSuccessTime int64
+	shardLock                sync.RWMutex
 }
 
-func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *ConsumerHeatBeat {
-	consumerHeatBeat := &ConsumerHeatBeat{
+func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *ConsumerHeartBeat {
+	consumerHeartBeat := &ConsumerHeartBeat{
 		client:                   consumerClient,
 		shutDownFlag:             atomic.NewBool(false),
 		heldShards:               []int{},
@@ -30,77 +29,77 @@ func initConsumerHeatBeat(consumerClient *ConsumerClient, logger log.Logger) *Co
 		logger:                   logger,
 		lastHeartBeatSuccessTime: time.Now().Unix(),
 	}
-	return consumerHeatBeat
+	return consumerHeartBeat
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) getHeldShards() []int {
-	shardLock.RLock()
-	defer shardLock.RUnlock()
-	return consumerHeatBeat.heldShards
+func (heartbeat *ConsumerHeartBeat) getHeldShards() []int {
+	heartbeat.shardLock.RLock()
+	defer heartbeat.shardLock.RUnlock()
+	return heartbeat.heldShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) setHeldShards(heldShards []int) {
-	shardLock.Lock()
-	defer shardLock.Unlock()
-	consumerHeatBeat.heldShards = heldShards
+func (heartbeat *ConsumerHeartBeat) setHeldShards(heldShards []int) {
+	heartbeat.shardLock.Lock()
+	defer heartbeat.shardLock.Unlock()
+	heartbeat.heldShards = heldShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) setHeartShards(heartShards []int) {
-	shardLock.Lock()
-	defer shardLock.Unlock()
-	consumerHeatBeat.heartShards = heartShards
+func (heartbeat *ConsumerHeartBeat) setHeartShards(heartShards []int) {
+	heartbeat.shardLock.Lock()
+	defer heartbeat.shardLock.Unlock()
+	heartbeat.heartShards = heartShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) getHeartShards() []int {
-	shardLock.RLock()
-	defer shardLock.RUnlock()
-	return consumerHeatBeat.heartShards
+func (heartbeat *ConsumerHeartBeat) getHeartShards() []int {
+	heartbeat.shardLock.RLock()
+	defer heartbeat.shardLock.RUnlock()
+	return heartbeat.heartShards
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) shutDownHeart() {
-	level.Info(consumerHeatBeat.logger).Log("msg", "try to stop heart beat")
-	consumerHeatBeat.shutDownFlag.Store(true)
+func (heartbeat *ConsumerHeartBeat) shutDownHeart() {
+	level.Info(heartbeat.logger).Log("msg", "try to stop heart beat")
+	heartbeat.shutDownFlag.Store(true)
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) heartBeatRun() {
+func (heartbeat *ConsumerHeartBeat) heartBeatRun() {
 	var lastHeartBeatTime int64
 
-	for !consumerHeatBeat.shutDownFlag.Load() {
+	for !heartbeat.shutDownFlag.Load() {
 		lastHeartBeatTime = time.Now().Unix()
-		uploadShards := append(consumerHeatBeat.heartShards, consumerHeatBeat.heldShards...)
-		consumerHeatBeat.setHeartShards(Set(uploadShards))
-		responseShards, err := consumerHeatBeat.client.heartBeat(consumerHeatBeat.getHeartShards())
+		uploadShards := append(heartbeat.heartShards, heartbeat.heldShards...)
+		heartbeat.setHeartShards(Set(uploadShards))
+		responseShards, err := heartbeat.client.heartBeat(heartbeat.getHeartShards())
 		if err != nil {
-			level.Warn(consumerHeatBeat.logger).Log("msg", "send heartbeat error", "error", err)
-			if time.Now().Unix()-consumerHeatBeat.lastHeartBeatSuccessTime > int64(consumerHeatBeat.client.consumerGroup.Timeout+consumerHeatBeat.client.option.HeartbeatIntervalInSecond) {
-				consumerHeatBeat.setHeldShards([]int{})
-				level.Info(consumerHeatBeat.logger).Log("msg", "Heart beat timeout, automatic reset consumer held shards")
+			level.Warn(heartbeat.logger).Log("msg", "send heartbeat error", "error", err)
+			if time.Now().Unix()-heartbeat.lastHeartBeatSuccessTime > int64(heartbeat.client.consumerGroup.Timeout+heartbeat.client.option.HeartbeatIntervalInSecond) {
+				heartbeat.setHeldShards([]int{})
+				level.Info(heartbeat.logger).Log("msg", "Heart beat timeout, automatic reset consumer held shards")
 			}
 		} else {
-			consumerHeatBeat.lastHeartBeatSuccessTime = time.Now().Unix()
-			level.Info(consumerHeatBeat.logger).Log("heart beat result", fmt.Sprintf("%v", consumerHeatBeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
-			consumerHeatBeat.setHeldShards(responseShards)
-			if !IntSliceReflectEqual(consumerHeatBeat.getHeartShards(), consumerHeatBeat.getHeldShards()) {
-				currentSet := Set(consumerHeatBeat.getHeartShards())
-				responseSet := Set(consumerHeatBeat.getHeldShards())
+			heartbeat.lastHeartBeatSuccessTime = time.Now().Unix()
+			level.Info(heartbeat.logger).Log("heart beat result", fmt.Sprintf("%v", heartbeat.heartShards), "get", fmt.Sprintf("%v", responseShards))
+			heartbeat.setHeldShards(responseShards)
+			if !IntSliceReflectEqual(heartbeat.getHeartShards(), heartbeat.getHeldShards()) {
+				currentSet := Set(heartbeat.getHeartShards())
+				responseSet := Set(heartbeat.getHeldShards())
 				add := Subtract(currentSet, responseSet)
 				remove := Subtract(responseSet, currentSet)
-				level.Info(consumerHeatBeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
+				level.Info(heartbeat.logger).Log("shard reorganize, adding:", fmt.Sprintf("%v", add), "removing:", fmt.Sprintf("%v", remove))
 			}
 
 		}
-		TimeToSleepInSecond(int64(consumerHeatBeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, consumerHeatBeat.shutDownFlag.Load())
+		TimeToSleepInSecond(int64(heartbeat.client.option.HeartbeatIntervalInSecond), lastHeartBeatTime, heartbeat.shutDownFlag.Load())
 	}
-	level.Info(consumerHeatBeat.logger).Log("msg", "heart beat exit")
+	level.Info(heartbeat.logger).Log("msg", "heart beat exit")
 }
 
-func (consumerHeatBeat *ConsumerHeatBeat) removeHeartShard(shardId int) bool {
-	shardLock.Lock()
-	defer shardLock.Unlock()
+func (heartbeat *ConsumerHeartBeat) removeHeartShard(shardId int) bool {
+	heartbeat.shardLock.Lock()
+	defer heartbeat.shardLock.Unlock()
 	isDeleteShard := false
-	for i, heartShard := range consumerHeatBeat.heartShards {
+	for i, heartShard := range heartbeat.heartShards {
 		if shardId == heartShard {
-			consumerHeatBeat.heartShards = append(consumerHeatBeat.heartShards[:i], consumerHeatBeat.heartShards[i+1:]...)
+			heartbeat.heartShards = append(heartbeat.heartShards[:i], heartbeat.heartShards[i+1:]...)
 			isDeleteShard = true
 			break
 		}
