@@ -125,27 +125,42 @@ func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, err
 	return cursor, err
 }
 
-func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, err error) {
+func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, rawSize int, err error) {
+	var logBytes []byte
 	for retry := 0; retry < 3; retry++ {
-		gl, nextCursor, err = consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
+		logBytes, nextCursor, err = consumer.client.GetLogsBytes(consumer.option.Project, consumer.option.Logstore, shardId,
+			cursor, "",
+			consumer.option.MaxFetchLogGroupCount)
+		if err == nil {
+			rawSize = len(logBytes)
+			gl, err = sls.LogsBytesDecode(logBytes)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			slsError, ok := err.(sls.Error)
 			if ok {
+				level.Warn(consumer.logger).Log("msg", "shard pull logs failed, occur sls error",
+					"shard", shardId,
+					"error", slsError,
+					"tryTimes", retry+1,
+					"cursor", cursor,
+				)
 				if slsError.HTTPCode == 403 {
-					level.Warn(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
 					time.Sleep(5 * time.Second)
-				} else {
-					level.Warn(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
-					time.Sleep(200 * time.Millisecond)
 				}
 			} else {
-				level.Warn(consumer.logger).Log("msg", "unknown error when pull log", "shardId", shardId, "cursor", cursor, "error", err)
+				level.Warn(consumer.logger).Log("msg", "unknown error when pull log",
+					"shardId", shardId,
+					"cursor", cursor,
+					"error", err,
+					"tryTimes", retry+1)
 			}
-		} else {
-			return gl, nextCursor, nil
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
 	// If you can't retry the log three times, it will return to empty list and start pulling the log cursor,
 	// so that next time you will come in and pull the function again, which is equivalent to a dead cycle.
-	return gl, nextCursor, err
+	return
 }

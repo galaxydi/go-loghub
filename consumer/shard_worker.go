@@ -17,6 +17,7 @@ type ShardConsumerWorker struct {
 	nextFetchCursor           string
 	lastFetchGroupCount       int
 	lastFetchTime             time.Time
+	lastFetchRawSize          int
 	consumerStatus            string
 	processor                 Processor
 	shardId                   int
@@ -144,16 +145,16 @@ func (consumer *ShardConsumerWorker) updateStatus(success bool) {
 }
 
 func (consumer *ShardConsumerWorker) shouldFetch() bool {
-	if consumer.lastFetchGroupCount >= 1000 {
+	if consumer.lastFetchGroupCount >= consumer.client.option.MaxFetchLogGroupCount || consumer.lastFetchRawSize >= 4 * 1024 * 1024 {
 		return true
 	}
 	duration := time.Since(consumer.lastFetchTime)
-	if consumer.lastFetchGroupCount < 100 {
+	if consumer.lastFetchGroupCount < 100 && consumer.lastFetchRawSize < 1024 * 1024{
 		// The time used here is in milliseconds.
 		return duration > 500*time.Millisecond
-	} else if consumer.lastFetchGroupCount < 500 {
+	} else if consumer.lastFetchGroupCount < 500 && consumer.lastFetchRawSize < 2 * 1024 * 1024 {
 		return duration > 200*time.Millisecond
-	} else { // 500 - 1000
+	} else {
 		return duration > 50*time.Millisecond
 	}
 }

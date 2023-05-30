@@ -49,14 +49,15 @@ func (consumer *ShardConsumerWorker) nextFetchTask() error {
 	// update last fetch time, for control fetch frequency
 	consumer.lastFetchTime = time.Now()
 
-	logGroup, nextCursor, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
+	logGroup, nextCursor, rawSize, err := consumer.client.pullLogs(consumer.shardId, consumer.nextFetchCursor)
 	if err != nil {
 		return err
 	}
 	// set cursors user to decide whether to save according to the execution of `process`
-	consumer.consumerCheckPointTracker.setCurrentCheckPoint(consumer.nextFetchCursor)
+	consumer.consumerCheckPointTracker.setCurrentCursor(consumer.nextFetchCursor)
 	consumer.lastFetchLogGroupList = logGroup
 	consumer.nextFetchCursor = nextCursor
+	consumer.lastFetchRawSize = rawSize
 	consumer.lastFetchGroupCount = GetLogGroupCount(consumer.lastFetchLogGroupList)
 	consumer.consumerCheckPointTracker.setNextCursor(consumer.nextFetchCursor)
 	level.Debug(consumer.logger).Log(

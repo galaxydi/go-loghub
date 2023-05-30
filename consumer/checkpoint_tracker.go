@@ -9,13 +9,19 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
+// CheckPointTracker
+// Generally, you just need SaveCheckPoint, if you use more funcs, make sure you understand these
 type CheckPointTracker interface {
 	// GetCheckPoint get lastest saved check point
 	GetCheckPoint() string
+	// SaveCheckPoint, save next cursor to checkpoint
+	SaveCheckPoint(force bool) error
 	// GetCurrentCursor get current fetched data cursor
 	GetCurrentCursor() string
-	// SaveCheckPoint, save checkpoint
-	SaveCheckPoint(force bool) error
+	// GetNextCursor get next fetched data cursor(this is also the next checkpoint to be saved)
+	GetNextCursor() string
+	// GetShardId, return the id of shard tracked
+	GetShardId() int
 }
 
 type DefaultCheckPointTracker struct {
@@ -60,12 +66,20 @@ func (tracker *DefaultCheckPointTracker) GetCurrentCursor() string {
 	return tracker.currentCursor
 }
 
-func (tracker *DefaultCheckPointTracker) setCurrentCheckPoint(cursor string) {
+func (tracker *DefaultCheckPointTracker) setCurrentCursor(cursor string) {
 	tracker.currentCursor = cursor
+}
+
+func (tracker *DefaultCheckPointTracker) GetNextCursor() string {
+	return tracker.nextCursor
 }
 
 func (tracker *DefaultCheckPointTracker) setNextCursor(cursor string) {
 	tracker.nextCursor = cursor
+}
+
+func (tracker *DefaultCheckPointTracker) GetShardId() int {
+	return tracker.shardId
 }
 
 func (tracker *DefaultCheckPointTracker) flushCheckPoint() error {
