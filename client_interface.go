@@ -108,6 +108,18 @@ type ClientInterface interface {
 	// GetMetricStore return a metric store.
 	GetMetricStore(project, name string) (*LogStore, error)
 
+	// #################### EventStore Operations #####################
+	// CreateEventStore creates a new event store in SLS.
+	CreateEventStore(project string, eventStore *LogStore) error
+	// UpdateEventStore updates a event store.
+	UpdateEventStore(project string, eventStore *LogStore) error
+	// DeleteEventStore deletes a event store.
+	DeleteEventStore(project, name string) error
+	// GetEventStore return a event store.
+	GetEventStore(project, name string) (*LogStore, error)
+	// ListEventStore returns all eventStore names of project p.
+	ListEventStore(project string, offset, size int) ([]string, error)
+
 	// #################### Logtail Operations #####################
 	// ListMachineGroup returns machine group name list and the total number of machine groups.
 	// The offset starts from 0 and the size is the max number of machine groups could be returned.
