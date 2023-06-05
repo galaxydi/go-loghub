@@ -719,6 +719,55 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	return logRsp, err
 }
 
+// GetLogsV3 query logs with [from, to) time range
+func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(reqBody)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "lz4",
+	}
+	uri := fmt.Sprintf("/logstores/%s/logs", s.Name)
+	r, err := request(s.project, "POST", uri, h, reqBody)
+	if err != nil {
+		return nil, NewClientError(err)
+	}
+	defer r.Body.Close()
+
+	respBody, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(respBody, err); jErr != nil {
+			return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+		}
+		return nil, err
+	}
+	if _, ok := r.Header[BodyRawSize]; ok {
+		if len(r.Header[BodyRawSize]) > 0 {
+			bodyRawSize, err := strconv.ParseInt(r.Header[BodyRawSize][0], 10, 64)
+			if err != nil {
+				return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+			}
+			out := make([]byte, bodyRawSize)
+			if bodyRawSize != 0 {
+				len, err := lz4.UncompressBlock(respBody, out)
+				if err != nil || int64(len) != bodyRawSize {
+					return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+				}
+			}
+			respBody = out
+		}
+	}
+	var result GetLogsV3Response
+	if err = json.Unmarshal(respBody, &result); err != nil {
+		return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+	}
+	return &result, nil
+}
+
 // GetContextLogs ...
 func (s *LogStore) GetContextLogs(backLines int32, forwardLines int32,
 	packID string, packMeta string) (*GetContextLogsResponse, error) {

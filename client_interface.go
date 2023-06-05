@@ -233,6 +233,7 @@ type ClientInterface interface {
 
 	GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
 	GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error)
+	GetLogsV3(project, logstore string, req *GetLogRequest) (*GetLogsV3Response, error)
 
 	// GetHistogramsToCompleted query logs with [from, to) time range to completed
 	GetHistogramsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error)

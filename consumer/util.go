@@ -1,9 +1,10 @@
 package consumerLibrary
 
 import (
-	"github.com/aliyun/aliyun-log-go-sdk"
 	"reflect"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 )
 
 // List removal of duplicate elements
