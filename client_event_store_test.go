@@ -74,7 +74,7 @@ func (m *EventStoreTestSuite) TestClient_UpdateAndGetEventStore() {
 	m.Require().Equal(m.eventStoreName, eventStore.Name)
 	m.Require().Equal(m.ttl, eventStore.TTL)
 	m.Require().Equal(m.shardCnt, eventStore.ShardCount)
-	m.Require().Equal(EVENT_STORE_TELEMETRY_TYPE, eventStore.TelemetryType)
+	m.Require().Equal(EventStoreTelemetryType, eventStore.TelemetryType)
 
 	eventStore.TTL = 15
 	ue := m.client.UpdateEventStore(m.projectName, eventStore)
@@ -83,7 +83,7 @@ func (m *EventStoreTestSuite) TestClient_UpdateAndGetEventStore() {
 	m.Require().Nil(ge1)
 	m.Require().Equal(m.eventStoreName, eventStore1.Name)
 	m.Require().Equal(15, eventStore1.TTL)
-	m.Require().Equal(EVENT_STORE_TELEMETRY_TYPE, eventStore1.TelemetryType)
+	m.Require().Equal(EventStoreTelemetryType, eventStore1.TelemetryType)
 	de := m.client.DeleteEventStore(m.projectName, m.eventStoreName)
 	m.Require().Nil(de)
 }
