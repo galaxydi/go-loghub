@@ -1776,3 +1776,53 @@ func (c *TokenAutoUpdateClient) PublishAlertEvent(project string, alertResult []
 	}
 	return err
 }
+
+func (c *TokenAutoUpdateClient) CreateEventStore(project string, eventStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateEventStore(project, eventStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateEventStore(project string, eventStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateEventStore(project, eventStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteEventStore(project, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteEventStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetEventStore(project, name string) (eventStore *LogStore, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		eventStore, err = c.logClient.GetEventStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListEventStore(project string, offset, size int) (eventStores []string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		eventStores, err = c.logClient.ListEventStore(project, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}

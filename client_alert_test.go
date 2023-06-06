@@ -2,10 +2,11 @@ package sls
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/suite"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/suite"
 )
 
 func TestAlert(t *testing.T) {
@@ -207,6 +208,19 @@ func (s *AlertTestSuite) createAlert2() error {
 				RepeatInterval: "5m",
 			},
 			AutoAnnotation: true,
+			SinkEventStore: &SinkEventStoreConfiguration{
+				Enabled:    true,
+				RoleArn:    "acs:ram::${uid}:role/aliyunlogetlrole",
+				Project:    s.projectName,
+				Endpoint:   s.endpoint,
+				EventStore: "alert-eventstore",
+			},
+			SinkAlerthub: &SinkAlerthubConfiguration{
+				Enabled: true,
+			},
+			SinkCms: &SinkCmsConfiguration{
+				Enabled: true,
+			},
 		},
 	}
 	return s.client.CreateAlert(s.projectName, alert)
