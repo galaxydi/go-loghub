@@ -230,6 +230,11 @@ type ClientInterface interface {
 		maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
 	GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
 		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
+	// GetLogsByNano query logs with [fromInNs, toInNs) nano time range
+	GetLogsByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+		maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
+	GetLogLinesByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
 
 	GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
 	GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error)

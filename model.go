@@ -10,14 +10,16 @@ import (
 
 // GetLogRequest for GetLogsV2
 type GetLogRequest struct {
-	From     int64  `json:"from"`  // unix time, eg time.Now().Unix() - 900
-	To       int64  `json:"to"`    // unix time, eg time.Now().Unix()
-	Topic    string `json:"topic"` // @note topic is not used anymore, use __topic__ : xxx in query instead
-	Lines    int64  `json:"lines"` // max 100; offset, lines and reverse is ignored when use SQL in query
-	Offset   int64  `json:"offset"`
-	Reverse  bool   `json:"reverse"`
-	Query    string `json:"query"`
-	PowerSQL bool   `json:"powerSql"`
+	From       int64  `json:"from"`  // unix time, eg time.Now().Unix() - 900
+	To         int64  `json:"to"`    // unix time, eg time.Now().Unix()
+	Topic      string `json:"topic"` // @note topic is not used anymore, use __topic__ : xxx in query instead
+	Lines      int64  `json:"lines"` // max 100; offset, lines and reverse is ignored when use SQL in query
+	Offset     int64  `json:"offset"`
+	Reverse    bool   `json:"reverse"`
+	Query      string `json:"query"`
+	PowerSQL   bool   `json:"powerSql"`
+	FromNsPart int32  `json:"fromNs"`
+	ToNsPart   int32  `json:"toNs"`
 }
 
 func (glr *GetLogRequest) ToURLParams() url.Values {
@@ -31,6 +33,8 @@ func (glr *GetLogRequest) ToURLParams() url.Values {
 	urlVal.Add("reverse", strconv.FormatBool(glr.Reverse))
 	urlVal.Add("powerSql", strconv.FormatBool(glr.PowerSQL))
 	urlVal.Add("query", glr.Query)
+	urlVal.Add("fromNs", strconv.Itoa(int(glr.FromNsPart)))
+	urlVal.Add("toNs", strconv.Itoa(int(glr.ToNsPart)))
 	return urlVal
 }
 
