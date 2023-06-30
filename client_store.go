@@ -210,6 +210,12 @@ func (c *Client) GetLogs(project, logstore string, topic string, from int64, to 
 	return ls.GetLogs(topic, from, to, queryExp, maxLineNum, offset, reverse)
 }
 
+func (c *Client) GetLogsByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogsByNano(topic, fromInNs, toInNs, queryExp, maxLineNum, offset, reverse)
+}
+
 // GetLogsToCompleted query logs with [from, to) time range to completed
 func (c *Client) GetLogsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
@@ -222,6 +228,12 @@ func (c *Client) GetLogLines(project, logstore string, topic string, from int64,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
 	ls := convertLogstore(c, project, logstore)
 	return ls.GetLogLines(topic, from, to, queryExp, maxLineNum, offset, reverse)
+}
+
+func (c *Client) GetLogLinesByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogLinesByNano(topic, fromInNs, toInNs, queryExp, maxLineNum, offset, reverse)
 }
 
 // GetLogsV2 ...

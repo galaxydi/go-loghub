@@ -602,6 +602,23 @@ func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp stri
 	return s.GetLogLinesV2(&req)
 }
 
+// GetLogLinesByNano query logs with [fromInNS, toInNs) nano time range
+func (s *LogStore) GetLogLinesByNano(topic string, fromInNS int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
+
+	var req GetLogRequest
+	req.Topic = topic
+	req.From = fromInNS / 1e9
+	req.To = toInNs / 1e9
+	req.FromNsPart = int32(fromInNS % 1e9)
+	req.ToNsPart = int32(toInNs % 1e9)
+	req.Query = queryExp
+	req.Lines = maxLineNum
+	req.Offset = offset
+	req.Reverse = reverse
+	return s.GetLogLinesV2(&req)
+}
+
 // GetLogLinesV2 query logs with [from, to) time range
 func (s *LogStore) GetLogLinesV2(req *GetLogRequest) (*GetLogLinesResponse, error) {
 	rsp, b, logRsp, err := s.getLogs(req)
@@ -629,6 +646,21 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	req.Topic = topic
 	req.From = from
 	req.To = to
+	req.Query = queryExp
+	req.Lines = maxLineNum
+	req.Offset = offset
+	req.Reverse = reverse
+	return s.GetLogsV2(&req)
+}
+
+func (s *LogStore) GetLogsByNano(topic string, fromInNS int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
+	var req GetLogRequest
+	req.Topic = topic
+	req.From = fromInNS / 1e9
+	req.To = toInNs / 1e9
+	req.FromNsPart = int32(fromInNS % 1e9)
+	req.ToNsPart = int32(toInNs % 1e9)
 	req.Query = queryExp
 	req.Lines = maxLineNum
 	req.Offset = offset
