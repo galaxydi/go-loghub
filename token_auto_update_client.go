@@ -326,6 +326,16 @@ func (c *TokenAutoUpdateClient) ListMachines(project, machineGroupName string) (
 	return
 }
 
+func (c *TokenAutoUpdateClient) ListMachinesV2(project, machineGroupName string, offset, size int) (ms []*Machine, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		ms, total, err = c.logClient.ListMachinesV2(project, machineGroupName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) CheckLogstoreExist(project string, logstore string) (ok bool, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		ok, err = c.logClient.CheckLogstoreExist(project, logstore)

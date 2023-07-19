@@ -126,6 +126,7 @@ type ClientInterface interface {
 	ListMachineGroup(project string, offset, size int) (m []string, total int, err error)
 	// ListMachines list all machines in machineGroupName
 	ListMachines(project, machineGroupName string) (ms []*Machine, total int, err error)
+	ListMachinesV2(project, machineGroupName string, offset, size int) (ms []*Machine, total int, err error)
 	// CheckMachineGroupExist check machine group exist or not
 	CheckMachineGroupExist(project string, machineGroup string) (bool, error)
 	// GetMachineGroup retruns machine group according by machine group name.
