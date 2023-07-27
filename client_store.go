@@ -103,6 +103,15 @@ func (c *Client) PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKe
 	return ls.PostLogStoreLogs(lg, hashKey)
 }
 
+// PostRawLogWithCompressType put raw log data to log service, no marshal
+func (c *Client) PostRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int, hashKey *string) (err error) {
+	ls := convertLogstore(c, project, logstore)
+	if err := ls.SetPutLogCompressType(compressType); err != nil {
+		return err
+	}
+	return ls.PostRawLogs(rawLogData, hashKey)
+}
+
 // PutLogsWithCompressType put logs into logstore with specific compress type.
 // The callers should transform user logs into LogGroup.
 func (c *Client) PutLogsWithCompressType(project, logstore string, lg *LogGroup, compressType int) (err error) {
