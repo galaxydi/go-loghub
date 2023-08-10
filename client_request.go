@@ -49,6 +49,12 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
 	}
 
+	for k, v := range c.CommonHeaders {
+		if _, ok := headers[k]; !ok {
+			headers[k] = v
+		}
+	}
+
 	c.accessKeyLock.RLock()
 	stsToken := c.SecurityToken
 	accessKeyID := c.AccessKeyID

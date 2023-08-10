@@ -153,6 +153,12 @@ func realRequest(ctx context.Context, project *LogProject, method, uri string, h
 		headers[HTTPHeaderUserAgent] = DefaultLogUserAgent
 	}
 
+	for k, v := range project.CommonHeaders {
+		if _, ok := headers[k]; !ok {
+			headers[k] = v
+		}
+	}
+
 	// Access with token
 	if project.SecurityToken != "" {
 		headers[HTTPHeaderAcsSecurityToken] = project.SecurityToken
