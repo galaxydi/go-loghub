@@ -13,16 +13,45 @@ import (
 )
 
 type ConsumerWorker struct {
-	consumerHeatBeat   *ConsumerHeatBeat
+	consumerHeatBeat   *ConsumerHeartBeat
 	client             *ConsumerClient
 	workerShutDownFlag *atomic.Bool
 	shardConsumer      sync.Map // map[int]*ShardConsumerWorker
-	do                 func(shard int, logGroup *sls.LogGroupList) string
+	processor          Processor
 	waitGroup          sync.WaitGroup
 	Logger             log.Logger
 }
 
+// depreciated: this old logic is to automatically save to memory, and then commit at a fixed time
+// we highly recommend you to use InitConsumerWorkerWithCheckpointTracker
 func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) string) *ConsumerWorker {
+	if option.AutoCommitDisabled {
+		panic("auto commit already disabled, sdk will not save any checkpoint, " +
+			"please use InitConsumerWorkerWithCheckpointTracker or set AutoCommitDisabled to false")
+	}
+	return InitConsumerWorkerWithProcessor(
+		option,
+		ProcessFunc(func(shardId int, logGroupList *sls.LogGroupList, checkpointTracker CheckPointTracker) (string, error) {
+			cursor := do(shardId, logGroupList)
+			// keep the original logic
+			// if cursor is not empty, we don't save,
+			if cursor == "" {
+				checkpointTracker.SaveCheckPoint(false)
+			}
+			return cursor, nil
+		}),
+	)
+}
+
+// InitConsumerWorkerWithCheckpointTracker
+// please note that you need to save after the process is successful，
+func InitConsumerWorkerWithCheckpointTracker(option LogHubConfig, do func(int, *sls.LogGroupList, CheckPointTracker) (string, error)) *ConsumerWorker {
+	return InitConsumerWorkerWithProcessor(option, ProcessFunc(do))
+}
+
+// InitConsumerWorkerWithProcessor
+// you need save checkpoint by yourself and can do something after consumer shutdown
+func InitConsumerWorkerWithProcessor(option LogHubConfig, processor Processor) *ConsumerWorker {
 	logger := logConfig(option)
 	consumerClient := initConsumerClient(option, logger)
 	consumerHeatBeat := initConsumerHeatBeat(consumerClient, logger)
@@ -31,10 +60,14 @@ func InitConsumerWorker(option LogHubConfig, do func(int, *sls.LogGroupList) str
 		client:             consumerClient,
 		workerShutDownFlag: atomic.NewBool(false),
 		//shardConsumer:      make(map[int]*ShardConsumerWorker),
-		do:     do,
-		Logger: logger,
+		processor: processor,
+		Logger:    logger,
 	}
-	consumerClient.createConsumerGroup()
+	if err := consumerClient.createConsumerGroup(); err != nil {
+		level.Error(consumerWorker.Logger).Log(
+			"msg", "possibly failed to create or update consumer group, please check worker run log",
+			"err", err)
+	}
 	return consumerWorker
 }
 
@@ -65,11 +98,7 @@ func (consumerWorker *ConsumerWorker) run() {
 				break
 			}
 			shardConsumer := consumerWorker.getShardConsumer(shard)
-			if shardConsumer.getConsumerIsCurrentDoneStatus() == true {
-				shardConsumer.consume()
-			} else {
-				continue
-			}
+			shardConsumer.consume()
 		}
 		consumerWorker.cleanShardConsumer(heldShards)
 		TimeToSleepInMillsecond(consumerWorker.client.option.DataFetchIntervalInMs, lastFetchTime, consumerWorker.workerShutDownFlag.Load())
@@ -89,7 +118,7 @@ func (consumerWorker *ConsumerWorker) shutDownAndWait() {
 				consumer := value.(*ShardConsumerWorker)
 				if !consumer.isShutDownComplete() {
 					consumer.consumerShutDown()
-				} else if consumer.isShutDownComplete() {
+				} else {
 					consumerWorker.shardConsumer.Delete(key)
 				}
 				return true
@@ -107,7 +136,7 @@ func (consumerWorker *ConsumerWorker) getShardConsumer(shardId int) *ShardConsum
 	if ok {
 		return consumer.(*ShardConsumerWorker)
 	}
-	consumerIns := initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.do, consumerWorker.Logger)
+	consumerIns := initShardConsumerWorker(shardId, consumerWorker.client, consumerWorker.consumerHeatBeat, consumerWorker.processor, consumerWorker.Logger)
 	consumerWorker.shardConsumer.Store(shardId, consumerIns)
 	return consumerIns
 

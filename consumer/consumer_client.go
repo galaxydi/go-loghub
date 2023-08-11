@@ -1,6 +1,7 @@
 package consumerLibrary
 
 import (
+	"fmt"
 	"time"
 
 	sls "github.com/aliyun/aliyun-log-go-sdk"
@@ -26,20 +27,23 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.MaxFetchLogGroupCount == 0 {
 		option.MaxFetchLogGroupCount = 1000
 	}
+	if option.AutoCommitIntervalInMS == 0 {
+		option.AutoCommitIntervalInMS = 60 * 1000
+	}
 	client := &sls.Client{
 		Endpoint:        option.Endpoint,
 		AccessKeyID:     option.AccessKeyID,
 		AccessKeySecret: option.AccessKeySecret,
 		SecurityToken:   option.SecurityToken,
-		UserAgent: option.ConsumerGroupName + "_" + option.ConsumerName,
+		UserAgent:       option.ConsumerGroupName + "_" + option.ConsumerName,
 	}
 	if option.HTTPClient != nil {
 		client.SetHTTPClient(option.HTTPClient)
 	}
 	consumerGroup := sls.ConsumerGroup{
-		option.ConsumerGroupName,
-		option.HeartbeatIntervalInSecond * 3,
-		option.InOrder,
+		ConsumerGroupName: option.ConsumerGroupName,
+		Timeout:           option.HeartbeatIntervalInSecond * 3,
+		InOrder:           option.InOrder,
 	}
 	consumerClient := &ConsumerClient{
 		option,
@@ -51,18 +55,37 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	return consumerClient
 }
 
-func (consumer *ConsumerClient) createConsumerGroup() {
-	err := consumer.client.CreateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup)
+func (consumer *ConsumerClient) createConsumerGroup() error {
+	consumerGroups, err := consumer.client.ListConsumerGroup(consumer.option.Project, consumer.option.Logstore)
 	if err != nil {
-		if slsError, ok := err.(*sls.Error); ok {
-			if slsError.Code == "ConsumerGroupAlreadyExist" {
-				level.Info(consumer.logger).Log("msg", "New consumer join the consumer group", "consumer name", consumer.option.ConsumerName, "group name", consumer.option.ConsumerGroupName)
+		return fmt.Errorf("list consumer group failed: %w", err)
+	}
+	alreadyExist := false
+	for _, cg := range consumerGroups {
+		if cg.ConsumerGroupName == consumer.consumerGroup.ConsumerGroupName {
+			alreadyExist = true
+			if (*cg) != consumer.consumerGroup {
+				level.Info(consumer.logger).Log("msg", "this config is different from original config, try to override it", "old_config", cg)
 			} else {
-				level.Error(consumer.logger).Log("msg", "create consumer group error", "error", err)
-
+				level.Info(consumer.logger).Log("msg", "new consumer join the consumer group", "consumer name", consumer.option.ConsumerName,
+					"group name", consumer.option.ConsumerGroupName)
+				return nil
 			}
 		}
 	}
+	if alreadyExist {
+		if err := consumer.client.UpdateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup); err != nil {
+			return fmt.Errorf("update consumer group failed: %w", err)
+		}
+	} else {
+		if err := consumer.client.CreateConsumerGroup(consumer.option.Project, consumer.option.Logstore, consumer.consumerGroup); err != nil {
+			if slsError, ok := err.(*sls.Error); !ok || slsError.Code != "ConsumerGroupAlreadyExist" {
+				return fmt.Errorf("create consumer group failed: %w", err)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (consumer *ConsumerClient) heartBeat(heart []int) ([]int, error) {
@@ -102,27 +125,42 @@ func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, err
 	return cursor, err
 }
 
-func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, err error) {
+func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, rawSize int, err error) {
+	var logBytes []byte
 	for retry := 0; retry < 3; retry++ {
-		gl, nextCursor, err = consumer.client.PullLogsWithQuery(consumer.option.Project, consumer.option.Logstore, shardId, consumer.option.Query, cursor, "", consumer.option.MaxFetchLogGroupCount)
+		logBytes, nextCursor, err = consumer.client.GetLogsBytesWithQuery(consumer.option.Project, consumer.option.Logstore, shardId,
+			consumer.option.Query, cursor, "",
+			consumer.option.MaxFetchLogGroupCount)
+		if err == nil {
+			rawSize = len(logBytes)
+			gl, err = sls.LogsBytesDecode(logBytes)
+			if err == nil {
+				break
+			}
+		}
 		if err != nil {
 			slsError, ok := err.(sls.Error)
 			if ok {
+				level.Warn(consumer.logger).Log("msg", "shard pull logs failed, occur sls error",
+					"shard", shardId,
+					"error", slsError,
+					"tryTimes", retry+1,
+					"cursor", cursor,
+				)
 				if slsError.HTTPCode == 403 {
-					level.Warn(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
 					time.Sleep(5 * time.Second)
-				} else {
-					level.Warn(consumer.logger).Log("msg", "shard Get checkpoint gets errors, starts to try again", "shard", shardId, "error", slsError)
-					time.Sleep(200 * time.Millisecond)
 				}
 			} else {
-				level.Warn(consumer.logger).Log("msg", "unknown error when pull log", "shardId", shardId, "cursor", cursor, "error", err)
+				level.Warn(consumer.logger).Log("msg", "unknown error when pull log",
+					"shardId", shardId,
+					"cursor", cursor,
+					"error", err,
+					"tryTimes", retry+1)
 			}
-		} else {
-			return gl, nextCursor, nil
+			time.Sleep(200 * time.Millisecond)
 		}
 	}
 	// If you can't retry the log three times, it will return to empty list and start pulling the log cursor,
 	// so that next time you will come in and pull the function again, which is equivalent to a dead cycle.
-	return gl, nextCursor, err
+	return
 }

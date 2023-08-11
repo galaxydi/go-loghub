@@ -138,6 +138,22 @@ type PolicyConfiguration struct {
 	ActionPolicyId string `json:"actionPolicyId"`
 }
 
+type SinkEventStoreConfiguration struct {
+	Enabled    bool   `json:"enabled"`
+	Endpoint   string `json:"endpoint"`
+	Project    string `json:"project"`
+	EventStore string `json:"eventStore"`
+	RoleArn    string `json:"roleArn"`
+}
+
+type SinkCmsConfiguration struct {
+	Enabled bool `json:"enabled"`
+}
+
+type SinkAlerthubConfiguration struct {
+	Enabled bool `json:"enabled"`
+}
+
 type Alert struct {
 	Name             string              `json:"name"`
 	DisplayName      string              `json:"displayName"`
@@ -226,8 +242,11 @@ type AlertConfiguration struct {
 	JoinConfigurations []*JoinConfiguration `json:"joinConfigurations"`
 	GroupConfiguration GroupConfiguration   `json:"groupConfiguration"`
 
-	PolicyConfiguration PolicyConfiguration `json:"policyConfiguration"`
-	AutoAnnotation      bool                `json:"autoAnnotation"`
+	PolicyConfiguration PolicyConfiguration          `json:"policyConfiguration"`
+	AutoAnnotation      bool                         `json:"autoAnnotation"`
+	SinkEventStore      *SinkEventStoreConfiguration `json:"sinkEventStore"`
+	SinkCms             *SinkCmsConfiguration        `json:"sinkCms"`
+	SinkAlerthub        *SinkAlerthubConfiguration   `json:"sinkAlerthub"`
 
 	Tags []string `json:"tags,omitempty"`
 }

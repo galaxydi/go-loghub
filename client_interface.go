@@ -108,12 +108,25 @@ type ClientInterface interface {
 	// GetMetricStore return a metric store.
 	GetMetricStore(project, name string) (*LogStore, error)
 
+	// #################### EventStore Operations #####################
+	// CreateEventStore creates a new event store in SLS.
+	CreateEventStore(project string, eventStore *LogStore) error
+	// UpdateEventStore updates a event store.
+	UpdateEventStore(project string, eventStore *LogStore) error
+	// DeleteEventStore deletes a event store.
+	DeleteEventStore(project, name string) error
+	// GetEventStore return a event store.
+	GetEventStore(project, name string) (*LogStore, error)
+	// ListEventStore returns all eventStore names of project p.
+	ListEventStore(project string, offset, size int) ([]string, error)
+
 	// #################### Logtail Operations #####################
 	// ListMachineGroup returns machine group name list and the total number of machine groups.
 	// The offset starts from 0 and the size is the max number of machine groups could be returned.
 	ListMachineGroup(project string, offset, size int) (m []string, total int, err error)
 	// ListMachines list all machines in machineGroupName
 	ListMachines(project, machineGroupName string) (ms []*Machine, total int, err error)
+	ListMachinesV2(project, machineGroupName string, offset, size int) (ms []*Machine, total int, err error)
 	// CheckMachineGroupExist check machine group exist or not
 	CheckMachineGroupExist(project string, machineGroup string) (bool, error)
 	// GetMachineGroup retruns machine group according by machine group name.
@@ -188,6 +201,8 @@ type ClientInterface interface {
 	// PostLogStoreLogs put logs into Shard logstore by hashKey.
 	// The callers should transform user logs into LogGroup.
 	PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKey *string) (err error)
+	// PostRawLogWithCompressType put logs into logstore with specific compress type and hashKey.
+	PostRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int, hashKey *string) (err error)
 	// PutLogsWithCompressType put logs into logstore with specific compress type.
 	// The callers should transform user logs into LogGroup.
 	PutLogsWithCompressType(project, logstore string, lg *LogGroup, compressType int) (err error)
@@ -220,9 +235,15 @@ type ClientInterface interface {
 		maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
 	GetLogLines(project, logstore string, topic string, from int64, to int64, queryExp string,
 		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
+	// GetLogsByNano query logs with [fromInNs, toInNs) nano time range
+	GetLogsByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+		maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
+	GetLogLinesByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+		maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error)
 
 	GetLogsV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
 	GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error)
+	GetLogsV3(project, logstore string, req *GetLogRequest) (*GetLogsV3Response, error)
 
 	// GetHistogramsToCompleted query logs with [from, to) time range to completed
 	GetHistogramsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error)

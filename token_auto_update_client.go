@@ -326,6 +326,16 @@ func (c *TokenAutoUpdateClient) ListMachines(project, machineGroupName string) (
 	return
 }
 
+func (c *TokenAutoUpdateClient) ListMachinesV2(project, machineGroupName string, offset, size int) (ms []*Machine, total int, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		ms, total, err = c.logClient.ListMachinesV2(project, machineGroupName, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) CheckLogstoreExist(project string, logstore string) (ok bool, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		ok, err = c.logClient.CheckLogstoreExist(project, logstore)
@@ -706,6 +716,17 @@ func (c *TokenAutoUpdateClient) PostLogStoreLogs(project, logstore string, lg *L
 	return
 }
 
+// PostRawLogWithCompressType put raw log data to log service, no marshal
+func (c *TokenAutoUpdateClient) PostRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int, hashKey *string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.PostRawLogWithCompressType(project, logstore, rawLogData, compressType, hashKey)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 // PutRawLogWithCompressType put raw log data to log service, no marshal
 func (c *TokenAutoUpdateClient) PutRawLogWithCompressType(project, logstore string, rawLogData []byte, compressType int) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
@@ -810,6 +831,16 @@ func (c *TokenAutoUpdateClient) GetLogsV2(project, logstore string, req *GetLogR
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetLogsV3(project, logstore string, req *GetLogRequest) (r *GetLogsV3Response, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogsV3(project, logstore, req)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogsToCompletedV2(project, logstore string, req *GetLogRequest) (r *GetLogsResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		r, err = c.logClient.GetLogsToCompletedV2(project, logstore, req)
@@ -841,6 +872,17 @@ func (c *TokenAutoUpdateClient) GetLogs(project, logstore string, topic string, 
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetLogsByNano(project, logstore string, topic string, fromInNs int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (r *GetLogsResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogsByNano(project, logstore, topic, fromInNs, toInNs, queryExp, maxLineNum, offset, reverse)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (r *GetLogsResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
@@ -856,6 +898,17 @@ func (c *TokenAutoUpdateClient) GetLogLines(project, logstore string, topic stri
 	maxLineNum int64, offset int64, reverse bool) (r *GetLogLinesResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		r, err = c.logClient.GetLogLines(project, logstore, topic, from, to, queryExp, maxLineNum, offset, reverse)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetLogLinesByNano(project, logstore string, topic string, fromInNs int64, toInNS int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (r *GetLogLinesResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogLinesByNano(project, logstore, topic, fromInNs, toInNS, queryExp, maxLineNum, offset, reverse)
 		if !c.processError(err) {
 			return
 		}
@@ -1776,4 +1829,54 @@ func (c *TokenAutoUpdateClient) PublishAlertEvent(project string, alertResult []
 		}
 	}
 	return err
+}
+
+func (c *TokenAutoUpdateClient) CreateEventStore(project string, eventStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.CreateEventStore(project, eventStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateEventStore(project string, eventStore *LogStore) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateEventStore(project, eventStore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) DeleteEventStore(project, name string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.DeleteEventStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetEventStore(project, name string) (eventStore *LogStore, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		eventStore, err = c.logClient.GetEventStore(project, name)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) ListEventStore(project string, offset, size int) (eventStores []string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		eventStores, err = c.logClient.ListEventStore(project, offset, size)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
 }

@@ -30,8 +30,8 @@ type LogStore struct {
 
 	AppendMeta    bool   `json:"appendMeta"`
 	TelemetryType string `json:"telemetryType"`
-	HotTTL        uint32 `json:"hot_ttl,omitempty"`
-	Mode          string `json:"mode,omitempty"` // "lite" or "standard"(default), can't be modified after creation
+	HotTTL        int32  `json:"hot_ttl,omitempty"`
+	Mode          string `json:"mode,omitempty"` // "query" or "standard"(default), can't be modified after creation
 
 	CreateTime     uint32 `json:"createTime,omitempty"`
 	LastModifyTime uint32 `json:"lastModifyTime,omitempty"`
@@ -185,6 +185,68 @@ func (s *LogStore) PutRawLog(rawLogData []byte) (err error) {
 	}
 	defer r.Body.Close()
 	body, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(body, err); jErr != nil {
+			return NewBadResponseError(string(body), r.Header, r.StatusCode)
+		}
+		return err
+	}
+	return nil
+}
+
+func (s *LogStore) PostRawLogs(body []byte, hashKey *string) (err error) {
+	if len(body) == 0 {
+		// empty log group or empty hashkey
+		return nil
+	}
+
+	if hashKey == nil || *hashKey == "" {
+		// empty hash call PutLogs
+		return s.PutRawLog(body)
+	}
+
+	var out []byte
+	var h map[string]string
+	var outLen int
+	switch s.putLogCompressType {
+	case Compress_LZ4:
+		// Compresse body with lz4
+		out = make([]byte, lz4.CompressBlockBound(len(body)))
+		var hashTable [1 << 16]int
+		n, err := lz4.CompressBlock(body, out, hashTable[:])
+		if err != nil {
+			return NewClientError(err)
+		}
+		// copy incompressible data as lz4 format
+		if n == 0 {
+			n, _ = copyIncompressible(body, out)
+		}
+
+		h = map[string]string{
+			"x-log-compresstype": "lz4",
+			"x-log-bodyrawsize":  strconv.Itoa(len(body)),
+			"Content-Type":       "application/x-protobuf",
+		}
+		outLen = n
+		break
+	case Compress_None:
+		// no compress
+		out = body
+		h = map[string]string{
+			"x-log-bodyrawsize": strconv.Itoa(len(body)),
+			"Content-Type":      "application/x-protobuf",
+		}
+		outLen = len(out)
+	}
+
+	uri := fmt.Sprintf("/logstores/%v/shards/route?key=%v", s.Name, *hashKey)
+	r, err := request(s.project, "POST", uri, h, out[:outLen])
+	if err != nil {
+		return NewClientError(err)
+	}
+	defer r.Body.Close()
+	body, _ = ioutil.ReadAll(r.Body)
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
 		if jErr := json.Unmarshal(body, err); jErr != nil {
@@ -623,6 +685,23 @@ func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp stri
 	return s.GetLogLinesV2(&req)
 }
 
+// GetLogLinesByNano query logs with [fromInNS, toInNs) nano time range
+func (s *LogStore) GetLogLinesByNano(topic string, fromInNS int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
+
+	var req GetLogRequest
+	req.Topic = topic
+	req.From = fromInNS / 1e9
+	req.To = toInNs / 1e9
+	req.FromNsPart = int32(fromInNS % 1e9)
+	req.ToNsPart = int32(toInNs % 1e9)
+	req.Query = queryExp
+	req.Lines = maxLineNum
+	req.Offset = offset
+	req.Reverse = reverse
+	return s.GetLogLinesV2(&req)
+}
+
 // GetLogLinesV2 query logs with [from, to) time range
 func (s *LogStore) GetLogLinesV2(req *GetLogRequest) (*GetLogLinesResponse, error) {
 	rsp, b, logRsp, err := s.getLogs(req)
@@ -650,6 +729,21 @@ func (s *LogStore) GetLogs(topic string, from int64, to int64, queryExp string,
 	req.Topic = topic
 	req.From = from
 	req.To = to
+	req.Query = queryExp
+	req.Lines = maxLineNum
+	req.Offset = offset
+	req.Reverse = reverse
+	return s.GetLogsV2(&req)
+}
+
+func (s *LogStore) GetLogsByNano(topic string, fromInNS int64, toInNs int64, queryExp string,
+	maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error) {
+	var req GetLogRequest
+	req.Topic = topic
+	req.From = fromInNS / 1e9
+	req.To = toInNs / 1e9
+	req.FromNsPart = int32(fromInNS % 1e9)
+	req.ToNsPart = int32(toInNs % 1e9)
 	req.Query = queryExp
 	req.Lines = maxLineNum
 	req.Offset = offset
@@ -738,6 +832,55 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 		logRsp.Logs = logs
 	}
 	return logRsp, err
+}
+
+// GetLogsV3 query logs with [from, to) time range
+func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, err
+	}
+	h := map[string]string{
+		"x-log-bodyrawsize": fmt.Sprintf("%v", len(reqBody)),
+		"Content-Type":      "application/json",
+		"Accept-Encoding":   "lz4",
+	}
+	uri := fmt.Sprintf("/logstores/%s/logs", s.Name)
+	r, err := request(s.project, "POST", uri, h, reqBody)
+	if err != nil {
+		return nil, NewClientError(err)
+	}
+	defer r.Body.Close()
+
+	respBody, _ := ioutil.ReadAll(r.Body)
+	if r.StatusCode != http.StatusOK {
+		err := new(Error)
+		if jErr := json.Unmarshal(respBody, err); jErr != nil {
+			return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+		}
+		return nil, err
+	}
+	if _, ok := r.Header[BodyRawSize]; ok {
+		if len(r.Header[BodyRawSize]) > 0 {
+			bodyRawSize, err := strconv.ParseInt(r.Header[BodyRawSize][0], 10, 64)
+			if err != nil {
+				return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+			}
+			out := make([]byte, bodyRawSize)
+			if bodyRawSize != 0 {
+				len, err := lz4.UncompressBlock(respBody, out)
+				if err != nil || int64(len) != bodyRawSize {
+					return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+				}
+			}
+			respBody = out
+		}
+	}
+	var result GetLogsV3Response
+	if err = json.Unmarshal(respBody, &result); err != nil {
+		return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+	}
+	return &result, nil
 }
 
 // GetContextLogs ...
