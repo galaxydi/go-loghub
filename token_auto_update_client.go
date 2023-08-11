@@ -781,13 +781,7 @@ func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID i
 
 func (c *TokenAutoUpdateClient) PullLogs(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
-	for i := 0; i < c.maxTryTimes; i++ {
-		gl, nextCursor, err = c.logClient.PullLogs(project, logstore, shardID, cursor, endCursor, logGroupMaxCount)
-		if !c.processError(err) {
-			return
-		}
-	}
-	return
+	return c.PullLogsWithQuery(project, logstore, shardID, "", cursor, endCursor, logGroupMaxCount)
 }
 
 func (c *TokenAutoUpdateClient) PullLogsWithQuery(project, logstore string, shardID int, query, cursor, endCursor string,

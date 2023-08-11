@@ -541,18 +541,7 @@ func LogsBytesDecode(data []byte) (gl *LogGroupList, err error) {
 // @note if you want to pull logs continuous, set endCursor = ""
 func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
-
-	out, nextCursor, err := s.GetLogsBytes(shardID, cursor, endCursor, logGroupMaxCount)
-	if err != nil {
-		return nil, "", err
-	}
-
-	gl, err = LogsBytesDecode(out)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return gl, nextCursor, nil
+	return s.PullLogsWithQuery(shardID, "", cursor, endCursor, logGroupMaxCount)
 }
 
 func (s *LogStore) PullLogsWithQuery(shardID int, query, cursor, endCursor string,
