@@ -104,7 +104,7 @@ func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, err
 
 func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, err error) {
 	for retry := 0; retry < 3; retry++ {
-		gl, nextCursor, err = consumer.client.PullLogs(consumer.option.Project, consumer.option.Logstore, shardId, cursor, "", consumer.option.MaxFetchLogGroupCount)
+		gl, nextCursor, err = consumer.client.PullLogsWithQuery(consumer.option.Project, consumer.option.Logstore, shardId, consumer.option.Query, cursor, "", consumer.option.MaxFetchLogGroupCount)
 		if err != nil {
 			slsError, ok := err.(sls.Error)
 			if ok {

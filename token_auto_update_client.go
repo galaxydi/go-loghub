@@ -769,6 +769,17 @@ func (c *TokenAutoUpdateClient) PullLogs(project, logstore string, shardID int, 
 	return
 }
 
+func (c *TokenAutoUpdateClient) PullLogsWithQuery(project, logstore string, shardID int, query, cursor, endCursor string,
+	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		gl, nextCursor, err = c.logClient.PullLogsWithQuery(project, logstore, shardID, query, cursor, endCursor, logGroupMaxCount)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetHistograms(project, logstore string, topic string, from int64, to int64, queryExp string) (h *GetHistogramsResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		h, err = c.logClient.GetHistograms(project, logstore, topic, from, to, queryExp)

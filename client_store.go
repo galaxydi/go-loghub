@@ -191,6 +191,12 @@ func (c *Client) PullLogs(project, logstore string, shardID int, cursor, endCurs
 	return ls.PullLogs(shardID, cursor, endCursor, logGroupMaxCount)
 }
 
+func (c *Client) PullLogsWithQuery(project, logstore string, shardID int, query, cursor, endCursor string,
+	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.PullLogsWithQuery(shardID, query, cursor, endCursor, logGroupMaxCount)
+}
+
 // GetHistograms query logs with [from, to) time range
 func (c *Client) GetHistograms(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error) {
 	ls := convertLogstore(c, project, logstore)

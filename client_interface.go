@@ -211,6 +211,8 @@ type ClientInterface interface {
 	// @note if you want to pull logs continuous, set endCursor = ""
 	PullLogs(project, logstore string, shardID int, cursor, endCursor string,
 		logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error)
+	PullLogsWithQuery(project, logstore string, shardID int, query, cursor, endCursor string,
+		logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error)
 	// GetHistograms query logs with [from, to) time range
 	GetHistograms(project, logstore string, topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error)
 	// GetLogs query logs with [from, to) time range

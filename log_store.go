@@ -375,10 +375,15 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 	return cursor, nil
 }
 
+func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
+	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+	return s.GetLogsBytesWithQuery(shardID, "", cursor, endCursor, logGroupMaxCount)
+}
+
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
+func (s *LogStore) GetLogsBytesWithQuery(shardID int, query, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
@@ -386,13 +391,13 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		"Accept-Encoding":   "lz4",
 	}
 
-	uri := ""
-	if endCursor == "" {
-		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
 			s.Name, shardID, cursor, logGroupMaxCount)
-	} else {
-		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&end_cursor=%v&count=%v",
-			s.Name, shardID, cursor, endCursor, logGroupMaxCount)
+	if endCursor != "" {
+		uri += fmt.Sprintf("&end_cursor=%v", endCursor)
+	}
+	if query != "" {
+		uri += fmt.Sprintf("&pullMode=scan_on_stream&responseWithMeta=true&query=%v", query)
 	}
 
 	r, err := request(s.project, "GET", uri, h, nil)
@@ -476,6 +481,22 @@ func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
 
 	out, nextCursor, err := s.GetLogsBytes(shardID, cursor, endCursor, logGroupMaxCount)
+	if err != nil {
+		return nil, "", err
+	}
+
+	gl, err = LogsBytesDecode(out)
+	if err != nil {
+		return nil, "", err
+	}
+
+	return gl, nextCursor, nil
+}
+
+func (s *LogStore) PullLogsWithQuery(shardID int, query, cursor, endCursor string,
+	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+
+	out, nextCursor, err := s.GetLogsBytesWithQuery(shardID, query, cursor, endCursor, logGroupMaxCount)
 	if err != nil {
 		return nil, "", err
 	}
