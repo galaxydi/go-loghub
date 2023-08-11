@@ -439,14 +439,19 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 
 func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
-	return s.GetLogsBytesWithQuery(shardID, "", cursor, endCursor, logGroupMaxCount)
+	plr := &PullLogRequest{
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return s.GetLogsBytesWithQuery(plr)
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogsBytesWithQuery(shardID int, query, cursor, endCursor string,
-	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
@@ -454,12 +459,15 @@ func (s *LogStore) GetLogsBytesWithQuery(shardID int, query, cursor, endCursor s
 	}
 
 	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
-			s.Name, shardID, cursor, logGroupMaxCount)
-	if endCursor != "" {
-		uri += fmt.Sprintf("&end_cursor=%v", endCursor)
+		s.Name, plr.ShardID, plr.Cursor, plr.LogGroupMaxCount)
+	if plr.EndCursor != "" {
+		uri += fmt.Sprintf("&end_cursor=%v", plr.EndCursor)
 	}
-	if query != "" {
-		uri += fmt.Sprintf("&pullMode=scan_on_stream&responseWithMeta=true&query=%v", query)
+	if plr.Query != "" {
+		uri += fmt.Sprintf("&query=%v", plr.Query)
+	}
+	if plr.PullMode != "" {
+		uri += fmt.Sprintf("&pullMode=%v", plr.PullMode)
 	}
 
 	r, err := request(s.project, "GET", uri, h, nil)
@@ -541,13 +549,18 @@ func LogsBytesDecode(data []byte) (gl *LogGroupList, err error) {
 // @note if you want to pull logs continuous, set endCursor = ""
 func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
-	return s.PullLogsWithQuery(shardID, "", cursor, endCursor, logGroupMaxCount)
+	plr := &PullLogRequest{
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return s.PullLogsWithQuery(plr)
 }
 
-func (s *LogStore) PullLogsWithQuery(shardID int, query, cursor, endCursor string,
-	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+func (s *LogStore) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
 
-	out, nextCursor, err := s.GetLogsBytesWithQuery(shardID, query, cursor, endCursor, logGroupMaxCount)
+	out, nextCursor, err := s.GetLogsBytesWithQuery(plr)
 	if err != nil {
 		return nil, "", err
 	}

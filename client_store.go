@@ -14,6 +14,17 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
+type PullLogRequest struct {
+	Project          string
+	Logstore         string
+	ShardID          int
+	Cursor           string
+	EndCursor        string
+	LogGroupMaxCount int
+	Query            string
+	PullMode         string
+}
+
 func convertLogstore(c *Client, project, logstore string) *LogStore {
 	c.accessKeyLock.RLock()
 	proj := convertLocked(c, project)
@@ -186,8 +197,20 @@ func (c *Client) GetPrevCursorTime(project, logstore string, shardID int, cursor
 // The nextCursor is the next curosr can be used to read logs at next time.
 func (c *Client) GetLogsBytes(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
-	ls := convertLogstore(c, project, logstore)
-	return ls.GetLogsBytes(shardID, cursor, endCursor, logGroupMaxCount)
+	plr := &PullLogRequest{
+		Project:          project,
+		Logstore:         logstore,
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return c.GetLogsBytesWithQuery(plr)
+}
+
+func (c *Client) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
+	ls := convertLogstore(c, plr.Project, plr.Logstore)
+	return ls.GetLogsBytesWithQuery(plr)
 }
 
 // PullLogs gets logs from shard specified by shardId according cursor and endCursor.
@@ -200,10 +223,9 @@ func (c *Client) PullLogs(project, logstore string, shardID int, cursor, endCurs
 	return ls.PullLogs(shardID, cursor, endCursor, logGroupMaxCount)
 }
 
-func (c *Client) PullLogsWithQuery(project, logstore string, shardID int, query, cursor, endCursor string,
-	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
-	ls := convertLogstore(c, project, logstore)
-	return ls.PullLogsWithQuery(shardID, query, cursor, endCursor, logGroupMaxCount)
+func (c *Client) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
+	ls := convertLogstore(c, plr.Project, plr.Logstore)
+	return ls.PullLogsWithQuery(plr)
 }
 
 // GetHistograms query logs with [from, to) time range
