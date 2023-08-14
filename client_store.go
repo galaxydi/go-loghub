@@ -14,17 +14,6 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-type PullLogRequest struct {
-	Project          string
-	Logstore         string
-	ShardID          int
-	Cursor           string
-	EndCursor        string
-	LogGroupMaxCount int
-	Query            string
-	PullMode         string
-}
-
 func convertLogstore(c *Client, project, logstore string) *LogStore {
 	c.accessKeyLock.RLock()
 	proj := convertLocked(c, project)
@@ -205,12 +194,12 @@ func (c *Client) GetLogsBytes(project, logstore string, shardID int, cursor, end
 		EndCursor:        endCursor,
 		LogGroupMaxCount: logGroupMaxCount,
 	}
-	return c.GetLogsBytesWithQuery(plr)
+	return c.GetLogsBytesV2(plr)
 }
 
-func (c *Client) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
+func (c *Client) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	ls := convertLogstore(c, plr.Project, plr.Logstore)
-	return ls.GetLogsBytesWithQuery(plr)
+	return ls.GetLogsBytesV2(plr)
 }
 
 // PullLogs gets logs from shard specified by shardId according cursor and endCursor.
@@ -223,9 +212,9 @@ func (c *Client) PullLogs(project, logstore string, shardID int, cursor, endCurs
 	return ls.PullLogs(shardID, cursor, endCursor, logGroupMaxCount)
 }
 
-func (c *Client) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
+func (c *Client) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
 	ls := convertLogstore(c, plr.Project, plr.Logstore)
-	return ls.PullLogsWithQuery(plr)
+	return ls.PullLogsV2(plr)
 }
 
 // GetHistograms query logs with [from, to) time range

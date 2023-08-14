@@ -38,6 +38,35 @@ func (glr *GetLogRequest) ToURLParams() url.Values {
 	return urlVal
 }
 
+type PullLogRequest struct {
+	Project          string
+	Logstore         string
+	ShardID          int
+	Cursor           string
+	EndCursor        string
+	LogGroupMaxCount int
+	Query            string
+	PullMode         string
+}
+
+func (plr *PullLogRequest) ToURLParams() url.Values {
+	urlVal := url.Values{}
+	urlVal.Add("type", "logs")
+	urlVal.Add("cursor", plr.Cursor)
+	urlVal.Add("count", strconv.Itoa(plr.LogGroupMaxCount))
+	if plr.EndCursor != "" {
+		urlVal.Add("end_cursor", plr.EndCursor)
+	}
+	if plr.Query != "" {
+		urlVal.Add("query", plr.Query)
+	}
+	if plr.PullMode != "" {
+		urlVal.Add("pullMode", plr.PullMode)
+	}
+
+	return urlVal
+}
+
 // GetHistogramsResponse defines response from GetHistograms call
 type SingleHistogram struct {
 	Progress string `json:"progress"`

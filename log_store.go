@@ -445,30 +445,21 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 		EndCursor:        endCursor,
 		LogGroupMaxCount: logGroupMaxCount,
 	}
-	return s.GetLogsBytesWithQuery(plr)
+	return s.GetLogsBytesV2(plr)
 }
 
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
+func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
 		"Accept-Encoding":   "lz4",
 	}
 
-	uri := fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
-		s.Name, plr.ShardID, plr.Cursor, plr.LogGroupMaxCount)
-	if plr.EndCursor != "" {
-		uri += fmt.Sprintf("&end_cursor=%v", plr.EndCursor)
-	}
-	if plr.Query != "" {
-		uri += fmt.Sprintf("&query=%v", plr.Query)
-	}
-	if plr.PullMode != "" {
-		uri += fmt.Sprintf("&pullMode=%v", plr.PullMode)
-	}
+	urlVal := plr.ToURLParams()
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?%s", s.Name, plr.ShardID, urlVal.Encode())
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
@@ -555,12 +546,12 @@ func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 		EndCursor:        endCursor,
 		LogGroupMaxCount: logGroupMaxCount,
 	}
-	return s.PullLogsWithQuery(plr)
+	return s.PullLogsV2(plr)
 }
 
-func (s *LogStore) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
+func (s *LogStore) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
 
-	out, nextCursor, err := s.GetLogsBytesWithQuery(plr)
+	out, nextCursor, err := s.GetLogsBytesV2(plr)
 	if err != nil {
 		return nil, "", err
 	}
