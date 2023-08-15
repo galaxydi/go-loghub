@@ -437,25 +437,29 @@ func (s *LogStore) GetCursor(shardID int, from string) (cursor string, err error
 	return cursor, nil
 }
 
+func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
+	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+	plr := &PullLogRequest{
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return s.GetLogsBytesV2(plr)
+}
+
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
-	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
 		"Accept-Encoding":   "lz4",
 	}
 
-	uri := ""
-	if endCursor == "" {
-		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&count=%v",
-			s.Name, shardID, cursor, logGroupMaxCount)
-	} else {
-		uri = fmt.Sprintf("/logstores/%v/shards/%v?type=logs&cursor=%v&end_cursor=%v&count=%v",
-			s.Name, shardID, cursor, endCursor, logGroupMaxCount)
-	}
+	urlVal := plr.ToURLParams()
+	uri := fmt.Sprintf("/logstores/%v/shards/%v?%s", s.Name, plr.ShardID, urlVal.Encode())
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
@@ -536,8 +540,18 @@ func LogsBytesDecode(data []byte) (gl *LogGroupList, err error) {
 // @note if you want to pull logs continuous, set endCursor = ""
 func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+	plr := &PullLogRequest{
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return s.PullLogsV2(plr)
+}
 
-	out, nextCursor, err := s.GetLogsBytes(shardID, cursor, endCursor, logGroupMaxCount)
+func (s *LogStore) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
+
+	out, nextCursor, err := s.GetLogsBytesV2(plr)
 	if err != nil {
 		return nil, "", err
 	}

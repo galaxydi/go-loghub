@@ -770,8 +770,20 @@ func (c *TokenAutoUpdateClient) GetCursorTime(project, logstore string, shardID 
 
 func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (out []byte, nextCursor string, err error) {
+	plr := &PullLogRequest{
+		Project:          project,
+		Logstore:         logstore,
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return c.GetLogsBytesV2(plr)
+}
+
+func (c *TokenAutoUpdateClient) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		out, nextCursor, err = c.logClient.GetLogsBytes(project, logstore, shardID, cursor, endCursor, logGroupMaxCount)
+		out, nextCursor, err = c.logClient.GetLogsBytesV2(plr)
 		if !c.processError(err) {
 			return
 		}
@@ -781,8 +793,20 @@ func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID i
 
 func (c *TokenAutoUpdateClient) PullLogs(project, logstore string, shardID int, cursor, endCursor string,
 	logGroupMaxCount int) (gl *LogGroupList, nextCursor string, err error) {
+	plr := &PullLogRequest{
+		Project:          project,
+		Logstore:         logstore,
+		ShardID:          shardID,
+		Cursor:           cursor,
+		EndCursor:        endCursor,
+		LogGroupMaxCount: logGroupMaxCount,
+	}
+	return c.PullLogsV2(plr)
+}
+
+func (c *TokenAutoUpdateClient) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
-		gl, nextCursor, err = c.logClient.PullLogs(project, logstore, shardID, cursor, endCursor, logGroupMaxCount)
+		gl, nextCursor, err = c.logClient.PullLogsV2(plr)
 		if !c.processError(err) {
 			return
 		}
