@@ -26,7 +26,7 @@ func main() {
 		// This options is used for initialization, will be ignored once consumer group is created and each shard has been started to be consumed.
 		// Could be "begin", "end", "specific time format in time stamp", it's log receiving time.
 		CursorPosition: consumerLibrary.BEGIN_CURSOR,
-		// Query is for log pre-handling before return to client, more info refer to https://help.aliyun.com/zh/sls/user-guide/rule-based-consumption
+		// Query is for log pre-handling before return to client, more info refer to https://www.alibabacloud.com/help/zh/sls/user-guide/rule-based-consumption
 		Query: "* | where cast(body_bytes_sent as bigint) > 14000",
 	}
 
