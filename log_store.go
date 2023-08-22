@@ -827,11 +827,71 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	return logRsp, err
 }
 
-// GetLogsV3 query logs with [from, to) time range
-func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
-	reqBody, err := json.Marshal(req)
+// GetLogsV2 query logs with [from, to) time range
+func (s *LogStore) GetLogsV2New(req *GetLogRequest) (*GetLogsResponse, error) {
+	resp, respHeader, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
+	}
+	return convV3ToV2LogResp(resp, respHeader), nil
+}
+
+func convV3ToV2LogResp(v3Resp *GetLogsV3Response, respHeader http.Header) *GetLogsResponse {
+	contents, header := writeMetaToHeader(v3Resp, respHeader)
+	return &GetLogsResponse{
+		Logs:     v3Resp.Logs,
+		Progress: v3Resp.Meta.Progress,
+		Count:    v3Resp.Meta.Count,
+		HasSQL:   v3Resp.Meta.HasSQL,
+		Contents: contents,
+		Header:   header,
+	}
+}
+
+// keys: [meta.keys]
+// terms: [meta.term_pairs]
+// limited: limited
+// marker: marker
+// mode: mode
+// phraseQueryInfo: scanAll, beginOffset, endOffset, endTime
+// shard shard_id
+// scanBytes
+// isAccurate
+// highlights
+// columnTypes types
+
+func writeMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) (contents string, respHeader http.Header) {
+	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
+	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
+	header.Add(ProgressHeader, v3Resp.Meta.Progress)
+	header.Add(ProcessedBytes, strconv.FormatInt(v3Resp.Meta.ProcessedBytes, 10))
+	header.Add(ElapsedMillisecond, strconv.FormatInt(v3Resp.Meta.ElapsedMillisecond, 10))
+	header.Add(HasSQLHeader, strconv.FormatBool(v3Resp.Meta.HasSQL))
+	header.Add(TelemetryType, v3Resp.Meta.TelemetryType)
+	header.Add(WhereQuery, v3Resp.Meta.WhereQuery)
+	header.Add(AggQuery, v3Resp.Meta.AggQuery)
+	header.Add(CpuSec, strconv.FormatFloat(v3Resp.Meta.CpuSec, 'E', -1, 64))
+	header.Add(CpuCores, strconv.FormatFloat(v3Resp.Meta.CpuCores, 'E', -1, 64))
+	header.Add(PowerSql, strconv.FormatBool(v3Resp.Meta.PowerSql))
+	header.Add(InsertedSql, v3Resp.Meta.InsertedSql)
+	contents = constructQueryInfo(v3Resp)
+	header.Add(GetLogsQueryInfo, contents)
+	return contents, header
+}
+
+// GetLogsV3 query logs with [from, to) time range
+func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
+	result, _, err := s.getLogsV3Internal(req)
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
+}
+
+func (s *LogStore) getLogsV3Internal(req *GetLogRequest) (*GetLogsV3Response, http.Header, error) {
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, nil, err
 	}
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(reqBody)),
@@ -841,7 +901,7 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	uri := fmt.Sprintf("/logstores/%s/logs", s.Name)
 	r, err := request(s.project, "POST", uri, h, reqBody)
 	if err != nil {
-		return nil, NewClientError(err)
+		return nil, nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 
@@ -849,21 +909,21 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
 		if jErr := json.Unmarshal(respBody, err); jErr != nil {
-			return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+			return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	if _, ok := r.Header[BodyRawSize]; ok {
 		if len(r.Header[BodyRawSize]) > 0 {
 			bodyRawSize, err := strconv.ParseInt(r.Header[BodyRawSize][0], 10, 64)
 			if err != nil {
-				return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+				return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 			}
 			out := make([]byte, bodyRawSize)
 			if bodyRawSize != 0 {
 				len, err := lz4.UncompressBlock(respBody, out)
 				if err != nil || int64(len) != bodyRawSize {
-					return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+					return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 				}
 			}
 			respBody = out
@@ -871,9 +931,9 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	}
 	var result GetLogsV3Response
 	if err = json.Unmarshal(respBody, &result); err != nil {
-		return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+		return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 	}
-	return &result, nil
+	return &result, r.Header, nil
 }
 
 // GetContextLogs ...
