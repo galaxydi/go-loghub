@@ -2,7 +2,10 @@ package producer
 
 import (
 	"net/http"
+	"sync"
 	"time"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
 )
 
 const Delimiter = "|"
@@ -34,6 +37,12 @@ type ProducerConfig struct {
 	StsTokenShutDown      chan struct{}
 	HTTPClient            *http.Client
 	UserAgent             string
+	LogTags               []*sls.LogTag
+	GeneratePackId        bool
+
+	packLock   sync.Mutex
+	packPrefix string
+	packNumber int64
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
