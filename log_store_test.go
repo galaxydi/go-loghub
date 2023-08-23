@@ -2,6 +2,7 @@ package sls
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 	"time"
 
@@ -70,31 +71,46 @@ func (s *GetLogsTestSuite) TestGetLogsV2() {
 		Lines: 100,
 	}
 	// old
-	resp, err := s.client.GetLogsV2(s.env.ProjectName, s.env.LogstoreName, req)
-	s.Require().NoError(err)
-	// new
 	ls := convertLogstore(s.client, s.env.ProjectName, s.env.LogstoreName)
-	resp2, err := ls.GetLogsV2New(req)
+	resp, err := ls.getLogsV2(req)
 	s.Require().NoError(err)
 
-	filtered := map[string]bool{
-		"Date":                      true,
-		"X-Log-Elapsed-Millisecond": true,
-		"X-Log-Requestid":           true,
-		"X-Log-Time":                true,
-		"Content-Type":              true,
-		"Content-Length":            true,
-	}
+	// new
+	resp2, err := s.client.GetLogsV2(s.env.ProjectName, s.env.LogstoreName, req)
+	s.Require().NoError(err)
 
+	// these headers need not to be compared
+	filtered := map[string]bool{
+		HTTPHeaderDate:          true,
+		ElapsedMillisecond:      true,
+		RequestIDHeader:         true,
+		HTTPHeaderLogDate:       true,
+		HTTPHeaderContentType:   true,
+		HTTPHeaderContentLength: true,
+		GetLogsQueryInfo:        true, // not support yet
+	}
+	addFilter := func(key string) {
+		filtered[strings.ToLower(key)] = true
+	}
+	addFilter(HTTPHeaderDate)
+	addFilter(ElapsedMillisecond)
+	addFilter(RequestIDHeader)
+	addFilter(HTTPHeaderLogDate)
+	addFilter(HTTPHeaderContentType)
+	addFilter(HTTPHeaderContentLength)
+	addFilter(GetLogsQueryInfo)
+
+	// compare headers
 	for k := range resp.Header {
-		if _, ok := filtered[k]; !ok {
+		key := strings.ToLower(k)
+		if _, ok := filtered[key]; !ok {
 			s.EqualValuesf(resp.Header.Get(k), resp2.Header.Get(k), "header key %s", k)
 		}
 	}
+	// compare values
 	s.EqualValues(resp.Progress, resp2.Progress)
 	s.EqualValues(resp.Count, resp2.Count)
 	s.EqualValues(resp.HasSQL, resp2.HasSQL)
-	s.EqualValues(resp.Contents, resp2.Contents)
 
 	fmt.Printf("%#v\n", resp)
 	fmt.Printf("%#v\n", resp2)

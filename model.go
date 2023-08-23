@@ -2,7 +2,6 @@ package sls
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -105,71 +104,6 @@ type PhraseQueryInfo struct {
 	BeginOffset *int64 `json:"beginOffset,omitempty"`
 	EndOffset   *int64 `json:"endOffset,omitempty"`
 	EndTime     *int64 `json:"endTime,omitempty"`
-}
-
-type QueryInfo struct {
-	Keys            []string         `json:"keys,omitempty"`
-	Limited         int64            `json:"limited"`
-	Marker          *string          `json:"string,omitempty"`
-	Mode            *int             `json:"mode,omitempty"`
-	PhraseQueryInfo *PhraseQueryInfo `json:"phraseQueryInfo,omitempty"`
-	Shard           *int             `json:"shard,omitempty"`
-	ScanBytes       *int64           `json:"scanBytes,omitempty"`
-	IsAccurate      *int64           `json:"isAccurate,omitempty"`
-	ColumnTypes     []string         `json:"columnTypes,omitempty"`
-}
-
-func constructQueryInfo(v3Resp *GetLogsV3Response) string {
-	res := ""
-	meta := v3Resp.Meta
-	if len(meta.Keys) > 0 {
-		keys, _ := json.Marshal(meta.Keys)
-		res += fmt.Sprintf(`",keys":[%s]`, keys)
-	}
-
-	if len(meta.Terms) > 0 {
-		res += `",terms": [`
-		for _, v := range meta.Terms {
-			res += fmt.Sprintf(`["%s","%s"],`, v.Term, v.Key)
-		}
-		res += "]"
-	}
-
-	if meta.Limited != 0 {
-		res += fmt.Sprintf(`,"limited":"%d"`, meta.Limited)
-	}
-	if meta.Marker != nil {
-		res += fmt.Sprintf(`,"marker":"%s"`, *meta.Marker)
-	}
-
-	var isAccurate *int64
-	// if meta.IsAccurate != nil {
-	// 	isAccurate = int64(*meta.IsAccurate)
-	// }
-	queryInfo := &QueryInfo{
-		Keys:            meta.Keys,
-		Limited:         meta.Limited,
-		Marker:          meta.Marker,
-		Mode:            meta.Mode,
-		PhraseQueryInfo: meta.PhraseQueryInfo,
-		Shard:           meta.Shard,
-		ScanBytes:       meta.ScanBytes,
-		IsAccurate:      isAccurate,
-		ColumnTypes:     meta.ColumnTypes,
-	}
-	// terms = [ [t1, k1], [t2, k2], [t3, k3] ]
-	terms := ""
-	for _, v := range meta.Terms {
-		terms += fmt.Sprintf(`["%s", "%s"], `, v.Term, v.Key)
-	}
-	if terms != "" {
-		terms = fmt.Sprintf(`[ %s ]`, terms[:len(terms)-1])
-	}
-
-	data, _ := json.Marshal(queryInfo)
-	text := string(data)
-	idx := strings.Index(text, "{")
-	return fmt.Sprintf(`%s "terms": %s, %s`, text[:idx+1], terms, text[idx+1:])
 }
 
 type GetLogsV3ResponseMeta struct {

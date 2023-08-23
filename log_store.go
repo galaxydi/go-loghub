@@ -814,7 +814,9 @@ func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, 
 }
 
 // GetLogsV2 query logs with [from, to) time range
-func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
+//
+// Deprecated: use [GetLogsV2] instead
+func (s *LogStore) getLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	rsp, b, logRsp, err := s.getLogs(req)
 	if err == nil && len(b) != 0 {
 		logs := []map[string]string{}
@@ -828,7 +830,7 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 }
 
 // GetLogsV2 query logs with [from, to) time range
-func (s *LogStore) GetLogsV2New(req *GetLogRequest) (*GetLogsResponse, error) {
+func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	resp, respHeader, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
@@ -836,31 +838,20 @@ func (s *LogStore) GetLogsV2New(req *GetLogRequest) (*GetLogsResponse, error) {
 	return convV3ToV2LogResp(resp, respHeader), nil
 }
 
+// @note: field [Contents] and header [x-log-query-info] is not supported in V3
 func convV3ToV2LogResp(v3Resp *GetLogsV3Response, respHeader http.Header) *GetLogsResponse {
-	contents, header := writeMetaToHeader(v3Resp, respHeader)
+	writeMetaToHeader(v3Resp, respHeader)
 	return &GetLogsResponse{
 		Logs:     v3Resp.Logs,
 		Progress: v3Resp.Meta.Progress,
 		Count:    v3Resp.Meta.Count,
 		HasSQL:   v3Resp.Meta.HasSQL,
-		Contents: contents,
-		Header:   header,
+		Contents: "",
+		Header:   respHeader,
 	}
 }
 
-// keys: [meta.keys]
-// terms: [meta.term_pairs]
-// limited: limited
-// marker: marker
-// mode: mode
-// phraseQueryInfo: scanAll, beginOffset, endOffset, endTime
-// shard shard_id
-// scanBytes
-// isAccurate
-// highlights
-// columnTypes types
-
-func writeMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) (contents string, respHeader http.Header) {
+func writeMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) {
 	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
 	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
 	header.Add(ProgressHeader, v3Resp.Meta.Progress)
@@ -874,9 +865,6 @@ func writeMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) (contents 
 	header.Add(CpuCores, strconv.FormatFloat(v3Resp.Meta.CpuCores, 'E', -1, 64))
 	header.Add(PowerSql, strconv.FormatBool(v3Resp.Meta.PowerSql))
 	header.Add(InsertedSql, v3Resp.Meta.InsertedSql)
-	contents = constructQueryInfo(v3Resp)
-	header.Add(GetLogsQueryInfo, contents)
-	return contents, header
 }
 
 // GetLogsV3 query logs with [from, to) time range
