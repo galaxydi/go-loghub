@@ -613,56 +613,6 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	return &getHistogramsResponse, nil
 }
 
-// getLogs query logs with [from, to) time range
-func (s *LogStore) getLogs(req *GetLogRequest) (*http.Response, []byte, *GetLogsResponse, error) {
-
-	h := map[string]string{
-		"x-log-bodyrawsize": "0",
-		"Accept":            "application/json",
-	}
-
-	urlVal := req.ToURLParams()
-
-	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
-	r, err := request(s.project, "GET", uri, h, nil)
-	if err != nil {
-		return nil, nil, nil, NewClientError(err)
-	}
-	defer r.Body.Close()
-
-	body, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		if jErr := json.Unmarshal(body, err); jErr != nil {
-			return nil, nil, nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
-		}
-		return nil, nil, nil, err
-	}
-
-	count, err := strconv.ParseInt(r.Header.Get(GetLogsCountHeader), 10, 32)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	var contents string
-	if _, ok := r.Header[GetLogsQueryInfo]; ok {
-		if len(r.Header[GetLogsQueryInfo]) > 0 {
-			contents = r.Header[GetLogsQueryInfo][0]
-		}
-	}
-	hasSQL := false
-	if r.Header.Get(HasSQLHeader) == "true" {
-		hasSQL = true
-	}
-
-	return r, body, &GetLogsResponse{
-		Progress: r.Header[ProgressHeader][0],
-		Count:    count,
-		Contents: contents,
-		HasSQL:   hasSQL,
-		Header:   r.Header,
-	}, nil
-}
-
 // GetLogLines query logs with [from, to) time range
 func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
@@ -697,18 +647,19 @@ func (s *LogStore) GetLogLinesByNano(topic string, fromInNS int64, toInNs int64,
 
 // GetLogLinesV2 query logs with [from, to) time range
 func (s *LogStore) GetLogLinesV2(req *GetLogRequest) (*GetLogLinesResponse, error) {
-	rsp, b, logRsp, err := s.getLogs(req)
+	v3Rsp, httpRsp, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
 	}
-	var logs []json.RawMessage
-	err = json.Unmarshal(b, &logs)
-	if err != nil {
-		return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
-	}
 
+	// ensured no error
+	data, _ := json.Marshal(&v3Rsp.Logs)
+	var logs []json.RawMessage
+	_ = json.Unmarshal(data, &logs)
+
+	v2Rsp := convV3ToV2LogResp(v3Rsp, httpRsp.Header)
 	lineRsp := GetLogLinesResponse{
-		GetLogsResponse: *logRsp,
+		GetLogsResponse: *v2Rsp,
 		Lines:           logs,
 	}
 
@@ -813,27 +764,13 @@ func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, 
 	return res, err
 }
 
-// use HTTP GET, for testing
-func (s *LogStore) getLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
-	rsp, b, logRsp, err := s.getLogs(req)
-	if err == nil && len(b) != 0 {
-		logs := []map[string]string{}
-		err = json.Unmarshal(b, &logs)
-		if err != nil {
-			return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
-		}
-		logRsp.Logs = logs
-	}
-	return logRsp, err
-}
-
 // GetLogsV2 query logs with [from, to) time range
 func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
-	resp, respHeader, err := s.getLogsV3Internal(req)
+	resp, httpRsp, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
 	}
-	return convV3ToV2LogResp(resp, respHeader), nil
+	return convV3ToV2LogResp(resp, httpRsp.Header), nil
 }
 
 // @note: field [Contents] and header [x-log-query-info] is not supported in V3
@@ -874,7 +811,7 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	return result, nil
 }
 
-func (s *LogStore) getLogsV3Internal(req *GetLogRequest) (*GetLogsV3Response, http.Header, error) {
+func (s *LogStore) getLogsV3Internal(req *GetLogRequest) (*GetLogsV3Response, *http.Response, error) {
 	reqBody, err := json.Marshal(req)
 	if err != nil {
 		return nil, nil, err
@@ -919,7 +856,7 @@ func (s *LogStore) getLogsV3Internal(req *GetLogRequest) (*GetLogsV3Response, ht
 	if err = json.Unmarshal(respBody, &result); err != nil {
 		return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 	}
-	return &result, r.Header, nil
+	return &result, r, nil
 }
 
 // GetContextLogs ...
