@@ -813,9 +813,7 @@ func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, 
 	return res, err
 }
 
-// GetLogsV2 query logs with [from, to) time range
-//
-// Deprecated: use [GetLogsV2] instead
+// use HTTP GET, for testing
 func (s *LogStore) getLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	rsp, b, logRsp, err := s.getLogs(req)
 	if err == nil && len(b) != 0 {
@@ -840,7 +838,7 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 
 // @note: field [Contents] and header [x-log-query-info] is not supported in V3
 func convV3ToV2LogResp(v3Resp *GetLogsV3Response, respHeader http.Header) *GetLogsResponse {
-	writeMetaToHeader(v3Resp, respHeader)
+	convMetaToHeader(v3Resp, respHeader)
 	return &GetLogsResponse{
 		Logs:     v3Resp.Logs,
 		Progress: v3Resp.Meta.Progress,
@@ -851,7 +849,7 @@ func convV3ToV2LogResp(v3Resp *GetLogsV3Response, respHeader http.Header) *GetLo
 	}
 }
 
-func writeMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) {
+func convMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) {
 	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
 	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
 	header.Add(ProgressHeader, v3Resp.Meta.Progress)

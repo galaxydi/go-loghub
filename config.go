@@ -14,8 +14,8 @@ const (
 	// ProgressHeader stands for the progress header in GetLogs response
 	ProgressHeader = "X-Log-Progress"
 
-	ProcessedRows      = "X-Log-Processed-Rows"
-	ProcessedBytes     = "X-Log-Processed-Bytes"
+	ProcessedRows      = "x-log-processed-rows"
+	ProcessedBytes     = "x-log-processed-bytes"
 	ElapsedMillisecond = "x-log-elapsed-millisecond"
 	TelemetryType      = "x-tlm-type"
 	WhereQuery         = "x-log-where-query"
