@@ -48,9 +48,8 @@ type LogProject struct {
 	retryTimeout    time.Duration
 	httpClient      *http.Client
 
-	// User defined common headers, will be added after signature.
+	// User defined common headers.
 	//
-	// Must has prefix x-log- or x-acs-.
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
 	CommonHeaders map[string]string
