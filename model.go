@@ -99,7 +99,7 @@ type MetaTerm struct {
 	Key  string `json:"key"`
 	Term string `json:"term"`
 }
-type PhraseQueryInfo struct {
+type PhraseQueryInfoV3 struct {
 	ScanAll     *bool  `json:"scanAll,omitempty"`
 	BeginOffset *int64 `json:"beginOffset,omitempty"`
 	EndOffset   *int64 `json:"endOffset,omitempty"`
@@ -122,15 +122,83 @@ type GetLogsV3ResponseMeta struct {
 	PowerSql           bool    `json:"powerSql"`
 	InsertedSql        string  `json:"insertedSQL"`
 
-	Keys            []string         `json:"keys,omitempty"`
-	Terms           []MetaTerm       `json:"terms,omitempty"`
-	Marker          *string          `json:"string,omitempty"`
-	Mode            *int             `json:"mode,omitempty"`
-	PhraseQueryInfo *PhraseQueryInfo `json:"phraseQueryInfo,omitempty"`
-	Shard           *int             `json:"shard,omitempty"`
-	ScanBytes       *int64           `json:"scanBytes,omitempty"`
-	IsAccurate      *bool            `json:"isAccurate,omitempty"`
-	ColumnTypes     []string         `json:"columnTypes,omitempty"`
+	Keys            []string            `json:"keys,omitempty"`
+	Terms           []MetaTerm          `json:"terms,omitempty"`
+	Marker          *string             `json:"string,omitempty"`
+	Mode            *int                `json:"mode,omitempty"`
+	PhraseQueryInfo *PhraseQueryInfoV3  `json:"phraseQueryInfo,omitempty"`
+	Shard           *int                `json:"shard,omitempty"`
+	ScanBytes       *int64              `json:"scanBytes,omitempty"`
+	IsAccurate      *bool               `json:"isAccurate,omitempty"`
+	ColumnTypes     []string            `json:"columnTypes,omitempty"`
+	Highlights      []map[string]string `json:"highlights,omitempty"`
+}
+
+type PhraseQueryInfoV2 struct {
+	ScanAll     string `json:"scanAll,omitempty"`
+	BeginOffset string `json:"beginOffset,omitempty"`
+	EndOffset   string `json:"endOffset,omitempty"`
+	EndTime     string `json:"endTime,omitempty"`
+}
+
+func (s *PhraseQueryInfoV3) toPhraseQueryInfoV2() *PhraseQueryInfoV2 {
+	if s == nil {
+		return nil
+	}
+	return &PhraseQueryInfoV2{
+		ScanAll:     BoolPtrToStringNum(s.ScanAll),
+		BeginOffset: Int64PtrToString(s.BeginOffset),
+		EndOffset:   Int64PtrToString(s.EndOffset),
+		EndTime:     Int64PtrToString(s.EndTime),
+	}
+}
+
+type QueryInfoV2 struct {
+	Keys            []string            `json:"keys,omitempty"`
+	Terms           [][]string          `json:"terms,omitempty"` // [[term, key], [term2, key2]]
+	Limited         string              `json:"limited,omitempty"`
+	Marker          *string             `json:"marker,omitempty"`
+	Mode            *int                `json:"mode,omitempty"`
+	PhraseQueryInfo *PhraseQueryInfoV2  `json:"phraseQueryInfo,omitempty"`
+	Shard           *int                `json:"shard,omitempty"`
+	ScanBytes       *int64              `json:"scanBytes,omitempty"`
+	IsAccurate      *int64              `json:"isAccurate,omitempty"`
+	ColumnTypes     []string            `json:"columnTypes,omitempty"`
+	Highlights      []map[string]string `json:"highlight,omitempty"`
+}
+
+func (meta *GetLogsV3ResponseMeta) constructQueryInfo() (string, error) {
+	var terms [][]string
+	for _, term := range meta.Terms {
+		terms = append(terms, []string{term.Term, term.Key})
+	}
+	var isAccurate *int64
+	if meta.IsAccurate != nil {
+		res := BoolToInt64(*meta.IsAccurate)
+		isAccurate = &res
+	}
+	limited := ""
+	if meta.Limited != 0 {
+		limited = strconv.FormatInt(meta.Limited, 10)
+	}
+	queryInfo := &QueryInfoV2{
+		Keys:            meta.Keys,
+		Terms:           terms,
+		Limited:         limited,
+		Marker:          meta.Marker,
+		Mode:            meta.Mode,
+		PhraseQueryInfo: meta.PhraseQueryInfo.toPhraseQueryInfoV2(),
+		Shard:           meta.Shard,
+		ScanBytes:       meta.ScanBytes,
+		IsAccurate:      isAccurate,
+		ColumnTypes:     meta.ColumnTypes,
+		Highlights:      meta.Highlights,
+	}
+	contents, err := json.Marshal(queryInfo)
+	if err != nil {
+		return "", err
+	}
+	return string(contents), nil
 }
 
 // GetLogsV3Response defines response from GetLogs call

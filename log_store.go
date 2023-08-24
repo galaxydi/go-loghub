@@ -657,12 +657,15 @@ func (s *LogStore) GetLogLinesV2(req *GetLogRequest) (*GetLogLinesResponse, erro
 	var logs []json.RawMessage
 	_ = json.Unmarshal(data, &logs)
 
-	v2Rsp := convV3ToV2LogResp(v3Rsp, httpRsp.Header)
+	v2Rsp, err := toLogRespV2(v3Rsp, httpRsp.Header)
+	if err != nil {
+		return nil, err
+	}
+
 	lineRsp := GetLogLinesResponse{
 		GetLogsResponse: *v2Rsp,
 		Lines:           logs,
 	}
-
 	return &lineRsp, nil
 }
 
@@ -770,23 +773,26 @@ func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	return convV3ToV2LogResp(resp, httpRsp.Header), nil
+	return toLogRespV2(resp, httpRsp.Header)
 }
 
-// @note: field [Contents] and header [x-log-query-info] is not supported in V3
-func convV3ToV2LogResp(v3Resp *GetLogsV3Response, respHeader http.Header) *GetLogsResponse {
-	convMetaToHeader(v3Resp, respHeader)
+func toLogRespV2(v3Resp *GetLogsV3Response, respHeader http.Header) (*GetLogsResponse, error) {
+	queryInfo, err := v3Resp.Meta.constructQueryInfo()
+	if err != nil {
+		return nil, fmt.Errorf("fail to construct x-log-query-info: %w", err)
+	}
+	writeHeader(v3Resp, respHeader, queryInfo)
 	return &GetLogsResponse{
 		Logs:     v3Resp.Logs,
 		Progress: v3Resp.Meta.Progress,
 		Count:    v3Resp.Meta.Count,
 		HasSQL:   v3Resp.Meta.HasSQL,
-		Contents: "",
+		Contents: queryInfo,
 		Header:   respHeader,
-	}
+	}, nil
 }
 
-func convMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) {
+func writeHeader(v3Resp *GetLogsV3Response, header http.Header, queryInfo string) {
 	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
 	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
 	header.Add(ProgressHeader, v3Resp.Meta.Progress)
@@ -800,6 +806,7 @@ func convMetaToHeader(v3Resp *GetLogsV3Response, header http.Header) {
 	header.Add(CpuCores, strconv.FormatFloat(v3Resp.Meta.CpuCores, 'E', -1, 64))
 	header.Add(PowerSql, strconv.FormatBool(v3Resp.Meta.PowerSql))
 	header.Add(InsertedSql, v3Resp.Meta.InsertedSql)
+	header.Add(GetLogsQueryInfo, queryInfo)
 }
 
 // GetLogsV3 query logs with [from, to) time range

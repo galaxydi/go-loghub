@@ -73,6 +73,7 @@ func (s *GetLogsTestSuite) TestGetLogsV2() {
 		From:  int64(t - 900),
 		To:    int64(t + 10),
 		Lines: 100,
+		Query: "val1 | with_pack_meta",
 	}
 	// old
 	ls := convertLogstore(s.client, s.env.ProjectName, s.env.LogstoreName)
@@ -84,15 +85,7 @@ func (s *GetLogsTestSuite) TestGetLogsV2() {
 	s.Require().NoError(err)
 
 	// these headers need not to be compared
-	filtered := map[string]bool{
-		HTTPHeaderDate:          true,
-		ElapsedMillisecond:      true,
-		RequestIDHeader:         true,
-		HTTPHeaderLogDate:       true,
-		HTTPHeaderContentType:   true,
-		HTTPHeaderContentLength: true,
-		GetLogsQueryInfo:        true, // not support yet
-	}
+	filtered := map[string]bool{}
 	addFilter := func(key string) {
 		filtered[strings.ToLower(key)] = true
 	}
@@ -100,6 +93,7 @@ func (s *GetLogsTestSuite) TestGetLogsV2() {
 	addFilter(ElapsedMillisecond)
 	addFilter(RequestIDHeader)
 	addFilter(HTTPHeaderLogDate)
+	addFilter("x-log-time")
 	addFilter(HTTPHeaderContentType)
 	addFilter(HTTPHeaderContentLength)
 	addFilter(GetLogsQueryInfo)
@@ -116,9 +110,53 @@ func (s *GetLogsTestSuite) TestGetLogsV2() {
 	s.EqualValues(resp.Count, resp2.Count)
 	s.EqualValues(resp.HasSQL, resp2.HasSQL)
 
-	// fmt.Printf("%#v\n", resp)
-	// fmt.Printf("%#v\n", resp2)
+	// compare query info
+	queryInfoV2 := resp.Contents
+	queryInfoV3 := resp2.Contents
+	fmt.Println(queryInfoV2)
+	fmt.Println(queryInfoV3)
+	var info2 interface{}
+	var info3 interface{}
+	s.Require().NoError(json.Unmarshal([]byte(queryInfoV2), &info2))
+	s.Require().NoError(json.Unmarshal([]byte(queryInfoV3), &info3))
+	s.EqualValues(info2, info3)
 }
+
+func (s *GetLogsTestSuite) TestConstructQueryInfo() {
+	v3Meta := &GetLogsV3ResponseMeta{
+		Keys:            nil,
+		Terms:           nil,
+		Marker:          nil,
+		Mode:            nil,
+		PhraseQueryInfo: nil,
+		Shard:           nil,
+		ScanBytes:       nil,
+		IsAccurate:      nil,
+		ColumnTypes:     nil,
+		Highlights:      nil,
+	}
+	contents, err := v3Meta.constructQueryInfo()
+	s.Require().NoError(err)
+	s.Equal("{}", contents)
+	b := false
+	v3Meta.IsAccurate = &b
+	contents, err = v3Meta.constructQueryInfo()
+	s.Require().NoError(err)
+	s.Equal("{\"isAccurate\":0}", contents)
+	b = true
+	contents, err = v3Meta.constructQueryInfo()
+	s.Require().NoError(err)
+	s.Equal("{\"isAccurate\":1}", contents)
+
+	v3Meta.Keys = make([]string, 0)
+	shard := 0
+	v3Meta.Shard = &shard
+	contents, err = v3Meta.constructQueryInfo()
+	s.Require().NoError(err)
+
+	s.Equal("{\"shard\":0,\"isAccurate\":1}", contents)
+}
+
 func (s *GetLogsTestSuite) TestMarshalLines() {
 	logs := []map[string]string{
 		{
