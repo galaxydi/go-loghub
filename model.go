@@ -124,7 +124,7 @@ type GetLogsV3ResponseMeta struct {
 
 	Keys            []string            `json:"keys,omitempty"`
 	Terms           []MetaTerm          `json:"terms,omitempty"`
-	Marker          *string             `json:"string,omitempty"`
+	Marker          *string             `json:"marker,omitempty"`
 	Mode            *int                `json:"mode,omitempty"`
 	PhraseQueryInfo *PhraseQueryInfoV3  `json:"phraseQueryInfo,omitempty"`
 	Shard           *int                `json:"shard,omitempty"`
