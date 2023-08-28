@@ -107,7 +107,7 @@ type Client struct {
 	AuthVersion     AuthVersionType //  v1 or v4 signature,default is v1
 
 	accessKeyLock sync.RWMutex
-	// User defined common headers, do no use x-log- as key prefix.
+	// User defined common headers.
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
 	CommonHeaders map[string]string

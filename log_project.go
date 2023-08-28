@@ -48,7 +48,8 @@ type LogProject struct {
 	retryTimeout    time.Duration
 	httpClient      *http.Client
 
-	// User defined common headers, do no use x-log- as key prefix.
+	// User defined common headers.
+	//
 	// When conflict with sdk pre-defined headers, the value will
 	// be ignored
 	CommonHeaders map[string]string
