@@ -27,15 +27,23 @@ var (
 // this file is deprecated and no maintenance
 // see client_project.go
 
+// DataRedundancyType
+const (
+	PROJECT_DATA_REDUNDANCY_TYPE_UNKNOWN = "Unknown"
+	PROJECT_DATA_REDUNDANCY_TYPE_LRS     = "LRS"
+	PROJECT_DATA_REDUNDANCY_TYPE_ZRS     = "ZRS"
+)
+
 // LogProject defines log project
 type LogProject struct {
-	Name           string `json:"projectName"`    // Project name
-	Description    string `json:"description"`    // Project description
-	Status         string `json:"status"`         // Normal
-	Owner          string `json:"owner"`          // empty
-	Region         string `json:"region"`         // region id, eg cn-shanghai
-	CreateTime     string `json:"createTime"`     // unix time seconds, eg 1524539357
-	LastModifyTime string `json:"lastModifyTime"` // unix time seconds, eg 1524539357
+	Name               string `json:"projectName"`                  // Project name
+	Description        string `json:"description"`                  // Project description
+	Status             string `json:"status"`                       // Normal
+	Owner              string `json:"owner"`                        // empty
+	Region             string `json:"region"`                       // region id, eg cn-shanghai
+	CreateTime         string `json:"createTime"`                   // unix time seconds, eg 1524539357
+	LastModifyTime     string `json:"lastModifyTime"`               // unix time seconds, eg 1524539357
+	DataRedundancyType string `json:"dataRedundancyType,omitempty"` // data redundancy type, valid values: ['LRS', 'ZRS']
 
 	Endpoint        string // IP or hostname of SLS endpoint
 	AccessKeyID     string

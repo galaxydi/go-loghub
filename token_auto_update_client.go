@@ -175,6 +175,16 @@ func (c *TokenAutoUpdateClient) CreateProject(name, description string) (prj *Lo
 	return
 }
 
+func (c *TokenAutoUpdateClient) CreateProjectV2(name, description, dataRedundancyType string) (prj *LogProject, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		prj, err = c.logClient.CreateProjectV2(name, description, dataRedundancyType)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 // UpdateProject create a new loghub project.
 func (c *TokenAutoUpdateClient) UpdateProject(name, description string) (prj *LogProject, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {

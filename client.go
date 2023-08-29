@@ -174,13 +174,20 @@ func (c *Client) ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken
 
 // CreateProject create a new loghub project.
 func (c *Client) CreateProject(name, description string) (*LogProject, error) {
+	return c.CreateProjectV2(name, description, "")
+}
+
+// CreateProjectV2 create a new loghub project, with dataRedundancyType option.
+func (c *Client) CreateProjectV2(name, description, dataRedundancyType string) (*LogProject, error) {
 	type Body struct {
-		ProjectName string `json:"projectName"`
-		Description string `json:"description"`
+		ProjectName        string `json:"projectName"`
+		Description        string `json:"description"`
+		DataRedundancyType string `json:"dataRedundancyType,omitempty"`
 	}
 	body, err := json.Marshal(Body{
-		ProjectName: name,
-		Description: description,
+		ProjectName:        name,
+		Description:        description,
+		DataRedundancyType: dataRedundancyType,
 	})
 	if err != nil {
 		return nil, err

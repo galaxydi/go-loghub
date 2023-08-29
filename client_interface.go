@@ -58,6 +58,8 @@ type ClientInterface interface {
 	// #################### Project Operations #####################
 	// CreateProject create a new loghub project.
 	CreateProject(name, description string) (*LogProject, error)
+	// CreateProject create a new loghub project, with dataRedundancyType option.
+	CreateProjectV2(name, description, dataRedundancyType string) (*LogProject, error)
 	GetProject(name string) (*LogProject, error)
 	// UpdateProject create a new loghub project.
 	UpdateProject(name, description string) (*LogProject, error)
