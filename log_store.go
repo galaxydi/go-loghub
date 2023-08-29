@@ -781,7 +781,7 @@ func toLogRespV2(v3Resp *GetLogsV3Response, respHeader http.Header) (*GetLogsRes
 	if err != nil {
 		return nil, fmt.Errorf("fail to construct x-log-query-info: %w", err)
 	}
-	writeHeader(v3Resp, respHeader, queryInfo)
+	convertToLogRespV2Header(v3Resp, respHeader, queryInfo)
 	return &GetLogsResponse{
 		Logs:     v3Resp.Logs,
 		Progress: v3Resp.Meta.Progress,
@@ -792,7 +792,7 @@ func toLogRespV2(v3Resp *GetLogsV3Response, respHeader http.Header) (*GetLogsRes
 	}, nil
 }
 
-func writeHeader(v3Resp *GetLogsV3Response, header http.Header, queryInfo string) {
+func convertToLogRespV2Header(v3Resp *GetLogsV3Response, header http.Header, queryInfo string) {
 	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
 	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
 	header.Add(ProgressHeader, v3Resp.Meta.Progress)
