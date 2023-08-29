@@ -613,56 +613,6 @@ func (s *LogStore) GetHistograms(topic string, from int64, to int64, queryExp st
 	return &getHistogramsResponse, nil
 }
 
-// getLogs query logs with [from, to) time range
-func (s *LogStore) getLogs(req *GetLogRequest) (*http.Response, []byte, *GetLogsResponse, error) {
-
-	h := map[string]string{
-		"x-log-bodyrawsize": "0",
-		"Accept":            "application/json",
-	}
-
-	urlVal := req.ToURLParams()
-
-	uri := fmt.Sprintf("/logstores/%s?%s", s.Name, urlVal.Encode())
-	r, err := request(s.project, "GET", uri, h, nil)
-	if err != nil {
-		return nil, nil, nil, NewClientError(err)
-	}
-	defer r.Body.Close()
-
-	body, _ := ioutil.ReadAll(r.Body)
-	if r.StatusCode != http.StatusOK {
-		err := new(Error)
-		if jErr := json.Unmarshal(body, err); jErr != nil {
-			return nil, nil, nil, NewBadResponseError(string(body), r.Header, r.StatusCode)
-		}
-		return nil, nil, nil, err
-	}
-
-	count, err := strconv.ParseInt(r.Header.Get(GetLogsCountHeader), 10, 32)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-	var contents string
-	if _, ok := r.Header[GetLogsQueryInfo]; ok {
-		if len(r.Header[GetLogsQueryInfo]) > 0 {
-			contents = r.Header[GetLogsQueryInfo][0]
-		}
-	}
-	hasSQL := false
-	if r.Header.Get(HasSQLHeader) == "true" {
-		hasSQL = true
-	}
-
-	return r, body, &GetLogsResponse{
-		Progress: r.Header[ProgressHeader][0],
-		Count:    count,
-		Contents: contents,
-		HasSQL:   hasSQL,
-		Header:   r.Header,
-	}, nil
-}
-
 // GetLogLines query logs with [from, to) time range
 func (s *LogStore) GetLogLines(topic string, from int64, to int64, queryExp string,
 	maxLineNum int64, offset int64, reverse bool) (*GetLogLinesResponse, error) {
@@ -697,21 +647,25 @@ func (s *LogStore) GetLogLinesByNano(topic string, fromInNS int64, toInNs int64,
 
 // GetLogLinesV2 query logs with [from, to) time range
 func (s *LogStore) GetLogLinesV2(req *GetLogRequest) (*GetLogLinesResponse, error) {
-	rsp, b, logRsp, err := s.getLogs(req)
+	v3Rsp, httpRsp, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
 	}
+
+	// ensured no error
+	data, _ := json.Marshal(&v3Rsp.Logs)
 	var logs []json.RawMessage
-	err = json.Unmarshal(b, &logs)
+	_ = json.Unmarshal(data, &logs)
+
+	v2Rsp, err := toLogRespV2(v3Rsp, httpRsp.Header)
 	if err != nil {
-		return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
+		return nil, err
 	}
 
 	lineRsp := GetLogLinesResponse{
-		GetLogsResponse: *logRsp,
+		GetLogsResponse: *v2Rsp,
 		Lines:           logs,
 	}
-
 	return &lineRsp, nil
 }
 
@@ -815,23 +769,59 @@ func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, 
 
 // GetLogsV2 query logs with [from, to) time range
 func (s *LogStore) GetLogsV2(req *GetLogRequest) (*GetLogsResponse, error) {
-	rsp, b, logRsp, err := s.getLogs(req)
-	if err == nil && len(b) != 0 {
-		logs := []map[string]string{}
-		err = json.Unmarshal(b, &logs)
-		if err != nil {
-			return nil, NewBadResponseError(string(b), rsp.Header, rsp.StatusCode)
-		}
-		logRsp.Logs = logs
+	resp, httpRsp, err := s.getLogsV3Internal(req)
+	if err != nil {
+		return nil, err
 	}
-	return logRsp, err
+	return toLogRespV2(resp, httpRsp.Header)
+}
+
+func toLogRespV2(v3Resp *GetLogsV3Response, respHeader http.Header) (*GetLogsResponse, error) {
+	queryInfo, err := v3Resp.Meta.constructQueryInfo()
+	if err != nil {
+		return nil, fmt.Errorf("fail to construct x-log-query-info: %w", err)
+	}
+	convertToLogRespV2Header(v3Resp, respHeader, queryInfo)
+	return &GetLogsResponse{
+		Logs:     v3Resp.Logs,
+		Progress: v3Resp.Meta.Progress,
+		Count:    v3Resp.Meta.Count,
+		HasSQL:   v3Resp.Meta.HasSQL,
+		Contents: queryInfo,
+		Header:   respHeader,
+	}, nil
+}
+
+func convertToLogRespV2Header(v3Resp *GetLogsV3Response, header http.Header, queryInfo string) {
+	header.Add(GetLogsCountHeader, strconv.FormatInt(v3Resp.Meta.Count, 10))
+	header.Add(ProcessedRows, strconv.FormatInt(v3Resp.Meta.ProcessedRows, 10))
+	header.Add(ProgressHeader, v3Resp.Meta.Progress)
+	header.Add(ProcessedBytes, strconv.FormatInt(v3Resp.Meta.ProcessedBytes, 10))
+	header.Add(ElapsedMillisecond, strconv.FormatInt(v3Resp.Meta.ElapsedMillisecond, 10))
+	header.Add(HasSQLHeader, strconv.FormatBool(v3Resp.Meta.HasSQL))
+	header.Add(TelemetryType, v3Resp.Meta.TelemetryType)
+	header.Add(WhereQuery, v3Resp.Meta.WhereQuery)
+	header.Add(AggQuery, v3Resp.Meta.AggQuery)
+	header.Add(CpuSec, strconv.FormatFloat(v3Resp.Meta.CpuSec, 'E', -1, 64))
+	header.Add(CpuCores, strconv.FormatFloat(v3Resp.Meta.CpuCores, 'E', -1, 64))
+	header.Add(PowerSql, strconv.FormatBool(v3Resp.Meta.PowerSql))
+	header.Add(InsertedSql, v3Resp.Meta.InsertedSql)
+	header.Add(GetLogsQueryInfo, queryInfo)
 }
 
 // GetLogsV3 query logs with [from, to) time range
 func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
-	reqBody, err := json.Marshal(req)
+	result, _, err := s.getLogsV3Internal(req)
 	if err != nil {
 		return nil, err
+	}
+	return result, nil
+}
+
+func (s *LogStore) getLogsV3Internal(req *GetLogRequest) (*GetLogsV3Response, *http.Response, error) {
+	reqBody, err := json.Marshal(req)
+	if err != nil {
+		return nil, nil, err
 	}
 	h := map[string]string{
 		"x-log-bodyrawsize": fmt.Sprintf("%v", len(reqBody)),
@@ -841,7 +831,7 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	uri := fmt.Sprintf("/logstores/%s/logs", s.Name)
 	r, err := request(s.project, "POST", uri, h, reqBody)
 	if err != nil {
-		return nil, NewClientError(err)
+		return nil, nil, NewClientError(err)
 	}
 	defer r.Body.Close()
 
@@ -849,21 +839,21 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	if r.StatusCode != http.StatusOK {
 		err := new(Error)
 		if jErr := json.Unmarshal(respBody, err); jErr != nil {
-			return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+			return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 		}
-		return nil, err
+		return nil, nil, err
 	}
 	if _, ok := r.Header[BodyRawSize]; ok {
 		if len(r.Header[BodyRawSize]) > 0 {
 			bodyRawSize, err := strconv.ParseInt(r.Header[BodyRawSize][0], 10, 64)
 			if err != nil {
-				return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+				return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 			}
 			out := make([]byte, bodyRawSize)
 			if bodyRawSize != 0 {
 				len, err := lz4.UncompressBlock(respBody, out)
 				if err != nil || int64(len) != bodyRawSize {
-					return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+					return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 				}
 			}
 			respBody = out
@@ -871,9 +861,9 @@ func (s *LogStore) GetLogsV3(req *GetLogRequest) (*GetLogsV3Response, error) {
 	}
 	var result GetLogsV3Response
 	if err = json.Unmarshal(respBody, &result); err != nil {
-		return nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
+		return nil, nil, NewBadResponseError(string(respBody), r.Header, r.StatusCode)
 	}
-	return &result, nil
+	return &result, r, nil
 }
 
 // GetContextLogs ...
