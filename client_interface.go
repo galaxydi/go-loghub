@@ -5,20 +5,54 @@ import (
 	"time"
 )
 
-// CreateNormalInterface create a normal client
+// CreateNormalInterface create a normal client.
+//
+// Deprecated: use CreateNormalInterfaceV2 instead.
+// If you keep using long-lived AccessKeyID and AccessKeySecret,
+// use the example code below.
+//
+//	  provider := NewStaticCredProvider(accessKeyID, accessKeySecret, securityToken)
+//		client := CreateNormalInterfaceV2(endpoint, provider)
 func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken string) ClientInterface {
 	return &Client{
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
 		SecurityToken:   securityToken,
+
+		credentialsProvider: NewStaticCredentialsProvider(
+			accessKeyID,
+			accessKeySecret,
+			securityToken,
+		),
 	}
 }
 
-type UpdateTokenFunction func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
+// CreateNormalInterfaceV2 create a normal client, with a CredentialsProvider.
+//
+// It is highly recommended to use a CredentialsProvider that provides dynamic
+// expirable credentials for security.
+//
+// See [credentials_provider.go] for more details.
+func CreateNormalInterfaceV2(endpoint string, credentialsProvider CredentialsProvider) ClientInterface {
+	return &Client{
+		Endpoint:            endpoint,
+		credentialsProvider: credentialsProvider,
+	}
+}
 
-// CreateTokenAutoUpdateClient crate a TokenAutoUpdateClient
+type UpdateTokenFunction = func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
+
+// CreateTokenAutoUpdateClient create a TokenAutoUpdateClient,
 // this client will auto fetch security token and retry when operation is `Unauthorized`
+//
+// Deprecated: Use CreateNormalInterfaceV2 and UpdateFuncProviderAdapter instead.
+//
+// Example:
+//
+//		provider := NewUpdateFuncProviderAdapter(updateStsTokenFunc)
+//	  client := CreateNormalInterfaceV2(endpoint, provider)
+//
 // @note TokenAutoUpdateClient will destroy when shutdown channel is closed
 func CreateTokenAutoUpdateClient(endpoint string, tokenUpdateFunc UpdateTokenFunction, shutdown <-chan struct{}) (client ClientInterface, err error) {
 	accessKeyID, accessKeySecret, securityToken, expireTime, err := tokenUpdateFunc()

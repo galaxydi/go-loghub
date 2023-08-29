@@ -57,6 +57,16 @@ func (c *Client) request(project, method, uri string, headers map[string]string,
 	authVersion := c.AuthVersion
 	c.accessKeyLock.RUnlock()
 
+	if c.credentialsProvider != nil {
+		res, err := c.credentialsProvider.GetCredentials()
+		if err != nil {
+			return nil, fmt.Errorf("fail to fetch credentials: %w", err)
+		}
+		accessKeyID = res.AccessKeyID
+		accessKeySecret = res.AccessKeySecret
+		stsToken = res.SecurityToken
+	}
+
 	// Access with token
 	if stsToken != "" {
 		headers[HTTPHeaderAcsSecurityToken] = stsToken
