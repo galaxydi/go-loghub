@@ -752,6 +752,21 @@ func (s *LogStore) GetLogsToCompletedV2(req *GetLogRequest) (*GetLogsResponse, e
 	return res, err
 }
 
+// GetLogsToCompletedV3 query logs with [from, to) time range to completed
+func (s *LogStore) GetLogsToCompletedV3(req *GetLogRequest) (*GetLogsV3Response, error) {
+	var res *GetLogsV3Response
+	var err error
+	f := func() (bool, error) {
+		res, err = s.GetLogsV3(req)
+		if err == nil {
+			return res.IsComplete(), nil
+		}
+		return false, err
+	}
+	s.getToCompleted(f)
+	return res, err
+}
+
 // GetHistogramsToCompleted query logs with [from, to) time range to completed
 func (s *LogStore) GetHistogramsToCompleted(topic string, from int64, to int64, queryExp string) (*GetHistogramsResponse, error) {
 	var res *GetHistogramsResponse

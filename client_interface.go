@@ -287,6 +287,8 @@ type ClientInterface interface {
 	GetLogsToCompleted(project, logstore string, topic string, from int64, to int64, queryExp string, maxLineNum int64, offset int64, reverse bool) (*GetLogsResponse, error)
 	// GetLogsToCompletedV2 query logs with [from, to) time range to completed
 	GetLogsToCompletedV2(project, logstore string, req *GetLogRequest) (*GetLogsResponse, error)
+	// GetLogsToCompletedV3 query logs with [from, to) time range to completed
+	GetLogsToCompletedV3(project, logstore string, req *GetLogRequest) (*GetLogsV3Response, error)
 
 	// #################### Index Operations #####################
 	// CreateIndex ...

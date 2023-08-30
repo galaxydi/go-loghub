@@ -874,6 +874,16 @@ func (c *TokenAutoUpdateClient) GetLogsToCompletedV2(project, logstore string, r
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetLogsToCompletedV3(project, logstore string, req *GetLogRequest) (r *GetLogsV3Response, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		r, err = c.logClient.GetLogsToCompletedV3(project, logstore, req)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) GetLogLinesV2(project, logstore string, req *GetLogRequest) (r *GetLogLinesResponse, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		r, err = c.logClient.GetLogLinesV2(project, logstore, req)

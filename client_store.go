@@ -280,6 +280,12 @@ func (c *Client) GetLogsToCompletedV2(project, logstore string, req *GetLogReque
 	return ls.GetLogsToCompletedV2(req)
 }
 
+// GetLogsToCompletedV3 ...
+func (c *Client) GetLogsToCompletedV3(project, logstore string, req *GetLogRequest) (*GetLogsV3Response, error) {
+	ls := convertLogstore(c, project, logstore)
+	return ls.GetLogsToCompletedV3(req)
+}
+
 // GetLogLinesV2 ...
 func (c *Client) GetLogLinesV2(project, logstore string, req *GetLogRequest) (*GetLogLinesResponse, error) {
 	ls := convertLogstore(c, project, logstore)

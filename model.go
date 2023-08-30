@@ -207,6 +207,10 @@ type GetLogsV3Response struct {
 	Logs []map[string]string   `json:"data"`
 }
 
+func (resp *GetLogsV3Response) IsComplete() bool {
+	return strings.ToLower(resp.Meta.Progress) == "complete"
+}
+
 // GetLogLinesResponse defines response from GetLogLines call
 // note: GetLogLinesResponse.Logs is nil when use GetLogLinesResponse
 type GetLogLinesResponse struct {
