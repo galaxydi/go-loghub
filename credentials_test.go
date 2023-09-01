@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	io "io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"testing"
@@ -107,7 +107,7 @@ func TestBuilderParser(t *testing.T) {
 
 	body := ``
 	resp := http.Response{
-		Body: io.NopCloser(bytes.NewBufferString(body)),
+		Body: ioutil.NopCloser(bytes.NewBufferString(body)),
 	}
 	_, err = ecsRamRoleParser(&resp)
 	assert.Error(t, err)
@@ -115,7 +115,7 @@ func TestBuilderParser(t *testing.T) {
 		"SecurityToken": "zzzz", "Expiration": 234, "LastUpdated": 456
 	}`
 	resp = http.Response{
-		Body: io.NopCloser(bytes.NewBufferString(body)),
+		Body: ioutil.NopCloser(bytes.NewBufferString(body)),
 	}
 	cred, err := ecsRamRoleParser(&resp)
 	assert.NoError(t, err)

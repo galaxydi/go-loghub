@@ -51,19 +51,19 @@ func (t *TempCredentials) WithExpiredFactor(factor float64) *TempCredentials {
 
 // Returns true if credentials has expired already or will expire soon.
 func (t *TempCredentials) ShouldRefresh() bool {
-	now := time.Now().UnixMilli()
-	if now >= t.expirationInMills {
+	nowInMills := time.Now().UnixNano() / 1e6
+	if nowInMills >= t.expirationInMills {
 		return true
 	}
 	duration := (float64)(t.expirationInMills-t.lastUpdatedInMills) * t.expiredFactor
 	if duration < 0.0 { // check here
 		duration = 0
 	}
-	return (now - t.lastUpdatedInMills) >= int64(duration)
+	return (nowInMills - t.lastUpdatedInMills) >= int64(duration)
 }
 
 // Returns true if credentials has expired already.
 func (t *TempCredentials) HasExpired() bool {
-	now := time.Now().UnixMilli()
-	return now >= t.expirationInMills
+	nowInMills := time.Now().UnixNano() / 1e6
+	return nowInMills >= t.expirationInMills
 }

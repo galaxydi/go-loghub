@@ -142,7 +142,7 @@ func updateFuncFetcher(updateFunc UpdateTokenFunction) CredentialsFetcher {
 			return nil, fmt.Errorf("updateTokenFunc result not valid, expirationTime:%s",
 				expireTime.Format(time.RFC3339))
 		}
-		return NewTempCredentials(id, secret, token, expireTime.UnixMilli(), -1), nil
+		return NewTempCredentials(id, secret, token, expireTime.UnixNano()/1e6, -1), nil
 	}
 
 }
@@ -168,7 +168,7 @@ func (adp *UpdateFuncProviderAdapter) GetCredentials() (Credentials, error) {
 	adp.cred.Store(&res.Credentials)
 	adp.expirationInMills.Store(res.expirationInMills)
 	level.Debug(Logger).Log("reason", "updateTokenFunc fetch new credentials succeed",
-		"expirationTime", time.UnixMilli(res.expirationInMills).Format(CRED_TIME_FORMAT),
+		"expirationTime", time.Unix(res.expirationInMills/1e3, res.expirationInMills%1e3*1e6).Format(CRED_TIME_FORMAT),
 	)
 	return res.Credentials, nil
 }
@@ -181,11 +181,12 @@ func (adp *UpdateFuncProviderAdapter) shouldRefresh() bool {
 		return true
 	}
 	now := time.Now()
-	return time.UnixMilli(adp.expirationInMills.Load()).Sub(now) <= adp.advanceDuration
+	millis := adp.expirationInMills.Load()
+	return time.Unix(millis/1e3, millis%1e3*1e6).Sub(now) <= adp.advanceDuration
 }
 
 func checkSTSTokenValid(accessKeyID, accessKeySecret, securityToken string, expirationTime time.Time) bool {
-	return accessKeyID != "" && accessKeySecret != "" && expirationTime.UnixMilli() > 0
+	return accessKeyID != "" && accessKeySecret != "" && expirationTime.UnixNano() > 0
 }
 
 const ECS_RAM_ROLE_URL_PREFIX = "http://100.100.100.200/latest/meta-data/ram/security-credentials/"
