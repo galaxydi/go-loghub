@@ -3,7 +3,7 @@ package sls
 import (
 	"encoding/json"
 	"fmt"
-	io "io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -207,7 +207,7 @@ func newEcsRamRoleReqBuilder(urlPrefix, ramRole string) func() (*http.Request, e
 // Parse ECS Ram Role http response, convert it to TempCredentials
 func ecsRamRoleParser(resp *http.Response) (*TempCredentials, error) {
 	// 1. read body
-	data, err := io.ReadAll(resp.Body)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("fail to read http resp body: %w", err)
 	}
