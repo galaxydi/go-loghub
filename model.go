@@ -293,3 +293,12 @@ func CreateDefaultIndex() *Index {
 		},
 	}
 }
+
+type GetMeteringModeResponse struct {
+	MeteringMode string `json:"meteringMode"`
+}
+
+const (
+	CHARGE_BY_FUNCTION    = "ChargeByFunction"
+	CHARGE_BY_DATA_INGEST = "ChargeByDataIngest"
+)

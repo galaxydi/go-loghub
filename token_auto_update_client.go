@@ -326,6 +326,26 @@ func (c *TokenAutoUpdateClient) ListMachineGroup(project string, offset, size in
 	return
 }
 
+func (c *TokenAutoUpdateClient) GetLogStoreMeteringMode(project string, logstore string) (res *GetMeteringModeResponse, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		res, err = c.logClient.GetLogStoreMeteringMode(project, logstore)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) UpdateLogStoreMeteringMode(project string, logstore string, meteringMode string) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.UpdateLogStoreMeteringMode(project, logstore, meteringMode)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) ListMachines(project, machineGroupName string) (ms []*Machine, total int, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		ms, total, err = c.logClient.ListMachines(project, machineGroupName)
