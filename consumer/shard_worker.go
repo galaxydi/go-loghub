@@ -136,7 +136,7 @@ func (consumer *ShardConsumerWorker) updateStatus(success bool) {
 		switch status {
 		case PULLING:
 			consumer.setConsumerStatus(PROCESSING)
-		case INITIALIZING,PROCESSING:
+		case INITIALIZING, PROCESSING:
 			consumer.setConsumerStatus(PULLING)
 		}
 	}
@@ -145,14 +145,14 @@ func (consumer *ShardConsumerWorker) updateStatus(success bool) {
 }
 
 func (consumer *ShardConsumerWorker) shouldFetch() bool {
-	if consumer.lastFetchGroupCount >= consumer.client.option.MaxFetchLogGroupCount || consumer.lastFetchRawSize >= 4 * 1024 * 1024 {
+	if consumer.lastFetchGroupCount >= consumer.client.option.MaxFetchLogGroupCount || consumer.lastFetchRawSize >= 4*1024*1024 {
 		return true
 	}
 	duration := time.Since(consumer.lastFetchTime)
-	if consumer.lastFetchGroupCount < 100 && consumer.lastFetchRawSize < 1024 * 1024{
+	if consumer.lastFetchGroupCount < 100 && consumer.lastFetchRawSize < 1024*1024 {
 		// The time used here is in milliseconds.
 		return duration > 500*time.Millisecond
-	} else if consumer.lastFetchGroupCount < 500 && consumer.lastFetchRawSize < 2 * 1024 * 1024 {
+	} else if consumer.lastFetchGroupCount < 500 && consumer.lastFetchRawSize < 2*1024*1024 {
 		return duration > 200*time.Millisecond
 	} else {
 		return duration > 50*time.Millisecond

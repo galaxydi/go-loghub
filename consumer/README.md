@@ -48,6 +48,7 @@ LogHubConfig是提供给用户的配置类，用于配置消费策略，您可�
 |CursorPosition|消费的点位|必填，支持 1.BEGIN_CURSOR: logstore的开始点位 2. END_CURSOR: logstore的最新数据点位 3.SPECIAL_TIME_CURSOR: 自行设置的unix时间戳|
 ||sls的logstore|必填|
 |HeartbeatIntervalInSecond|心跳的时间间隔|非必填，默认时间为20s, sdk会根据心跳时间与服务器确认alive|
+|HeartbeatTimeoutInSecond|心跳的超时间隔|非必填，默认时间为HeartbeatIntervalInSecond的3倍, sdk会根据心跳时间与服务器确认alive，持续心跳失败达到超时时间后后，服务器可重新分配该超时shard|
 |DataFetchIntervalInMs|数据默认拉取的间隔|非必填，默认为200ms|
 |MaxFetchLogGroupCount|数据一次拉取的log group数量|非必填，默认为1000|
 |CursorStartTime|数据点位的时间戳|非必填，CursorPosition为SPECIAL_TIME_CURSOR时需填写|

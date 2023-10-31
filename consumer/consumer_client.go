@@ -21,6 +21,9 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.HeartbeatIntervalInSecond == 0 {
 		option.HeartbeatIntervalInSecond = 20
 	}
+	if option.HeartbeatTimeoutInSecond == 0 {
+		option.HeartbeatTimeoutInSecond = option.HeartbeatIntervalInSecond * 3
+	}
 	if option.DataFetchIntervalInMs == 0 {
 		option.DataFetchIntervalInMs = 200
 	}
@@ -42,7 +45,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	}
 	consumerGroup := sls.ConsumerGroup{
 		ConsumerGroupName: option.ConsumerGroupName,
-		Timeout:           option.HeartbeatIntervalInSecond * 3,
+		Timeout:           option.HeartbeatTimeoutInSecond,
 		InOrder:           option.InOrder,
 	}
 	consumerClient := &ConsumerClient{
