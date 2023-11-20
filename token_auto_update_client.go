@@ -146,6 +146,11 @@ func (c *TokenAutoUpdateClient) SetHTTPClient(client *http.Client) {
 	c.logClient.SetHTTPClient(client)
 }
 
+// SetRetryTimeout set retry timeout
+func (c *TokenAutoUpdateClient) SetRetryTimeout(timeout time.Duration) {
+	c.logClient.SetRetryTimeout(timeout)
+}
+
 // SetAuthVersion set auth version that the client used
 func (c *TokenAutoUpdateClient) SetAuthVersion(version AuthVersionType) {
 	c.logClient.SetAuthVersion(version)
