@@ -165,6 +165,11 @@ func (c *Client) SetHTTPClient(client *http.Client) {
 	c.HTTPClient = client
 }
 
+// SetRetryTimeout set retry timeout
+func (c *Client) SetRetryTimeout(timeout time.Duration) {
+	c.RetryTimeOut = timeout
+}
+
 // SetAuthVersion set signature version that the client used
 func (c *Client) SetAuthVersion(version AuthVersionType) {
 	c.accessKeyLock.Lock()
