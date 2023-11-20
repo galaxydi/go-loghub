@@ -79,6 +79,8 @@ type ClientInterface interface {
 	SetUserAgent(userAgent string)
 	// SetHTTPClient set a custom http client, all request will send to sls by this client
 	SetHTTPClient(client *http.Client)
+	// SetRetryTimeout set retry timeout, client will retry util retry timeout
+	SetRetryTimeout(timeout time.Duration)
 	// #################### Client Operations #####################
 	// ResetAccessKeyToken reset client's access key token
 	ResetAccessKeyToken(accessKeyID, accessKeySecret, securityToken string)
