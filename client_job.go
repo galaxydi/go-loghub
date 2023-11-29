@@ -190,6 +190,8 @@ type (
 		TimePattern      string            `json:"timePattern"`
 		TimeFormat       string            `json:"timeFormat"`
 		TimeZone         string            `json:"timeZone"`
+		Communication    string            `json:"communication"`
+		NameResolutions  string            `json:"nameResolutions"`
 		AdditionalProps  map[string]string `json:"additionalProps"`
 	}
 
