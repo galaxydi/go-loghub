@@ -40,6 +40,9 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 		SecurityToken:   option.SecurityToken,
 		UserAgent:       option.ConsumerGroupName + "_" + option.ConsumerName,
 	}
+	if option.CredentialsProvider != nil {
+		client = client.WithCredentialsProvider(option.CredentialsProvider)
+	}
 	if option.HTTPClient != nil {
 		client.SetHTTPClient(option.HTTPClient)
 	}

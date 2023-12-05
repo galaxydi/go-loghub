@@ -16,6 +16,12 @@ import (
 const CRED_TIME_FORMAT = time.RFC3339
 
 type CredentialsProvider interface {
+	/**
+	 * GetCredentials is called everytime credentials are needed, the CredentialsProvider
+	 * should cache credentials to avoid fetch credentials too frequently.
+	 *
+	 * @note GetCredentials must be thread-safe to avoid data race.
+	 */
 	GetCredentials() (Credentials, error)
 }
 

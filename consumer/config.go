@@ -1,12 +1,17 @@
 package consumerLibrary
 
-import "net/http"
+import (
+	"net/http"
+
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+)
 
 type LogHubConfig struct {
 	//:param Endpoint:
 	//:param AccessKeyID:
 	//:param AccessKeySecret:
 	//:param SecurityToken: If you use sts token to consume data, you must make sure consumer will be stopped before this token expired.
+	//:param CredentialsProvider: CredentialsProvider that providers credentials(AccessKeyID, AccessKeySecret, StsToken)
 	//:param Project:
 	//:param Logstore:
 	//:param Query:
@@ -45,6 +50,7 @@ type LogHubConfig struct {
 	Endpoint                  string
 	AccessKeyID               string
 	AccessKeySecret           string
+	CredentialsProvider       sls.CredentialsProvider
 	Project                   string
 	Logstore                  string
 	Query                     string

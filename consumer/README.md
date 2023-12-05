@@ -39,8 +39,9 @@ LogHubConfig是提供给用户的配置类，用于配置消费策略，您可�
 |参数|含义|详情|
 | --- | --- | --- |
 |Endpoint|sls的endpoint|必填，如cn-hangzhou.sls.aliyuncs.com|
-|AccessKeyId|aliyun的AccessKeyId|必填|
-|AccessKeySecret|aliyun的AccessKeySecret|必填|
+|AccessKeyId|aliyun的AccessKeyId|当 CredentialsProvider 为 nil 时必填|
+|AccessKeySecret|aliyun的AccessKeySecret|当 CredentialsProvider 为 nil 时必填|
+|CredentialsProvider|自定义接口|可选，可自定义CredentialsProvider，来提供动态的 AccessKeyId/AccessKeySecret/StsToken，该接口应当缓存 AK，且必须线程安全|
 |Project|sls的project信息|必填|
 |Logstore|sls的logstore|必填|
 |ConsumerGroupName|消费组名称|必填|

@@ -133,6 +133,7 @@ func(callback *Callback)Fail(result *producer.Result){
 | Endpoint            | String | 服务入口，关于如何确定project对应的服务入口可参考文章[服务入口](https://help.aliyun.com/document_detail/29008.html?spm=a2c4e.11153940.blogcont682761.14.446e7720gs96LB)。 |
 | AccessKeyID         | String | 账户的AK id。                                                |
 | AccessKeySecret     | String | 账户的AK 密钥。                                              |
+|CredentialsProvider|Interface|可选，可自定义CredentialsProvider，来提供动态的 AccessKeyId/AccessKeySecret/StsToken，该接口应当缓存 AK，且必须线程安全|
 | NoRetryStatusCodeList  | []int  | 用户配置的不需要重试的错误码列表，当发送日志失败时返回的错误码在列表中，则不会重试。默认包含400，404两个值。                 |
 | UpdateStsToken      | Func   | 函数类型，该函数内去实现自己的获取ststoken 的逻辑，producer 会自动刷新ststoken并放入client 当中。
 | StsTokenShutDown    | channel| 关闭ststoken 自动刷新的通讯信道，当该信道关闭时，不再自动刷新ststoken值。当producer关闭的时候，该参数不为nil值，则会主动调用close去关闭该信道停止ststoken的自动刷新。 |
