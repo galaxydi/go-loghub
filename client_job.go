@@ -193,6 +193,7 @@ type (
 		Communication    string            `json:"communication"`
 		NameResolutions  string            `json:"nameResolutions"`
 		AdditionalProps  map[string]string `json:"additionalProps"`
+		VpcId            string            `json:"vpcId"`
 	}
 
 	// ingestion JDBC source
