@@ -448,10 +448,16 @@ func (s *LogStore) GetLogsBytes(shardID int, cursor, endCursor string,
 	return s.GetLogsBytesV2(plr)
 }
 
+// Deprecated: use GetLogsBytesWithQuery instead
+func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) ([]byte, string, error) {
+	out, plm, err := s.GetLogsBytesWithQuery(plr)
+	return out, plm.NextCursor, err
+}
+
 // GetLogsBytes gets logs binary data from shard specified by shardId according cursor and endCursor.
 // The logGroupMaxCount is the max number of logGroup could be returned.
 // The nextCursor is the next curosr can be used to read logs at next time.
-func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
+func (s *LogStore) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, pullLogMeta *PullLogMeta, err error) {
 	h := map[string]string{
 		"x-log-bodyrawsize": "0",
 		"Accept":            "application/x-protobuf",
@@ -463,12 +469,12 @@ func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor s
 
 	r, err := request(s.project, "GET", uri, h, nil)
 	if err != nil {
-		return nil, "", err
+		return
 	}
 	defer r.Body.Close()
 	buf, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, "", err
+		return
 	}
 
 	if r.StatusCode != http.StatusOK {
@@ -494,28 +500,34 @@ func (s *LogStore) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor s
 		err = fmt.Errorf("unexpected compress type:%v", v[0])
 		return
 	}
-
+	pullLogMeta = &PullLogMeta{}
 	v, ok = r.Header["X-Log-Cursor"]
 	if !ok || len(v) == 0 {
 		err = fmt.Errorf("can't find 'x-log-cursor' header")
 		return
 	}
-	nextCursor = v[0]
-
-	v, ok = r.Header["X-Log-Bodyrawsize"]
-	if !ok || len(v) == 0 {
-		err = fmt.Errorf("can't find 'x-log-bodyrawsize' header")
+	pullLogMeta.NextCursor = v[0]
+	pullLogMeta.RawSize, err = ParseHeaderInt(r, "X-Log-Bodyrawsize")
+	if err != nil {
 		return
 	}
-	bodyRawSize, err := strconv.Atoi(v[0])
-	if err != nil {
-		return nil, "", err
-	}
-
-	out = make([]byte, bodyRawSize)
-	if bodyRawSize != 0 {
+	if pullLogMeta.RawSize > 0 {
+		out = make([]byte, pullLogMeta.RawSize)
 		len := 0
-		if len, err = lz4.UncompressBlock(buf, out); err != nil || len != bodyRawSize {
+		if len, err = lz4.UncompressBlock(buf, out); err != nil || len != pullLogMeta.RawSize {
+			return
+		}
+	}
+	// If query is not nil, extract more headers
+	if plr.Query != "" {
+		// RawSizeBeforeQuery before data processing
+		pullLogMeta.RawSizeBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatasize")
+		if err != nil {
+			return
+		}
+		//lines before data processing
+		pullLogMeta.RawDataCountBeforeQuery, err = ParseHeaderInt(r, "X-Log-Rawdatacount")
+		if err != nil {
 			return
 		}
 	}
@@ -549,19 +561,24 @@ func (s *LogStore) PullLogs(shardID int, cursor, endCursor string,
 	return s.PullLogsV2(plr)
 }
 
-func (s *LogStore) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
+// Deprecated: use PullLogsWithQuery instead
+func (s *LogStore) PullLogsV2(plr *PullLogRequest) (*LogGroupList, string, error) {
+	gl, plm, err := s.PullLogsWithQuery(plr)
+	return gl, plm.NextCursor, err
+}
 
-	out, nextCursor, err := s.GetLogsBytesV2(plr)
+func (s *LogStore) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, plm *PullLogMeta, err error) {
+	out, plm, err := s.GetLogsBytesWithQuery(plr)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
 	gl, err = LogsBytesDecode(out)
 	if err != nil {
-		return nil, "", err
+		return nil, nil, err
 	}
 
-	return gl, nextCursor, nil
+	return
 }
 
 // GetHistograms query logs with [from, to) time range

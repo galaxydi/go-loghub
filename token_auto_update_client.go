@@ -816,9 +816,20 @@ func (c *TokenAutoUpdateClient) GetLogsBytes(project, logstore string, shardID i
 	return c.GetLogsBytesV2(plr)
 }
 
+// Deprecated: use GetLogsBytesWithQuery instead
 func (c *TokenAutoUpdateClient) GetLogsBytesV2(plr *PullLogRequest) (out []byte, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		out, nextCursor, err = c.logClient.GetLogsBytesV2(plr)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) GetLogsBytesWithQuery(plr *PullLogRequest) (out []byte, plm *PullLogMeta, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		out, plm, err = c.logClient.GetLogsBytesWithQuery(plr)
 		if !c.processError(err) {
 			return
 		}
@@ -839,9 +850,20 @@ func (c *TokenAutoUpdateClient) PullLogs(project, logstore string, shardID int, 
 	return c.PullLogsV2(plr)
 }
 
+// Deprecated: use PullLogsWithQuery instead
 func (c *TokenAutoUpdateClient) PullLogsV2(plr *PullLogRequest) (gl *LogGroupList, nextCursor string, err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		gl, nextCursor, err = c.logClient.PullLogsV2(plr)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
+func (c *TokenAutoUpdateClient) PullLogsWithQuery(plr *PullLogRequest) (gl *LogGroupList, plm *PullLogMeta, err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		gl, plm, err = c.logClient.PullLogsWithQuery(plr)
 		if !c.processError(err) {
 			return
 		}

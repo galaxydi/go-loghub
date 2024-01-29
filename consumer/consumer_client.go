@@ -131,8 +131,7 @@ func (consumer *ConsumerClient) getCursor(shardId int, from string) (string, err
 	return cursor, err
 }
 
-func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, nextCursor string, rawSize int, err error) {
-	var logBytes []byte
+func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.LogGroupList, plm *sls.PullLogMeta, err error) {
 	plr := &sls.PullLogRequest{
 		Project:          consumer.option.Project,
 		Logstore:         consumer.option.Logstore,
@@ -141,20 +140,10 @@ func (consumer *ConsumerClient) pullLogs(shardId int, cursor string) (gl *sls.Lo
 		Cursor:           cursor,
 		LogGroupMaxCount: consumer.option.MaxFetchLogGroupCount,
 	}
-	if plr.Query != "" {
-		plr.PullMode = "scan_on_stream"
-	}
 	for retry := 0; retry < 3; retry++ {
-		logBytes, nextCursor, err = consumer.client.GetLogsBytesV2(plr)
-		if err == nil {
-			rawSize = len(logBytes)
-			gl, err = sls.LogsBytesDecode(logBytes)
-			if err == nil {
-				break
-			}
-		}
+		gl, plm, err = consumer.client.PullLogsWithQuery(plr)
 		if err != nil {
-			slsError, ok := err.(sls.Error)
+			slsError, ok := err.(*sls.Error)
 			if ok {
 				level.Warn(consumer.logger).Log("msg", "shard pull logs failed, occur sls error",
 					"shard", shardId,

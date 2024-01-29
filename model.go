@@ -50,7 +50,8 @@ type PullLogRequest struct {
 	EndCursor        string
 	LogGroupMaxCount int
 	Query            string
-	PullMode         string
+	// Deprecated: PullMode is not used
+	PullMode string
 }
 
 func (plr *PullLogRequest) ToURLParams() url.Values {
@@ -63,12 +64,16 @@ func (plr *PullLogRequest) ToURLParams() url.Values {
 	}
 	if plr.Query != "" {
 		urlVal.Add("query", plr.Query)
+		urlVal.Add("pullMode", "scan_on_stream")
 	}
-	if plr.PullMode != "" {
-		urlVal.Add("pullMode", plr.PullMode)
-	}
-
 	return urlVal
+}
+
+type PullLogMeta struct {
+	NextCursor              string
+	RawSize                 int
+	RawSizeBeforeQuery      int
+	RawDataCountBeforeQuery int
 }
 
 // GetHistogramsResponse defines response from GetHistograms call
