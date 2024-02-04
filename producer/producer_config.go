@@ -54,6 +54,8 @@ type ProducerConfig struct {
 	StsTokenShutDown chan struct{}
 	AccessKeyID      string // Deprecated: use CredentialsProvider instead
 	AccessKeySecret  string // Deprecated: use CredentialsProvider instead
+	Region           string
+	AuthVersion      sls.AuthVersionType
 }
 
 func GetDefaultProducerConfig() *ProducerConfig {
