@@ -36,7 +36,12 @@ func InitProducer(producerConfig *ProducerConfig) *Producer {
 	if err != nil {
 		level.Warn(logger).Log("msg", "Failed to create ststoken client, use default client without ststoken.", "error", err)
 	}
-
+	if producerConfig.Region != "" {
+		client.SetRegion(producerConfig.Region)
+	}
+	if producerConfig.AuthVersion != "" {
+		client.SetAuthVersion(producerConfig.AuthVersion)
+	}
 	if producerConfig.HTTPClient != nil {
 		client.SetHTTPClient(producerConfig.HTTPClient)
 	}
