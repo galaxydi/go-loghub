@@ -43,7 +43,7 @@ producer同时提供了简单的使用代码simple:([producer_simple_demo](https
 ```go langgo l
 producerConfig := producer.GetDefaultProducerConfig()
 producerConfig.Endpoint = os.Getenv("Endpoint")
-provider := sls.NewStaticCredProvider(os.Getenv("AccessKeyID"), os.Getenv("AccessKeySecret"), "")
+provider := sls.NewStaticCredentailsProvider(os.Getenv("AccessKeyID"), os.Getenv("AccessKeySecret"), "")
 producerConfig.CredentialsProvider = provider
 producerInstance:=producer.InitProducer(producerConfig)
 ch := make(chan os.Signal)
@@ -137,6 +137,8 @@ func(callback *Callback)Fail(result *producer.Result){
 | NoRetryStatusCodeList  | []int  | 用户配置的不需要重试的错误码列表，当发送日志失败时返回的错误码在列表中，则不会重试。默认包含400，404两个值。                 |
 | UpdateStsToken      | Func   | 函数类型，该函数内去实现自己的获取ststoken 的逻辑，producer 会自动刷新ststoken并放入client 当中。
 | StsTokenShutDown    | channel| 关闭ststoken 自动刷新的通讯信道，当该信道关闭时，不再自动刷新ststoken值。当producer关闭的时候，该参数不为nil值，则会主动调用close去关闭该信道停止ststoken的自动刷新。 |
+| Region              | String | 日志服务的区域，当签名使用 AuthV4 时必选。 例如cn-hangzhou。    |
+| AuthVersion         | String | 使用的签名版本，可选枚举值为 AuthV1， AuthV4。|
 
 ## 关于性能
 
