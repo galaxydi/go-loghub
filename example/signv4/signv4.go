@@ -12,9 +12,9 @@ import (
 	"github.com/go-kit/kit/log/level"
 )
 
-func CreateSignV4Client() {
-	accessKeyId, accessKeySecret := "", ""           // replace with your access key and secret
-	endpoint := "cn-hangzhou-share.log.aliyuncs.com" // replace with your endpoint
+func main() {
+	accessKeyId, accessKeySecret := "", ""              // replace with your access key and secret
+	endpoint := "cn-hangzhou-intranet.log.aliyuncs.com" // replace with your endpoint
 
 	client := sls.CreateNormalInterfaceV2(endpoint,
 		sls.NewStaticCredentialsProvider(accessKeyId, accessKeySecret, ""))
