@@ -46,7 +46,8 @@ type LogHubConfig struct {
 	//:param AutoCommitDisabled: whether to disable commit checkpoint automatically, default is false, means auto commit checkpoint
 	//	  Note that if you set autocommit to false, you must use InitConsumerWorkerWithCheckpointTracker instead of InitConsumerWorker
 	//:param AutoCommitIntervalInSec: default auto commit interval, default is 30
-
+	//:param AuthVersion: signature algorithm version, default is sls.AuthV1
+	//:param Region: region of sls endpoint, eg. cn-hangzhou, region must be set if AuthVersion is sls.AuthV4
 	Endpoint                  string
 	AccessKeyID               string
 	AccessKeySecret           string
@@ -73,6 +74,8 @@ type LogHubConfig struct {
 	SecurityToken             string
 	AutoCommitDisabled        bool
 	AutoCommitIntervalInMS    int64
+	AuthVersion               sls.AuthVersionType
+	Region                    string
 }
 
 const (
