@@ -11,7 +11,7 @@ func TestParseRegion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "xx-test-acdr-ut-1", region)
 
-	region, err = ParseRegion("http://cn-hangzhou-share.log.aliyuncs.com")
+	region, err = ParseRegion("http://cn-hangzhou-intranet.log.aliyuncs.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "cn-hangzhou", region)
 
@@ -23,7 +23,7 @@ func TestParseRegion(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "ap-southease-1", region)
 
-	region, err = ParseRegion("cn-shanghai-corp-share.sls.aliyuncs.com")
+	region, err = ParseRegion("cn-shanghai-corp.sls.aliyuncs.com")
 	assert.NoError(t, err)
 	assert.Equal(t, "cn-shanghai-corp", region)
 
