@@ -52,9 +52,8 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	}
 	if option.Region != "" {
 		client.SetRegion(option.Region)
-	} else if option.AuthVersion == sls.AuthV4 {
-		level.Error(logger).Log("error", "region must be set when using signature v4")
 	}
+
 	consumerGroup := sls.ConsumerGroup{
 		ConsumerGroupName: option.ConsumerGroupName,
 		Timeout:           option.HeartbeatTimeoutInSecond,
