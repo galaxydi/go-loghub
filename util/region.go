@@ -8,6 +8,8 @@ import (
 
 const ENDPOINT_REGEX_PATTERN = `^(?:http[s]?:\/\/)?([a-z-0-9]+)\.(?:sls|log)\.aliyuncs\.com$`
 
+var regionSuffixs = []string{"-intranet", "-share", "-vpc"}
+
 func ParseRegion(endpoint string) (string, error) {
 	var re = regexp.MustCompile(ENDPOINT_REGEX_PATTERN)
 	groups := re.FindStringSubmatch(endpoint)
@@ -15,7 +17,10 @@ func ParseRegion(endpoint string) (string, error) {
 		return "", fmt.Errorf("invalid endpoint format: %s", endpoint)
 	}
 	region := groups[1]
-	region = strings.TrimSuffix(region, "-intranet")
-	region = strings.TrimSuffix(region, "-share")
+	for _, suffix := range regionSuffixs {
+		if strings.HasSuffix(region, suffix) {
+			return region[:len(region)-len(suffix)], nil
+		}
+	}
 	return region, nil
 }
