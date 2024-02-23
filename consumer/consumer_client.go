@@ -33,16 +33,17 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	if option.AutoCommitIntervalInMS == 0 {
 		option.AutoCommitIntervalInMS = 60 * 1000
 	}
-	client := &sls.Client{
-		Endpoint:        option.Endpoint,
-		AccessKeyID:     option.AccessKeyID,
-		AccessKeySecret: option.AccessKeySecret,
-		SecurityToken:   option.SecurityToken,
-		UserAgent:       option.ConsumerGroupName + "_" + option.ConsumerName,
-	}
+	var client sls.ClientInterface
 	if option.CredentialsProvider != nil {
-		client = client.WithCredentialsProvider(option.CredentialsProvider)
+		client = sls.CreateNormalInterfaceV2(option.Endpoint, option.CredentialsProvider)
+	} else {
+		client = sls.CreateNormalInterface(option.Endpoint,
+			option.AccessKeyID,
+			option.AccessKeySecret,
+			option.SecurityToken)
 	}
+	client.SetUserAgent(option.ConsumerGroupName + "_" + option.ConsumerName)
+
 	if option.HTTPClient != nil {
 		client.SetHTTPClient(option.HTTPClient)
 	}
@@ -61,7 +62,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	}
 	consumerClient := &ConsumerClient{
 		option,
-		client,
+		client.(*sls.Client),
 		consumerGroup,
 		logger,
 	}
