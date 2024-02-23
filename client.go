@@ -406,7 +406,7 @@ func (c *Client) Close() error {
 
 func (c *Client) setSignV4IfInAcdr(endpoint string) {
 	region, err := util.ParseRegion(endpoint)
-	if err != nil && strings.Contains(region, "-acdr-ut-") {
+	if err == nil && strings.Contains(region, "-acdr-ut-") {
 		c.AuthVersion = AuthV4
 		c.Region = region
 	}
