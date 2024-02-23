@@ -7,13 +7,9 @@ import (
 )
 
 func TestParseRegion(t *testing.T) {
-	region, err := ParseRegion("cn-qingdao-acdr-ut-1-intranet.log.aliyuncs.com")
+	region, err := ParseRegion("xx-test-acdr-ut-1-intranet.log.aliyuncs.com")
 	assert.NoError(t, err)
-	assert.Equal(t, "cn-qingdao-acdr-ut-1", region)
-
-	region, err = ParseRegion("cn-chengdu-acdr-ut-1-intranet.log.aliyuncs.com")
-	assert.NoError(t, err)
-	assert.Equal(t, "cn-chengdu-acdr-ut-1", region)
+	assert.Equal(t, "xx-test-acdr-ut-1", region)
 
 	region, err = ParseRegion("http://cn-hangzhou-share.log.aliyuncs.com")
 	assert.NoError(t, err)

@@ -3,6 +3,8 @@ package sls
 import (
 	"net/http"
 	"time"
+
+	"github.com/aliyun/aliyun-log-go-sdk/util"
 )
 
 // CreateNormalInterface create a normal client.
@@ -14,7 +16,7 @@ import (
 //	  provider := NewStaticCredentailsProvider(accessKeyID, accessKeySecret, securityToken)
 //		client := CreateNormalInterfaceV2(endpoint, provider)
 func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken string) ClientInterface {
-	return &Client{
+	client := &Client{
 		Endpoint:        endpoint,
 		AccessKeyID:     accessKeyID,
 		AccessKeySecret: accessKeySecret,
@@ -26,6 +28,8 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 			securityToken,
 		),
 	}
+	client.setSignV4IfInAcdr(endpoint)
+	return client
 }
 
 // CreateNormalInterfaceV2 create a normal client, with a CredentialsProvider.
@@ -35,13 +39,15 @@ func CreateNormalInterface(endpoint, accessKeyID, accessKeySecret, securityToken
 //
 // See [credentials_provider.go] for more details.
 func CreateNormalInterfaceV2(endpoint string, credentialsProvider CredentialsProvider) ClientInterface {
-	return &Client{
+	client := &Client{
 		Endpoint:            endpoint,
 		credentialsProvider: credentialsProvider,
 	}
+	client.setSignV4IfInAcdr(endpoint)
+	return client
 }
 
-type UpdateTokenFunction = func() (accessKeyID, accessKeySecret, securityToken string, expireTime time.Time, err error)
+type UpdateTokenFunction = util.UpdateTokenFunction
 
 // CreateTokenAutoUpdateClient create a TokenAutoUpdateClient,
 // this client will auto fetch security token and retry when operation is `Unauthorized`
