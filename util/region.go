@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-const ENDPOINT_REGEX_PATTERN = `^(?:http[s]?:\/\/)?([a-z-0-9]+)\.(?:sls|log).aliyuncs.com$`
+const ENDPOINT_REGEX_PATTERN = `^(?:http[s]?:\/\/)?([a-z-0-9]+)\.(?:sls|log)\.aliyuncs\.com$`
 
 func ParseRegion(endpoint string) (string, error) {
 	var re = regexp.MustCompile(ENDPOINT_REGEX_PATTERN)
