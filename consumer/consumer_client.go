@@ -11,7 +11,7 @@ import (
 
 type ConsumerClient struct {
 	option        LogHubConfig
-	client        *sls.Client
+	client        sls.ClientInterface
 	consumerGroup sls.ConsumerGroup
 	logger        log.Logger
 }
@@ -61,7 +61,7 @@ func initConsumerClient(option LogHubConfig, logger log.Logger) *ConsumerClient 
 	}
 	consumerClient := &ConsumerClient{
 		option,
-		client.(*sls.Client),
+		client,
 		consumerGroup,
 		logger,
 	}
