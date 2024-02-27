@@ -8,8 +8,11 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/aliyun/aliyun-log-go-sdk/util"
 )
 
 // GlobalForceUsingHTTP if GlobalForceUsingHTTP is true, then all request will use HTTP(ignore LogProject's UsingHTTP flag)
@@ -399,4 +402,12 @@ func (c *Client) DeleteProject(name string) error {
 // Close the client
 func (c *Client) Close() error {
 	return nil
+}
+
+func (c *Client) setSignV4IfInAcdr(endpoint string) {
+	region, err := util.ParseRegion(endpoint)
+	if err == nil && strings.Contains(region, "-acdr-ut-") {
+		c.AuthVersion = AuthV4
+		c.Region = region
+	}
 }
