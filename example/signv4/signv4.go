@@ -29,9 +29,9 @@ func main() {
 }
 
 func CreateSignV4Consumer() {
-	accessKeyId, accessKeySecret := "", ""           // replace with your access key and secret
-	endpoint := "cn-hangzhou-share.log.aliyuncs.com" // replace with your endpoint
-	region, err := util.ParseRegion(endpoint)        // parse region from endpoint
+	accessKeyId, accessKeySecret := "", ""              // replace with your access key and secret
+	endpoint := "cn-hangzhou-intranet.log.aliyuncs.com" // replace with your endpoint
+	region, err := util.ParseRegion(endpoint)           // parse region from endpoint
 	if err != nil {
 		panic(err)
 	}
