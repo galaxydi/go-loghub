@@ -2,6 +2,7 @@ package sls
 
 import (
 	"crypto/hmac"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
@@ -11,34 +12,77 @@ import (
 	"time"
 )
 
+const (
+	HTTPHeaderAuthorization    = "Authorization"
+	HTTPHeaderContentMD5       = "Content-MD5"
+	HTTPHeaderContentType      = "Content-Type"
+	HTTPHeaderContentLength    = "Content-Length"
+	HTTPHeaderDate             = "Date"
+	HTTPHeaderHost             = "Host"
+	HTTPHeaderUserAgent        = "User-Agent"
+	HTTPHeaderAcsSecurityToken = "x-acs-security-token"
+	HTTPHeaderAPIVersion       = "x-log-apiversion"
+	HTTPHeaderLogDate          = "x-log-date"
+	HTTPHeaderLogContentSha256 = "x-log-content-sha256"
+	HTTPHeaderSignatureMethod  = "x-log-signaturemethod"
+	HTTPHeaderBodyRawSize      = "x-log-bodyrawsize"
+)
+
+type Signer interface {
+	// Sign modifies @param headers only, adds signature and other http headers
+	// that log services authorization requires.
+	Sign(method, uriWithQuery string, headers map[string]string, body []byte) error
+}
+
 // GMT location
 var gmtLoc = time.FixedZone("GMT", 0)
 
 // NowRFC1123 returns now time in RFC1123 format with GMT timezone,
-// eg. "Mon, 02 Jan 2006 15:04:05 GMT".
+// eg, "Mon, 02 Jan 2006 15:04:05 GMT".
 func nowRFC1123() string {
 	return time.Now().In(gmtLoc).Format(time.RFC1123)
 }
+func NewSignerV0() *SignerV0 {
+	return &SignerV0{}
+}
 
-// signature calculates a request's signature digest.
-func signature(project *LogProject, method, uri string,
-	headers map[string]string) (digest string, err error) {
+type SignerV0 struct{}
+
+func (s *SignerV0) Sign(method, uriWithQuery string, headers map[string]string, body []byte) error {
+	// do nothing
+	return nil
+}
+
+// SignerV1 version v1
+type SignerV1 struct {
+	accessKeyID     string
+	accessKeySecret string
+}
+
+func NewSignerV1(accessKeyID, accessKeySecret string) *SignerV1 {
+	return &SignerV1{
+		accessKeyID:     accessKeyID,
+		accessKeySecret: accessKeySecret,
+	}
+}
+
+func (s *SignerV1) Sign(method, uri string, headers map[string]string, body []byte) error {
 	var contentMD5, contentType, date, canoHeaders, canoResource string
-	var slsHeaderKeys sort.StringSlice
-
-	if val, ok := headers["Content-MD5"]; ok {
-		contentMD5 = val
+	if body != nil {
+		contentMD5 = fmt.Sprintf("%X", md5.Sum(body))
+		headers[HTTPHeaderContentMD5] = contentMD5
 	}
 
-	if val, ok := headers["Content-Type"]; ok {
+	if val, ok := headers[HTTPHeaderContentType]; ok {
 		contentType = val
 	}
 
-	date, ok := headers["Date"]
+	date, ok := headers[HTTPHeaderDate]
 	if !ok {
-		err = fmt.Errorf("Can't find 'Date' header")
-		return
+		return fmt.Errorf("Can't find 'Date' header")
 	}
+	headers[HTTPHeaderSignatureMethod] = signatureMethod
+	var slsHeaderKeys sort.StringSlice
 
 	// Calc CanonicalizedSLSHeaders
 	slsHeaders := make(map[string]string, len(headers))
@@ -61,7 +105,7 @@ func signature(project *LogProject, method, uri string,
 	// Calc CanonicalizedResource
 	u, err := url.Parse(uri)
 	if err != nil {
-		return
+		return err
 	}
 
 	canoResource += u.EscapedPath()
@@ -94,11 +138,23 @@ func signature(project *LogProject, method, uri string,
 		canoResource
 
 	// Signature = base64(hmac-sha1(UTF8-Encoding-Of(SignString)，AccessKeySecret))
-	mac := hmac.New(sha1.New, []byte(project.AccessKeySecret))
+	mac := hmac.New(sha1.New, []byte(s.accessKeySecret))
 	_, err = mac.Write([]byte(signStr))
 	if err != nil {
-		return
+		return err
 	}
-	digest = base64.StdEncoding.EncodeToString(mac.Sum(nil))
-	return
+	digest := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+	auth := fmt.Sprintf("SLS %s:%s", s.accessKeyID, digest)
+	headers[HTTPHeaderAuthorization] = auth
+	return nil
+}
+
+// add commonHeaders to headers after signature if not conflict
+func addHeadersAfterSign(commonHeaders, headers map[string]string) {
+	for k, v := range commonHeaders {
+		lowerKey := strings.ToLower(k)
+		if _, ok := headers[lowerKey]; !ok {
+			headers[k] = v
+		}
+	}
 }
