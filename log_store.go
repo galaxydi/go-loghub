@@ -40,6 +40,7 @@ type LogStore struct {
 	putLogCompressType int
 	EncryptConf        *EncryptConf `json:"encrypt_conf,omitempty"`
 	ProductType        string       `json:"productType,omitempty"`
+	useMetricStoreURL  bool
 }
 
 // Shard defines shard struct
@@ -303,8 +304,12 @@ func (s *LogStore) PutLogs(lg *LogGroup) (err error) {
 		}
 		outLen = len(out)
 	}
-
-	uri := fmt.Sprintf("/logstores/%v", s.Name)
+	var uri string
+	if s.useMetricStoreURL {
+		uri = fmt.Sprintf("/prometheus/%s/%s/api/v1/write", s.project.Name, s.Name)
+	} else {
+		uri = fmt.Sprintf("/logstores/%v", s.Name)
+	}
 	r, err := request(s.project, "POST", uri, h, out[:outLen])
 	if err != nil {
 		return NewClientError(err)
@@ -329,7 +334,7 @@ func (s *LogStore) PostLogStoreLogs(lg *LogGroup, hashKey *string) (err error) {
 		return nil
 	}
 
-	if hashKey == nil || *hashKey == "" {
+	if hashKey == nil || *hashKey == "" || s.useMetricStoreURL {
 		// empty hash call PutLogs
 		return s.PutLogs(lg)
 	}

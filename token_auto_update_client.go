@@ -741,6 +741,16 @@ func (c *TokenAutoUpdateClient) PutLogs(project, logstore string, lg *LogGroup) 
 	return
 }
 
+func (c *TokenAutoUpdateClient) PutLogsWithMetricStoreURL(project, logstore string, lg *LogGroup) (err error) {
+	for i := 0; i < c.maxTryTimes; i++ {
+		err = c.logClient.PutLogsWithMetricStoreURL(project, logstore, lg)
+		if !c.processError(err) {
+			return
+		}
+	}
+	return
+}
+
 func (c *TokenAutoUpdateClient) PostLogStoreLogs(project, logstore string, lg *LogGroup, hashKey *string) (err error) {
 	for i := 0; i < c.maxTryTimes; i++ {
 		err = c.logClient.PostLogStoreLogs(project, logstore, lg, hashKey)
