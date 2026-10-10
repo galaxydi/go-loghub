@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"os"
 
-	sls "github.com/galaxydi/go-loghub"
-	"github.com/galaxydi/go-loghub/example/util"
+	sls "github.com/aliyun/aliyun-log-go-sdk"
+	"github.com/aliyun/aliyun-log-go-sdk/example/util"
 )
 
 func main() {
 	// machine group example
-	projectName := util.Project.Name
+	project := util.ProjectName
 	logstore := "test-logstore"
 	testConf := "test-conf"
 	testMachineGroup := "test-mg"
@@ -21,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 	if exist {
-		util.Project.DeleteMachineGroup(testMachineGroup)
+		util.Client.DeleteMachineGroup(project, testMachineGroup)
 	}
 
 	err = createMachineGroup(testMachineGroup)
@@ -49,16 +49,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	exist, err = util.Project.CheckConfigExist(testConf)
+	exist, err = util.Client.CheckConfigExist(project, testConf)
 	if err != nil {
 		fmt.Println("check config exist fail:", err)
 		os.Exit(1)
 	}
 	if exist {
-		util.Project.DeleteConfig(testConf)
+		util.Client.DeleteConfig(project, testConf)
 	}
 
-	err = createLogConfig(testConf, projectName, logstore, testService)
+	err = createLogConfig(testConf, project, logstore, testService)
 	if err != nil {
 		fmt.Println("create config fail:")
 		fmt.Println(err)
@@ -99,33 +99,33 @@ func main() {
 }
 
 func applyConfToMachineGroup(confName string, mgname string) (err error) {
-	err = util.Project.ApplyConfigToMachineGroup(confName, mgname)
+	err = util.Client.ApplyConfigToMachineGroup(util.ProjectName, confName, mgname)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func createLogConfig(configName string, projectName, logstore string, serviceName string) (err error) {
-	// 日志所在的父目录
+func createLogConfig(configName string, project, logstore string, serviceName string) (err error) {
+	// The parent directory where the log is located
 	logPath := "/var/log/lambda/" + serviceName
-	// 日志文件的pattern，如functionName.LOG
+	// The pattern of the log file, such as functionName.LOG
 	filePattern := "*.LOG"
-	// 日志时间格式
+	// Log time format
 	timeFormat := "%Y/%m/%d %H:%M:%S"
-	// 日志提取后所生成的Key
+	// Key generated after log extraction
 	key := make([]string, 1)
-	// 用于过滤日志所用到的key，只有key的值满足对应filterRegex列中设定的正则表达式日志才是符合要求的
+	// The key used to filter the log. Only the value of the key satisfies the regular expression log set in the corresponding filterRegex column.
 	filterKey := make([]string, 1)
-	// 和每个filterKey对应的正正则表达式， filterRegex的长度和filterKey的长度必须相同
+	// The regular expression corresponding to each filterKey, the length of filterRegex and the length of filterKey must be the same.
 	filterRegex := make([]string, 1)
 	// topicFormat
-	// 1. 用于将日志文件路径的某部分作为topic
-	// 2. none 表示topic为空
-	// 3. default 表示将日志文件路径作为topic
-	// 4. group_topic 表示将应用该配置的机器组topic属性作为topic
-	// 以serviceName为topic的正则：/var/log/lambda/([^/]*)/.*
-	// 日志路径: /var/log/lambda/my-service/fjaishgaidhfiajf2343/func1.LOG
+	// 1. Used to use a part of the log file path as a topic
+	// 2. none means the topic is empty
+	// 3. default means to use the log file path as a topic
+	// 4. group_topic indicates that the machine group topic attribute of the configuration will be applied as the topic
+	// The regular rule with serviceName as the topic: /var/log/lambda/([^/]*)/.*
+	// Log path: /var/log/lambda/my-service/fjaishgaidhfiajf2343/func1.LOG
 	topicFormat := "/var/log/lambda/([^/]*)/.*" // topicFormat is right
 	inputDetail := sls.InputDetail{
 		LogType:       "common_reg_log",
@@ -141,17 +141,17 @@ func createLogConfig(configName string, projectName, logstore string, serviceNam
 		TopicFormat:   topicFormat,
 	}
 	outputDetail := sls.OutputDetail{
-		ProjectName:  projectName,
+		ProjectName:  project,
 		LogStoreName: logstore,
 	}
 	config := &sls.LogConfig{
 		Name:         configName,
-		InputType:    "file",       //现在只支持file
-		OutputType:   "LogService", //现在只支持LogService
+		InputType:    "file",
+		OutputType:   "LogService", // Now only supports LogService
 		InputDetail:  inputDetail,
 		OutputDetail: outputDetail,
 	}
-	err = util.Project.CreateConfig(config)
+	err = util.Client.CreateConfig(project, config)
 	if err != nil {
 		return err
 	}
@@ -159,14 +159,14 @@ func createLogConfig(configName string, projectName, logstore string, serviceNam
 }
 
 func checkMachineGroupExist(groupName string) (exist bool, err error) {
-	exist, err = util.Project.CheckMachineGroupExist(groupName)
+	exist, err = util.Client.CheckMachineGroupExist(util.ProjectName, groupName)
 	if err != nil {
 		return false, err
 	}
 	return exist, nil
 }
 func getMachineGroup(groupName string) (err error) {
-	_, err = util.Project.GetMachineGroup(groupName)
+	_, err = util.Client.GetMachineGroup(util.ProjectName, groupName)
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func getMachineGroup(groupName string) (err error) {
 }
 
 func deleteMachineGroup(groupName string) (err error) {
-	err = util.Project.DeleteMachineGroup(groupName)
+	err = util.Client.DeleteMachineGroup(util.ProjectName, groupName)
 	if err != nil {
 		return err
 	}
@@ -182,10 +182,7 @@ func deleteMachineGroup(groupName string) (err error) {
 }
 
 func createMachineGroup(groupName string) (err error) {
-	attribute := sls.MachinGroupAttribute{
-		ExternalName: "",
-		TopicName:    "",
-	}
+	attribute := sls.MachinGroupAttribute{}
 	machineList := []string{"mac-user-defined-id-value"}
 	var machineGroup = &sls.MachineGroup{
 		Name:          groupName,
@@ -193,7 +190,7 @@ func createMachineGroup(groupName string) (err error) {
 		MachineIDList: machineList,
 		Attribute:     attribute,
 	}
-	err = util.Project.CreateMachineGroup(machineGroup)
+	err = util.Client.CreateMachineGroup(util.ProjectName, machineGroup)
 	if err != nil {
 		return err
 	}
@@ -201,7 +198,7 @@ func createMachineGroup(groupName string) (err error) {
 }
 
 func deleteConfig(confName string) (err error) {
-	err = util.Project.DeleteConfig(confName)
+	err = util.Client.DeleteConfig(util.ProjectName, confName)
 	if err != nil {
 		return err
 	}
